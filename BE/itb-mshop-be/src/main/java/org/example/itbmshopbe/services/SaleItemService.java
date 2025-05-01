@@ -4,6 +4,7 @@ package org.example.itbmshopbe.services;
 import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
 import org.example.itbmshopbe.entities.SaleItem;
+import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,7 @@ public class SaleItemService {
 
     public SaleItemDetailDto getSaleItemDetails(Integer id){
         SaleItem saleItem = saleItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("SaleItem not found for this id ::" + id));
+                .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
         return convertToDetailDto(saleItem);
     }
 
