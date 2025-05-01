@@ -41,6 +41,8 @@ public class SaleItemService {
         dto.setRamGb(saleItem.getRamGb());
         dto.setScreenSizeInch(saleItem.getScreenSizeInch());
         dto.setQuantity(saleItem.getQuantity());
+        dto.setStorageGb(saleItem.getStorageGb());
+        dto.setColor(saleItem.getColor());
         return dto;
     }
 
