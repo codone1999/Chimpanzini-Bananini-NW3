@@ -12,7 +12,7 @@ public class SaleItemGalleryDto {
     private String model;
     private String brandName;
     private Integer price;
-    private Integer ramGb;
     private Integer storageGb;
+    private Integer ramGb;
     private String color;
 }
