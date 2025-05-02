@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/v1/sale-items")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
 public class SaleItemController {
     private final SaleItemService saleItemService;
 

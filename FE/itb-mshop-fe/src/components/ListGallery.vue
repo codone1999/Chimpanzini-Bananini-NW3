@@ -1,61 +1,17 @@
 <script setup>
-const products = [
-  {
-    id: 1,
-    brand: 'Apple',
-    model: 'iPhone 12 Pro Max',
-    ramGb: 6,
-    storageGb: 256,
-    storageUnit: 'GB',
-    price: '99',
-    priceUnit: 'Bath',
-    image: '/public/favicon.ico',
-  },
-  {
-    id: 2,
-    brand: 'Apple',
-    model: 'iPhone 13 Pro',
-    ramGb: 6,
-    storageGb: 256,
-    storageUnit: 'GB',
-    price: '99',
-    priceUnit: 'Bath',
-    image: '/public/favicon.ico',
-  },
-  {
-    id: 3,
-    brand: 'Apple',
-    model: 'iPhone 14',
-    ramGb: 6,
-    storageGb: 256,
-    storageUnit: 'GB',
-    price: '99',
-    priceUnit: 'Bath',
-    image: '/public/favicon.ico',
-  },
-  {
-    id: 4,
-    brand: 'Apple',
-    model: 'iPhone 15 Air',
-    ramGb: 6,
-    storageGb: 256,
-    storageUnit: 'GB',
-    price: '99',
-    priceUnit: 'Bath',
-    image: '/public/favicon.ico',
-  },
-  {
-    id: 5,
-    brand: 'Apple',
-    model: 'iPhone 16 thin',
-    ramGb: 6,
-    storageGb: 256,
-    storageUnit: 'GB',
-    price: '99',
-    priceUnit: 'Bath',
-    image: '/public/favicon.ico',
-  },
-]
+import { ref, onMounted } from 'vue'
+import { getItems } from '@/lib/fetchUtils';
+
+const products = ref([])
+
+onMounted(async() => {
+  try {
+    products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`)
+  } catch (error) {
+    console.error(error)
+  }
+})
+
 </script>
 
 <template>
@@ -80,7 +36,7 @@ const products = [
         <router-link :to="{ name: 'ListDetails', params: { id: product.id }}">
             <img :src="product.image" :alt="product.name" class="w-full h-56 object-cover" />
             <div class="p-4 text-center">
-              <h3 class="font-semibold text-gray-700">{{ product.brand }}</h3>
+              <h3 class="font-semibold text-gray-700">{{ product.brandName }}</h3>
               <p class="text-purple-600 font-bold mt-1">{{ product.model }} / {{ product.ramGb }}GB / {{ product.storageGb }}{{ product.storageUnit }}</p>
               <button
                 class="mt-3 w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition"
