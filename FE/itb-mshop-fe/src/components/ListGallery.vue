@@ -34,7 +34,7 @@ onMounted(async() => {
         class="border rounded-lg overflow-hidden shadow hover:shadow-md transition"
       >
         <router-link :to="{ name: 'ListDetails', params: { id: product.id }}">
-            <img :src="product.image" :alt="product.name" class="w-full h-56 object-cover" />
+            <img src="/FE/itb-mshop-fe/public/phone.jpg" :alt="product.name" class="w-full h-56 object-cover" />
             <div class="p-4 text-center">
               <h3 class="font-semibold text-gray-700">{{ product.brandName }}</h3>
               <p class="text-purple-600 font-bold mt-1">{{ product.model }} / {{ product.ramGb }}GB / {{ product.storageGb }}{{ product.storageUnit }}</p>
