@@ -1,16 +1,17 @@
 package org.example.itbmshopbe.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
+import org.example.itbmshopbe.dtos.CreateSaleItemDto;
 import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
 import org.example.itbmshopbe.services.SaleItemService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerErrorException;
 
 import java.util.List;
 
@@ -29,5 +30,15 @@ public class SaleItemController {
     @GetMapping("/{id}")
     public ResponseEntity<SaleItemDetailDto> getSaleItemDetails(@PathVariable Integer id){
         return ResponseEntity.ok(saleItemService.getSaleItemDetails(id));
+    }
+
+    @PostMapping("")
+    public ResponseEntity<SaleItemDetailDto> addSaleItem(@Valid @RequestBody CreateSaleItemDto createSaleItemDto){
+        try{
+            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(createSaleItemDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdSaleItem);
+        } catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
+        }
     }
 }
