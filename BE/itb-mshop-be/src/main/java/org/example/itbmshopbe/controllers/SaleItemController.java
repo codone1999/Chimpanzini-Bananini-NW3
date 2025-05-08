@@ -57,4 +57,14 @@ public class SaleItemController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item update failed", e);
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSaleItem(@PathVariable Integer id){
+        try {
+            saleItemService.deleteSaleItem(id);
+            return ResponseEntity.noContent().build();
+        } catch (ItemNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
+        }
+    }
 }

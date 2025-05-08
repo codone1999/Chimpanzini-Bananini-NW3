@@ -107,4 +107,11 @@ public class SaleItemService {
 
         return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
     }
+
+    @Transactional
+    public void deleteSaleItem(Integer id){
+        SaleItem saleItem = findSaleItemById(id);
+        saleItemRepository.delete(saleItem);
+    }
+
 }
