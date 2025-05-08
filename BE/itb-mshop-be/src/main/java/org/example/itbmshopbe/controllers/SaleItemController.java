@@ -6,6 +6,7 @@ import org.apache.coyote.Response;
 import org.example.itbmshopbe.dtos.CreateSaleItemDto;
 import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
+import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.services.SaleItemService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,21 @@ public class SaleItemController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdSaleItem);
         } catch (Exception e){
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SaleItemDetailDto> updateSaleItem(
+            @PathVariable Integer id,
+            @RequestBody CreateSaleItemDto updateSaleItemDto) {
+
+        try {
+            SaleItemDetailDto updatedSaleItem = saleItemService.updateSaleItem(id, updateSaleItemDto);
+            return ResponseEntity.ok(updatedSaleItem);
+        } catch (ItemNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item update failed", e);
         }
     }
 }

@@ -23,6 +23,16 @@ public class SaleItemService {
     private final SaleItemRepository saleItemRepository;
     private final BrandRepository brandRepository;
 
+    private SaleItem findSaleItemById(Integer id){
+        return saleItemRepository.findById(id)
+                .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
+    }
+
+    private Brand findBrandById(Integer brandId){
+        return brandRepository.findById(brandId)
+                .orElseThrow(() -> new ItemNotFoundException("Brand not found for this id :: " + brandId));
+    }
+
     private SaleItemGalleryDto convertToGalleryDto(SaleItem saleItem){
         SaleItemGalleryDto dto = new SaleItemGalleryDto();
         dto.setId(saleItem.getId());
@@ -59,17 +69,13 @@ public class SaleItemService {
     }
 
     public SaleItemDetailDto getSaleItemDetails(Integer id){
-        SaleItem saleItem = saleItemRepository.findById(id)
-                .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
-        return convertToDetailDto(saleItem);
+        return convertToDetailDto(findSaleItemById(id));
     }
 
     @Transactional
     public SaleItemDetailDto addSaleItem(CreateSaleItemDto createSaleItemDto){
-        Brand brand = brandRepository.findById(createSaleItemDto.getBrandId())
-                .orElseThrow(() -> new ItemNotFoundException("Brand not found for this id :: " + createSaleItemDto.getBrandId()));
         SaleItem newSaleItem = new SaleItem();
-        newSaleItem.setBrand(brand);
+        newSaleItem.setBrand(findBrandById(createSaleItemDto.getBrandId()));
         newSaleItem.setModel(createSaleItemDto.getModel());
         newSaleItem.setDescription(createSaleItemDto.getDescription());
         newSaleItem.setQuantity(createSaleItemDto.getQuantity());
@@ -84,5 +90,21 @@ public class SaleItemService {
         return convertToDetailDto(saleItemRepository.save(newSaleItem));
     }
 
+    @Transactional
+    public SaleItemDetailDto updateSaleItem(Integer id, CreateSaleItemDto updateSaleItemDto) {
+        SaleItem saleItemToUpdate = findSaleItemById(id);
+        Brand brand = findBrandById(updateSaleItemDto.getBrandId());
+        saleItemToUpdate.setBrand(brand);
+        saleItemToUpdate.setModel(updateSaleItemDto.getModel());
+        saleItemToUpdate.setDescription(updateSaleItemDto.getDescription());
+        saleItemToUpdate.setQuantity(updateSaleItemDto.getQuantity());
+        saleItemToUpdate.setPrice(updateSaleItemDto.getPrice());
+        saleItemToUpdate.setScreenSizeInch(updateSaleItemDto.getScreenSizeInch());
+        saleItemToUpdate.setRamGb(updateSaleItemDto.getRamGb());
+        saleItemToUpdate.setStorageGb(updateSaleItemDto.getStorageGb());
+        saleItemToUpdate.setColor(updateSaleItemDto.getColor());
+        saleItemToUpdate.setUpdatedOn(Instant.now());
 
+        return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
+    }
 }
