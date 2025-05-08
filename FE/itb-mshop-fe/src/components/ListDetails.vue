@@ -7,21 +7,50 @@ import phoneImg from '../../public/phone.jpg';
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const product = ref(null)
 
-onMounted(async () => {
-  try {
-    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-    if (!item || item?.status === 404) {
-      router.push('/sale-items')
-      alert('The requested sale item does not exist.')
-      return
-    }
-    product.value = item;
-  } catch (error) {
-    console.error('Failed to fetch product:', error);
-  }
-})
+const showModal = ref(false)
+const selectedItem = ref(null)
+
+function confirmDelete(item) {
+  selectedItem.value = item
+  showModal.value = true
+}
+
+function deleteItem() {
+  // console.log('Deleting:', selectedItem.value)
+  // Make your API delete call here
+  showModal.value = false
+
+  router.push('/sale-items')
+}
+
+const product = ref(
+  {id: 1,
+  brand: 'Apple',
+  brandName: 'Apple',
+  model: 'iPhone 13 Pro',
+  price: 35900,
+  description: 'Flagship iPhone with A15 Bionic, 120Hz ProMotion display, and triple-camera setup.',
+  ramGb: 6,
+  storageGb: 256,
+  color: 'Sierra Blue',
+  screenSizeInch: 6.1,
+  quantity: 10}
+)
+
+// onMounted(async () => {
+//   try {
+//     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+//     if (!item || item?.status === 404) {
+//       router.push('/sale-items')
+//       alert('The requested sale item does not exist.')
+//       return
+//     }
+//     product.value = item;
+//   } catch (error) {
+//     console.error('Failed to fetch product:', error);
+//   }
+// })
 </script>
 
 <template>
@@ -54,8 +83,46 @@ onMounted(async () => {
         <p><strong>Color:</strong> <span class="itbms-color">{{ product.color ?? "-" }}</span></p>
         <p><strong>Available Quantity:</strong> <span class="itbms-quantity">{{ product.quantity }}</span> units</p>
 
-        <button class="mt-4 bg-purple-600 text-white py-2 px-6 rounded hover:bg-purple-700">
-          Add to Cart
+        <div class="flex space-x-3">
+          <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
+            class="itbms-edit-button mt-4 bg-purple-600 text-white py-2 px-6 rounded hover:bg-purple-700"
+          >
+            Edit
+          </router-link>
+          <button
+            @click="confirmDelete({ id: 1, name: 'Example Product' })"
+            class="itbms-delete-button mt-4 bg-gray-200 text-gray-600 py-2 px-6 rounded hover:bg-gray-300 "
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+   <!-- Delete Confirmation Modal -->
+   <div
+    v-if="showModal"
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60"
+  >
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
+      <p class="mb-6">
+        Do you want to delete
+        <span class="font-semibold">{{ selectedItem?.name }}</span>?
+      </p>
+      <div class="flex justify-end gap-4">
+        <button
+          @click="showModal = false"
+          class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+        <button
+          @click="deleteItem"
+          class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Delete
         </button>
       </div>
     </div>

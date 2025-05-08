@@ -15,8 +15,8 @@ const mobileMenuOpen = ref(false)
       <!-- Desktop Links -->
       <div class="hidden md:flex space-x-6 text-sm font-medium text-gray-700">
         <router-link to="/" class="hover:text-purple-600">Home</router-link>
-        <router-link to="/shop" class="hover:text-purple-600">Shop</router-link>
-        <router-link to="/categories" class="hover:text-purple-600">Categories</router-link>
+        <router-link :to="{ name: 'ListGallery'}" class="hover:text-purple-600">Shop</router-link>
+        <router-link :to="{ name: 'ListDetails', params: { id: 1 }}" class="hover:text-purple-600">Categories</router-link>
         <router-link to="/contact" class="hover:text-purple-600">Contact</router-link>
       </div>
 
