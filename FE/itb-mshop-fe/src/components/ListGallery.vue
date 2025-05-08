@@ -19,6 +19,12 @@ onMounted(async() => {
   <section id="shop" class="bg-white py-12 px-4 md:px-8 max-w-7xl mx-auto">
     <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Shop Our Products</h2>
 
+    <router-link :to="{ name: 'AddItem'}"
+      class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-lg font-medium shadow-md transition"
+    >
+      Add Item
+    </router-link>
+
     <!-- No products -->
     <div v-if="products.length === 0" class="text-center text-gray-500 text-lg py-10">
       No sale items.
