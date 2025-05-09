@@ -1,47 +1,93 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
-import { getItemById } from '@/lib/fetchUtils'
+import { getItemById, getItems, editItem } from '@/lib/fetchUtils'
 import phoneImg from '../../public/phone.jpg';
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const product = ref(
-  {id: 1,
-  brand: 'Apple',
-  brandName: 'Apple',
-  model: 'iPhone 13 Pro',
-  price: 35900,
-  description: 'Flagship iPhone with A15 Bionic, 120Hz ProMotion display, and triple-camera setup.',
-  ramGb: 6,
-  storageGb: 256,
-  color: 'Sierra Blue',
-  screenSizeInch: 6.1,
-  quantity: 10}
-)
 
-// onMounted(async () => {
-//   try {
-//     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-//     if (!item || item?.status === 404) {
-//       router.push('/sale-items')
-//       alert('The requested sale item does not exist.')
-//       return
-//     }
-//     product.value = item;
-//   } catch (error) {
-//     console.error('Failed to fetch product:', error);
-//   }
-// })
+const brandSelected = ref(null)
+
+const product = ref({
+  "id": null,
+  "model": "",
+  "brand": {
+    "id": null,
+    "name": ""
+  },
+  "description": "",
+  "price": 0,
+  "ramGb": 0,             // OPTIONAL
+  "screenSizeInch": 0,    // OPTIONAL
+  "quantity": 0,
+  "storageGb": 0,         // OPTIONAL
+  "color": ""             // OPTIONAL
+})
+
+async function handleSubmit() {
+   try {
+    const editedItem = await editItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id, product.value)
+    if (editedItem) {
+      router.push({ name: 'ListGallery' })
+    }
+    console.log(product.value)
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
+
+onMounted(async () => {
+  try {
+    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    if (!item || item?.status === 404) {
+      router.push('/sale-items')
+      alert('The requested sale item does not exist.')
+      return
+    }
+    product.value = {
+      "id": item.id,
+      "model": item.model,
+      "brand": {
+        "id": null,
+        "name": item.brandName
+      },
+      "description": item.description,
+      "price": item.price,
+      "ramGb": item.ramGb,                      // OPTIONAL
+      "screenSizeInch": item.screenSizeInch,    // OPTIONAL
+      "quantity": item.quantity,
+      "storageGb": item.storageGb,              // OPTIONAL
+      "color": item.color                       // OPTIONAL
+    }
+    // console.log(product.value)
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+
+  try {
+    const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    if (!brand || brand?.status === 404) {
+      // alert('The requested sale brand does not exist.')
+      return
+    }
+    brandSelected.value = brand
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+})
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 text-gray-800">  
+    <div class="min-h-screen bg-gray-50 text-gray-800">
       <!-- Add Item Form -->
       <main class="container mx-auto p-6 bg-white shadow-md rounded-md">
         <!-- <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Add New Sale Item</h2> -->
-        <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form
+          class="grid grid-cols-1 md:grid-cols-2 gap-6"
+          @submit.prevent="handleSubmit"
+        >
           <!-- Image section -->
           <div class="flex flex-col items-center justify-center">
             <!-- Main -->
@@ -54,68 +100,58 @@ const product = ref(
               <img :src="phoneImg" class="w-20 h-25 bg-gray-200 text-xs" />
             </div>
           </div>
-  
+
           <!-- Form fields -->
           <div>
             <div class="mb-4">
-                <label class="block mb-1 font-medium" for="brand">Brand</label>
-                <select id="itbms-brand" v-model="product.brandName" 
-                    class="itbms-brand w-full border border-gray-300 rounded px-3 py-2"
-                >
-                    <option>Select Brand</option>
-                    <option>Apple</option>
-                    <option>Samsung</option>
-                    <option>Huawei</option>
-                </select>
+            <label class="block mb-1 font-medium">Brand</label>
+            <select v-model="product.brand" class="w-full border px-3 py-2 rounded">
+              <option disabled value="">Select Brand</option>
+              <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
+                {{ brand.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-medium">Model</label>
+            <input v-model.trim="product.model" type="text" class="w-full border px-3 py-2 rounded" required />
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-medium">Price (Baht)</label>
+            <input v-model.number="product.price" type="number" class="w-full border px-3 py-2 rounded" required />
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-medium">Description</label>
+            <textarea v-model.trim="product.description" rows="3" class="w-full border px-3 py-2 rounded" required></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block mb-1 font-medium">RAM (GB)</label>
+              <input v-model.number="product.ramGb" type="number" class="w-full border px-3 py-2 rounded" />
             </div>
-  
-            <div class="mb-4">
-              <label class="block mb-1 font-medium" for="model">Model</label>
-              <input id="itbms-model" type="text" v-model="product.model" 
-                class="itbms-model w-full border border-gray-300 rounded px-3 py-2" />
+            <div>
+              <label class="block mb-1 font-medium">Screen Size (Inches)</label>
+              <input v-model.number="product.screenSizeInch" type="number" step="any" class="w-full border px-3 py-2 rounded" />
             </div>
-  
-            <div class="mb-4">
-              <label class="block mb-1 font-medium" for="price">Price (Baht)</label>
-              <input id="itbms-price" type="number" v-model="product.price" 
-                class="itbms-price w-full border border-gray-300 rounded px-3 py-2" />
+            <div>
+              <label class="block mb-1 font-medium">Storage (GB)</label>
+              <input v-model.number="product.storageGb" type="number" class="w-full border px-3 py-2 rounded" />
             </div>
-  
-            <div class="mb-4">
-              <label class="block mb-1 font-medium" for="desc">Description</label>
-              <textarea id="itbms-description" rows="3" v-model="product.description" 
-                class="itbms-description w-full border border-gray-300 rounded px-3 py-2"></textarea>
+            <div>
+              <label class="block mb-1 font-medium">Color</label>
+              <input v-model.trim="product.color" type="text" class="w-full border px-3 py-2 rounded" />
             </div>
-  
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block mb-1 font-medium">RAM (GB)</label>
-                <input id="itbms-ramGb" type="number" v-model="product.ramGb" 
-                    class="itbms-ramGb w-full border border-gray-300 rounded px-3 py-2" />
-              </div>
-              <div>
-                <label class="block mb-1 font-medium">Screen Size (Inches)</label>
-                <input id="itbms-screenSizeInch" type="number" v-model="product.screenSizeInch" 
-                    class="itbms-screenSizeInch w-full border border-gray-300 rounded px-3 py-2" />
-              </div>
-              <div>
-                <label class="block mb-1 font-medium">Storage (GB)</label>
-                <input id="itbms-storageGb" type="number" v-model="product.storageGb" 
-                    class="itbms-storageGb w-full border border-gray-300 rounded px-3 py-2" />
-              </div>
-              <div>
-                <label class="block mb-1 font-medium">Color</label>
-                <input id="itbms-color" type="text" v-model="product.color" 
-                    class="itbms-color w-full border border-gray-300 rounded px-3 py-2" />
-              </div>
-            </div>
-  
-            <div class="mb-6">
-              <label class="block mb-1 font-medium">Quantity</label>
-              <input id="itbms-quantity" type="number" v-model="product.quantity" 
-                class="itbms-quantity w-full border border-gray-300 rounded px-3 py-2" />
-            </div>
-  
+          </div>
+
+          <div class="mb-6">
+            <label class="block mb-1 font-medium">Quantity</label>
+            <input v-model.number="product.quantity" type="number" class="w-full border px-3 py-2 rounded" required/>
+          </div>
+
             <!-- Buttons -->
             <div class="flex justify-end space-x-4">
                 <router-link :to="{ name: 'ListGallery'}"  class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">

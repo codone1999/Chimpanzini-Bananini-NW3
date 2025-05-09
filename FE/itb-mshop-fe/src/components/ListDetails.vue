@@ -10,6 +10,7 @@ const id = route.params.id
 
 const showModal = ref(false)
 const selectedItem = ref(null)
+const product = ref(null)
 
 function confirmDelete(item) {
   selectedItem.value = item
@@ -24,33 +25,19 @@ function deleteItem() {
   router.push('/sale-items')
 }
 
-const product = ref(
-  {id: 1,
-  brand: 'Apple',
-  brandName: 'Apple',
-  model: 'iPhone 13 Pro',
-  price: 35900,
-  description: 'Flagship iPhone with A15 Bionic, 120Hz ProMotion display, and triple-camera setup.',
-  ramGb: 6,
-  storageGb: 256,
-  color: 'Sierra Blue',
-  screenSizeInch: 6.1,
-  quantity: 10}
-)
-
-// onMounted(async () => {
-//   try {
-//     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-//     if (!item || item?.status === 404) {
-//       router.push('/sale-items')
-//       alert('The requested sale item does not exist.')
-//       return
-//     }
-//     product.value = item;
-//   } catch (error) {
-//     console.error('Failed to fetch product:', error);
-//   }
-// })
+onMounted(async () => {
+  try {
+    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    if (!item || item?.status === 404) {
+      router.push('/sale-items')
+      alert('The requested sale item does not exist.')
+      return
+    }
+    product.value = item;
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+})
 </script>
 
 <template>

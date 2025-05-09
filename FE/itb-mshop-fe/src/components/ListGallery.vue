@@ -1,11 +1,31 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getItems } from '@/lib/fetchUtils';
+import { useRoute, useRouter } from 'vue-router'
+
 import phoneImg from '../../public/phone.jpg';
+
+const route = useRoute()
+const router = useRouter()
+const showSuccessMessage = ref(false)
 
 const products = ref([])
 
+
 onMounted(async() => {
+  if (route.query.added === 'true') {
+    showSuccessMessage.value = true
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      // Reset the query param properly
+      router.replace({ 
+        name: route.name, 
+        query: { ...route.query, added: undefined } // remove 'added'
+      })
+    }
+    , 3000)
+  }
+
   try {
     products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
   } catch (error) {
@@ -19,11 +39,18 @@ onMounted(async() => {
   <section id="shop" class="bg-white py-12 px-4 md:px-8 max-w-7xl mx-auto">
     <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Shop Our Products</h2>
 
-    <router-link :to="{ name: 'AddItem'}"
-      class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-lg font-medium shadow-md transition"
-    >
-      Add Item
-    </router-link>
+    <!-- Success Message -->
+    <div v-if="showSuccessMessage" class="mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded">
+      Item was successfully added to the list.
+    </div>
+
+    <button>
+      <router-link :to="{ name: 'AddItem'}"
+        class="itbms-sale-item-add bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-lg font-medium shadow-md transition"
+      >
+        Add Item
+      </router-link>
+    </button>
 
     <!-- No products -->
     <div v-if="products.length === 0" class="text-center text-gray-500 text-lg py-10">
