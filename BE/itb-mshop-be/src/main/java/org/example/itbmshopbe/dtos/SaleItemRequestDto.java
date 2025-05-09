@@ -3,6 +3,8 @@ package org.example.itbmshopbe.dtos;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.*;
+
 @Data
 public class SaleItemRequestDto {
     private Integer id;
@@ -23,7 +25,7 @@ public class SaleItemRequestDto {
 
     private Integer ramGb;
 
-    private java.math.BigDecimal screenSizeInch;
+    private BigDecimal screenSizeInch;
 
     @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity cannot be negative")
