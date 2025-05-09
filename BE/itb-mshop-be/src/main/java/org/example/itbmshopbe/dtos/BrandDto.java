@@ -10,5 +10,6 @@ import lombok.Setter;
 @Data
 public class BrandDto {
     private Integer id;
+    @NotNull(message = "Brand Name is required")
     private String name;
 }

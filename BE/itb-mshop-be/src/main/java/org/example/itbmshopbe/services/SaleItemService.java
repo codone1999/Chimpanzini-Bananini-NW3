@@ -92,8 +92,6 @@ public class SaleItemService {
         return convertToDetailDto(saleItemRepository.save(newSaleItem));
     }
 
-
-
     @Transactional
     public SaleItemDetailDto updateSaleItem(Integer id, SaleItemRequestDto requestDto) {
         SaleItem saleItemToUpdate = findSaleItemById(id);
@@ -114,7 +112,6 @@ public class SaleItemService {
 
         return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
     }
-
 
     @Transactional
     public void deleteSaleItem(Integer id){
