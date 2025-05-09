@@ -5,6 +5,8 @@ import lombok.Data;
 
 @Data
 public class SaleItemRequestDto {
+    private Integer id;
+
     @NotBlank(message = "Model is required")
     @Size(max = 60, message = "Model must be less than 60 characters")
     private String model;
