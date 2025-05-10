@@ -9,19 +9,7 @@ const router = useRouter()
 const id = route.params.id
 
 const showModal = ref(false)
-const selectedItem = ref(null)
-const product = ref({
-  "id": 16,
-  "model": "Galaxy S23 Ultra",
-  "brandName": "Samsung",
-  "description": "Samsung Galaxy S23 Ultra 512GB สีดำปีศาจ\nสภาพนางฟ้า 99% ไร้รอย แถมเคสแท้\nแบตอึดสุดๆ รองรับปากกา S-Pen\nอุปกรณ์ครบกล่อง ประกันศูนย์เหลือ 6 เดือน\nส่งฟรี",
-  "price": 39600,
-  "ramGb": null,
-  "screenSizeInch": 6.8,
-  "quantity": 6,
-  "storageGb": 512,
-  "color": null
-})
+const product = ref()
 
 function confirmDelete() {
   showModal.value = true
@@ -44,19 +32,19 @@ async function handleDelete() {
   router.push('/sale-items')
 }
 
-// onMounted(async () => {
-//   try {
-//     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-//     if (!item || item?.status === 404) {
-//       router.push('/sale-items')
-//       // alert('The requested sale item does not exist.')
-//       return
-//     }
-//     product.value = item;
-//   } catch (error) {
-//     console.error('Failed to fetch product:', error);
-//   }
-// })
+onMounted(async () => {
+  try {
+    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    if (!item || item?.status === 404) {
+      router.push('/sale-items')
+      // alert('The requested sale item does not exist.')
+      return
+    }
+    product.value = item;
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+})
 </script>
 
 <template>
@@ -69,9 +57,9 @@ async function handleDelete() {
         Home
       </router-link>
       <span class="text-gray-400">> </span>
-      <span class="itbms-brand">{{ product.brand }}</span>
-      <span class="itbms-model">{{ product.model }}</span>
-      <span class="itbms-ramGb">{{ product.ramGb ?? "" }}</span> GB
+      <span class="itbms-model">{{ product.model }}</span>&thinsp;
+      <span class="itbms-ramGb">{{ product.ramGb ?? "" }}</span>/
+      <span class="itbms-storageGb">{{ product.storageGb ?? "" }}</span>GB
       <span class="itbms-color">{{ product.color ?? "" }}</span>
     </h3>
 

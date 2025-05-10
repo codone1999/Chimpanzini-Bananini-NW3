@@ -84,7 +84,7 @@ onMounted(async() => {
             <button
               class="mt-3 w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition"
             >
-              <span class="itbms-price-unit">Bath </span>
+              <span class="itbms-price-unit">Baht </span>
               <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
             </button>
           </div>

@@ -9,10 +9,7 @@ const router = useRouter()
 const brandSelected = ref(null)
 const newSaleItem = ref({
   "id": null,
-  "brand": {
-    id: null,
-    name: ''
-  },
+  "brand": '',            // Receive like {id: 1, name: Example}
   "model": '',
   "description": '',
   "price": 0,
@@ -38,7 +35,7 @@ onMounted(async () => {
   try {
     const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
     if (!brand || brand?.status === 404) {
-      alert('The requested sale brand does not exist.')
+      // alert('The requested sale brand does not exist.')
       return
     }
     brandSelected.value = brand
@@ -83,7 +80,7 @@ onMounted(async () => {
           <div class="mb-4">
             <label class="block mb-1 font-medium">Brand</label>
             <select v-model="newSaleItem.brand" class="w-full border px-3 py-2 rounded">
-              <option disabled value="">Select Brand</option>
+              <option disabled value=''>Select Brand</option>
               <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
                 {{ brand.name }}
               </option>

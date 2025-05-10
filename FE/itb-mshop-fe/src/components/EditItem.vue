@@ -90,9 +90,26 @@ onMounted(async () => {
         >
           <!-- Image section -->
           <div class="flex flex-col items-center justify-center">
-            <!-- Main -->
-            <img :src="phoneImg" class="w-100 h-125 bg-gray-200 flex items-center justify-center text-gray-500 mb-4" />
-            <!-- Subtance -->
+            <div class="text-xl font-bold mb-4">
+              <router-link
+                :to="{ name: 'ListGallery'}"
+                class="itbms-home-button text-blue-500"
+              >
+                Home
+              </router-link>
+              <router-link 
+                :to="{ name: 'ListDetails', params: { id: product.id }}"
+                class="itbms-back-button text-blue-500"  
+              >
+                <span class="text-gray-400">> </span>
+                <span class="itbms-model">{{ product.model }}</span>&thinsp;
+                <span class="itbms-ramGb">{{ product.ramGb ?? "" }}</span>/
+                <span class="itbms-storageGb">{{ product.storageGb ?? "" }}</span>GB
+                <span class="itbms-color">{{ product.color ?? "" }}</span>
+                      
+                <img :src="phoneImg" class="w-100 h-125 bg-gray-200" />
+              </router-link>
+            </div>
             <div class="flex space-x-3">
               <img :src="phoneImg" class="w-20 h-25 bg-gray-200 text-xs" />
               <img :src="phoneImg" class="w-20 h-25 bg-gray-200 text-xs" />
@@ -104,53 +121,53 @@ onMounted(async () => {
           <!-- Form fields -->
           <div>
             <div class="mb-4">
-            <label class="block mb-1 font-medium">Brand</label>
-            <select v-model="product.brand" class="w-full border px-3 py-2 rounded">
-              <option disabled value="">Select Brand</option>
-              <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
-                {{ brand.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="mb-4">
-            <label class="block mb-1 font-medium">Model</label>
-            <input v-model.trim="product.model" type="text" class="w-full border px-3 py-2 rounded" required />
-          </div>
-
-          <div class="mb-4">
-            <label class="block mb-1 font-medium">Price (Baht)</label>
-            <input v-model.number="product.price" type="number" class="w-full border px-3 py-2 rounded" required />
-          </div>
-
-          <div class="mb-4">
-            <label class="block mb-1 font-medium">Description</label>
-            <textarea v-model.trim="product.description" rows="3" class="w-full border px-3 py-2 rounded" required></textarea>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block mb-1 font-medium">RAM (GB)</label>
-              <input v-model.number="product.ramGb" type="number" class="w-full border px-3 py-2 rounded" />
+              <label class="block mb-1 font-medium">Brand</label>
+              <select v-model="product.brand" class="itbms-brand w-full border px-3 py-2 rounded">
+                <option disabled value="">Select Brand</option>
+                <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
+                  {{ brand.name }}
+                </option>
+              </select>
             </div>
-            <div>
-              <label class="block mb-1 font-medium">Screen Size (Inches)</label>
-              <input v-model.number="product.screenSizeInch" type="number" step="any" class="w-full border px-3 py-2 rounded" />
-            </div>
-            <div>
-              <label class="block mb-1 font-medium">Storage (GB)</label>
-              <input v-model.number="product.storageGb" type="number" class="w-full border px-3 py-2 rounded" />
-            </div>
-            <div>
-              <label class="block mb-1 font-medium">Color</label>
-              <input v-model.trim="product.color" type="text" class="w-full border px-3 py-2 rounded" />
-            </div>
-          </div>
 
-          <div class="mb-6">
-            <label class="block mb-1 font-medium">Quantity</label>
-            <input v-model.number="product.quantity" type="number" class="w-full border px-3 py-2 rounded" required/>
-          </div>
+            <div class="mb-4">
+              <label class="block mb-1 font-medium">Model</label>
+              <input v-model.trim="product.model" type="text" class="itbms-model w-full border px-3 py-2 rounded" required />
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-1 font-medium">Price (Baht)</label>
+              <input v-model.number="product.price" type="number" class="itbms-price w-full border px-3 py-2 rounded" required />
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-1 font-medium">Description</label>
+              <textarea v-model.trim="product.description" rows="3" class="itbms-description w-full border px-3 py-2 rounded" required></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block mb-1 font-medium">RAM (GB)</label>
+                <input v-model.number="product.ramGb" type="number" class="itbms-ramGb w-full border px-3 py-2 rounded" />
+              </div>
+              <div>
+                <label class="block mb-1 font-medium">Screen Size (Inches)</label>
+                <input v-model.number="product.screenSizeInch" type="number" step="any" class="itbms-screenSizeInch w-full border px-3 py-2 rounded" />
+              </div>
+              <div>
+                <label class="block mb-1 font-medium">Storage (GB)</label>
+                <input v-model.number="product.storageGb" type="number" class="itbms-storageGb w-full border px-3 py-2 rounded" />
+              </div>
+              <div>
+                <label class="block mb-1 font-medium">Color</label>
+                <input v-model.trim="product.color" type="text" class="itbms-color w-full border px-3 py-2 rounded" />
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block mb-1 font-medium">Quantity</label>
+              <input v-model.number="product.quantity" type="number" class="itbms-quantity w-full border px-3 py-2 rounded" required/>
+            </div>
 
             <!-- Buttons -->
             <div class="flex justify-end space-x-4">
