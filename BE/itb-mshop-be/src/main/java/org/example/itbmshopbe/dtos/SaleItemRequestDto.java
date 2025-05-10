@@ -25,7 +25,7 @@ public class SaleItemRequestDto {
 
     private Integer ramGb;
 
-    private BigDecimal screenSizeInch;
+    private Double screenSizeInch;
 
     @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity cannot be negative")
