@@ -79,7 +79,7 @@ onMounted(async () => {
         <div>
           <div class="mb-4">
             <label class="block mb-1 font-medium">Brand</label>
-            <select v-model="newSaleItem.brand" class="w-full border px-3 py-2 rounded">
+            <select v-model="newSaleItem.brand" class="itbms-brand w-full border px-3 py-2 rounded">
               <option disabled value=''>Select Brand</option>
               <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
                 {{ brand.name }}
@@ -89,54 +89,54 @@ onMounted(async () => {
 
           <div class="mb-4">
             <label class="block mb-1 font-medium">Model</label>
-            <input v-model.trim="newSaleItem.model" type="text" class="w-full border px-3 py-2 rounded" required />
+            <input v-model.trim="newSaleItem.model" type="text" class="itbms-model w-full border px-3 py-2 rounded" required />
           </div>
 
           <div class="mb-4">
             <label class="block mb-1 font-medium">Price (Baht)</label>
-            <input v-model.number="newSaleItem.price" type="number" class="w-full border px-3 py-2 rounded" required />
+            <input v-model.number="newSaleItem.price" type="number" class="itbms-price w-full border px-3 py-2 rounded" required />
           </div>
 
           <div class="mb-4">
             <label class="block mb-1 font-medium">Description</label>
-            <textarea v-model.trim="newSaleItem.description" rows="3" class="w-full border px-3 py-2 rounded" required></textarea>
+            <textarea v-model.trim="newSaleItem.description" rows="3" class="itbms-description w-full border px-3 py-2 rounded" required></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label class="block mb-1 font-medium">RAM (GB)</label>
-              <input v-model.number="newSaleItem.ramGb" type="number" class="w-full border px-3 py-2 rounded" />
+              <input v-model.number="newSaleItem.ramGb" type="number" class="itbms-ramGb w-full border px-3 py-2 rounded" />
             </div>
             <div>
               <label class="block mb-1 font-medium">Screen Size (Inches)</label>
-              <input v-model.number="newSaleItem.screenSizeInch" type="number" step="any" class="w-full border px-3 py-2 rounded" />
+              <input v-model.number="newSaleItem.screenSizeInch" type="number" step="any" class="itbms-screenSizeInch w-full border px-3 py-2 rounded" />
             </div>
             <div>
               <label class="block mb-1 font-medium">Storage (GB)</label>
-              <input v-model.number="newSaleItem.storageGb" type="number" class="w-full border px-3 py-2 rounded" />
+              <input v-model.number="newSaleItem.storageGb" type="number" class="itbms-storageGb w-full border px-3 py-2 rounded" />
             </div>
             <div>
               <label class="block mb-1 font-medium">Color</label>
-              <input v-model.trim="newSaleItem.color" type="text" class="w-full border px-3 py-2 rounded" />
+              <input v-model.trim="newSaleItem.color" type="text" class="itbms-color w-full border px-3 py-2 rounded" />
             </div>
           </div>
 
           <div class="mb-6">
             <label class="block mb-1 font-medium">Quantity</label>
-            <input v-model.number="newSaleItem.quantity" type="number" class="w-full border px-3 py-2 rounded" required/>
+            <input v-model.number="newSaleItem.quantity" type="number" class="itbms-quantity w-full border px-3 py-2 rounded" required/>
           </div>
 
           <!-- Buttons -->
           <div class="flex justify-end space-x-4">
             <router-link
               :to="{ name: 'ListGallery' }"
-              class="px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
+              class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
             >
               Cancel
             </router-link>
             <button
               type="submit"
-              class="px-5 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+              class="itbms-save-button px-5 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
             >
               Save
             </button>
