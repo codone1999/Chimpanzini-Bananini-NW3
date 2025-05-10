@@ -40,8 +40,11 @@ onMounted(async() => {
     <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Shop Our Products</h2>
 
     <!-- Success Message -->
-    <div v-if="showSuccessMessage" class="mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded">
-      Item was successfully added to the list.
+    <div 
+      v-if="showSuccessMessage" 
+      class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
+    >
+      The sale item has been successfully added.
     </div>
 
     <button>

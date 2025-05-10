@@ -58,7 +58,18 @@ onMounted(async () => {
       >
         <!-- Image section -->
         <div class="flex flex-col items-center justify-center">
-          <img :src="phoneImg" class="w-100 h-125 bg-gray-200 mb-4" />
+          <div class="text-xl font-bold mb-4">
+            <router-link
+              :to="{ name: 'ListGallery'}"
+              class="itbms-home-button text-blue-500"
+            >
+              Home
+            </router-link>
+            <span class="text-gray-400">> </span>
+            <span class="itbms-brand">New Sale Item</span>
+            
+            <img :src="phoneImg" class="w-100 h-125 bg-gray-200" />
+          </div>
           <div class="flex space-x-3">
             <img :src="phoneImg" class="w-20 h-25 bg-gray-200 text-xs" />
             <img :src="phoneImg" class="w-20 h-25 bg-gray-200 text-xs" />
