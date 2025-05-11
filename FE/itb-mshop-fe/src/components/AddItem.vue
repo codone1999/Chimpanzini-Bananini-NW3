@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { addItem, getItems } from '@/lib/fetchUtils'
 import phoneImg from '../../public/phone.jpg';
@@ -18,6 +18,18 @@ const newSaleItem = ref({
   "ramGb": null,          // OPTIONAL
   "storageGb": null,      // OPTIONAL
   "color": null,          // OPTIONAL
+})
+
+const isFormValid = computed(() => {
+  return (
+    newSaleItem.value.brand &&
+    typeof newSaleItem.value.brand === 'object' &&
+    newSaleItem.value.brand.name?.trim() &&
+    newSaleItem.value.model.trim() !== '' &&
+    newSaleItem.value.description.trim() !== '' &&
+    newSaleItem.value.price > 0 &&
+    newSaleItem.value.quantity > 0
+  )
 })
 
 async function handleSubmit() {
@@ -142,7 +154,11 @@ onMounted(async () => {
                 </router-link>
                 <button
                   type="submit"
-                  class="itbms-save-button px-5 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                  :disabled="!isFormValid"
+                   :class="[
+                      'itbms-save-button px-5 py-2 text-white rounded transition',
+                      isFormValid ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-300 cursor-not-allowed'
+                    ]"
                 >
                   Save
                 </button>

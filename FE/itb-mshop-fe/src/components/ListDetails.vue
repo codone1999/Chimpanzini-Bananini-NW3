@@ -18,17 +18,14 @@ function confirmDelete() {
 async function handleDelete() {
   try {
     const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-    if (!item || item?.status === 404) {
-      router.push('/sale-items')
-      // alert('The requested sale item does not exist.')
-      return
-    };
+    if (!item || item?.status === 404 || item === 404) {
+      alert('The requested sale item does not exist.')
+    }
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
 
   showModal.value = false
-
   router.push('/sale-items')
 }
 
@@ -37,7 +34,7 @@ onMounted(async () => {
     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
     if (!item || item?.status === 404) {
       router.push('/sale-items')
-      // alert('The requested sale item does not exist.')
+      alert('The requested sale item does not exist.')
       return
     }
     product.value = item;

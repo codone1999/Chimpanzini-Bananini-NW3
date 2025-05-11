@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { getItemById, getItems, editItem } from '@/lib/fetchUtils'
 import phoneImg from '../../public/phone.jpg';
 
@@ -25,6 +25,37 @@ const product = ref({
   "storageGb": 0,         // OPTIONAL
   "color": ""             // OPTIONAL
 })
+const originalProduct = null
+
+const isFormValid = computed(() => {
+  return (
+    product.value.brand &&
+    typeof product.value.brand === 'object' &&
+    product.value.brand.name?.trim() &&
+    product.value.model.trim() !== '' &&
+    product.value.description.trim() !== '' &&
+    product.value.price > 0 &&
+    product.value.quantity > 0
+  )
+})
+
+const isChanged = computed(() => {
+  return (
+    product.value.brand.name !== originalProduct.brand.name ||
+    product.value.model !== originalProduct.model ||
+    product.value.price !== originalProduct.price ||
+    product.value.description !== originalProduct.description ||
+    product.value.ramGb !== originalProduct.ramGb ||
+    product.value.screenSizeInch !==originalProduct.screenSizeInch ||
+    product.value.storageGb !== originalProduct.storageGb ||
+    product.value.color !== originalProduct.color ||
+    product.value.quantity !== originalProduct.quantity
+  )
+})
+
+const isSaveDisabled = computed(() => {
+  return !isFormValid.value || !isChanged.value
+})
 
 async function handleSubmit() {
    try {
@@ -46,7 +77,8 @@ onMounted(async () => {
       alert('The requested sale item does not exist.')
       return
     }
-    product.value = {
+
+    const data = {
       "id": item.id,
       "model": item.model,
       "brand": {
@@ -59,9 +91,10 @@ onMounted(async () => {
       "screenSizeInch": item.screenSizeInch,    // OPTIONAL
       "quantity": item.quantity,
       "storageGb": item.storageGb,              // OPTIONAL
-      "color": item.color                       // OPTIONAL
+      "color": item.color 
     }
-    // console.log(product.value)
+    product.value = data
+    originalProduct = data
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
@@ -171,12 +204,21 @@ onMounted(async () => {
 
             <!-- Buttons -->
             <div class="flex justify-end space-x-4">
-                <router-link :to="{ name: 'ListGallery'}"  class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">
+                <router-link 
+                  :to="{ name: 'ListGallery'}"  
+                  class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
+                >
                     Cancel
                 </router-link>
-                <button id="itbms-save-button" type="submit"
-                    class="itbms-save-button px-5 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
-                    Save
+                <button
+                  type="submit"
+                  :disabled="isSaveDisabled"
+                  :class="[
+                    'itbms-save-button px-5 py-2 text-white rounded transition',
+                    isSaveDisabled ? 'bg-purple-300 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+                  ]"
+                >
+                  Save
                 </button>
             </div>
           </div>
