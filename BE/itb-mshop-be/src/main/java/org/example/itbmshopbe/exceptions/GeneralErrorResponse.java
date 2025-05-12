@@ -30,10 +30,4 @@ public class GeneralErrorResponse {
         private final String field;
         private final String message;
     }
-    public void addValidationError(String field, String message){
-        if(Objects.isNull(errors)){
-            errors = new ArrayList<>();
-        }
-        errors.add(new ValidationError(field, message));
-    }
 }

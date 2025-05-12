@@ -58,12 +58,8 @@ public class SaleItemController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSaleItem(@PathVariable Integer id){
-        try {
-            saleItemService.deleteSaleItem(id);
-            return ResponseEntity.noContent().build();
-        } catch (ItemNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSaleItem(@PathVariable Integer id) {
+        saleItemService.deleteSaleItem(id);
     }
 }

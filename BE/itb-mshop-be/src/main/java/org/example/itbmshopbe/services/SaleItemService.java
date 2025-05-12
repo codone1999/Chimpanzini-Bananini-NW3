@@ -12,6 +12,7 @@ import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -96,7 +97,7 @@ public class SaleItemService {
         return firstSentence + middleContent + lastSentence;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public SaleItemDetailDto addSaleItem(SaleItemRequestDto requestDto) {
         if (requestDto.getModel() == null || requestDto.getModel().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Model is required.");
@@ -111,7 +112,6 @@ public class SaleItemService {
         }
 
         Brand brand;
-
         if (requestDto.getBrand() != null && requestDto.getBrand().getId() != null) {
             brand = brandRepository.findById(requestDto.getBrand().getId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -124,7 +124,7 @@ public class SaleItemService {
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand name is required.");
         }
-
+        String color = requestDto.getColor();
         SaleItem newSaleItem = new SaleItem();
         newSaleItem.setBrand(brand);
         newSaleItem.setModel(trimFirstAndLastSentence(requestDto.getModel()));
@@ -134,7 +134,7 @@ public class SaleItemService {
         newSaleItem.setScreenSizeInch(requestDto.getScreenSizeInch());
         newSaleItem.setQuantity((requestDto.getQuantity() == null || requestDto.getQuantity() < 0) ? 1 : requestDto.getQuantity());
         newSaleItem.setStorageGb(requestDto.getStorageGb());
-        newSaleItem.setColor(requestDto.getColor() != null ? requestDto.getColor().trim() : null);
+        newSaleItem.setColor((color != null && !color.trim().isEmpty()) ? color.trim() : null);
         newSaleItem.setCreatedOn(Instant.now());
         newSaleItem.setUpdatedOn(Instant.now());
 
@@ -182,6 +182,7 @@ public class SaleItemService {
                 ? 1
                 : requestDto.getQuantity();
 
+
         saleItemToUpdate.setBrand(brand);
         saleItemToUpdate.setModel(model);
         saleItemToUpdate.setDescription(description);
@@ -190,16 +191,20 @@ public class SaleItemService {
         saleItemToUpdate.setScreenSizeInch(requestDto.getScreenSizeInch());
         saleItemToUpdate.setRamGb(requestDto.getRamGb());
         saleItemToUpdate.setStorageGb(requestDto.getStorageGb());
-        saleItemToUpdate.setColor(color);
+        saleItemToUpdate.setColor((color != null && !color.trim().isEmpty()) ? color.trim() : null);
         saleItemToUpdate.setUpdatedOn(Instant.now());
 
         return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
     }
 
-    @Transactional
-    public void deleteSaleItem(Integer id){
-        SaleItem saleItem = findSaleItemById(id);
-        saleItemRepository.delete(saleItem);
+    public void deleteSaleItem(Integer id) {
+        if (! saleItemRepository.existsById(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "SaleItem with id " + id + " not found"
+            );
+        }
+        saleItemRepository.deleteById(id);
     }
 
 }
