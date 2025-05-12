@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, h } from 'vue'
 import { getItems } from '@/lib/fetchUtils';
 import { useRoute, useRouter } from 'vue-router'
 
@@ -7,24 +7,30 @@ import phoneImg from '../../public/phone.jpg';
 
 const route = useRoute()
 const router = useRouter()
+
 const showSuccessMessage = ref(false)
+const successMessage = ref('')
 
-const products = ref()
+const products = ref([])
 
-
-onMounted(async() => {
-  if (route.query.added === 'true') {
+function handleQuerySuccess(type, message) {
+  if (route.query[type] === 'true') {
     showSuccessMessage.value = true
+    successMessage.value = message
+
     setTimeout(() => {
       showSuccessMessage.value = false
-      // Reset the query param properly
-      router.replace({ 
-        name: route.name, 
-        query: { ...route.query, added: undefined } // remove 'added'
-      })
-    }
-    , 3000)
+      const updatedQuery = { ...route.query }
+      delete updatedQuery[type] // remove query param
+      router.replace({ name: route.name, query: updatedQuery })
+    }, 3000)
   }
+}
+
+onMounted(async() => {
+  handleQuerySuccess('added', 'The sale item has been added.')
+  handleQuerySuccess('deleted', 'The sale item has been deleted.')
+  handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
   try {
     products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
@@ -46,10 +52,10 @@ onMounted(async() => {
       v-if="showSuccessMessage" 
       class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
     >
-      The sale item has been successfully added.
+      {{ successMessage }}
     </div>
 
-    <button class="mb-6">
+    <button class="itbms-sale-item-add mb-6">
       <router-link
         :to="{ name: 'AddItem'}"
         class="bg-[#7e5bef] hover:bg-[#6847d5] text-white px-6 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
@@ -60,7 +66,7 @@ onMounted(async() => {
 
     <!-- No products -->
     <div v-if="products.length === 0" class="text-center text-gray-500 text-lg py-10">
-      No sale items.
+      no sale item
     </div>
 
     <!-- Product Grid -->
@@ -71,7 +77,7 @@ onMounted(async() => {
       <div
         v-for="product in products"
         :key="product.id"
-        class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition duration-300"
+        class="itbms-row bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition duration-300"
       >
         <router-link :to="{ name: 'ListDetails', params: { id: product.id }}">
           <img :src="phoneImg" :alt="product.name" class="w-full h-56 object-contain bg-[#f2f2f2]" />
@@ -79,15 +85,17 @@ onMounted(async() => {
             <h3 class="itbms-brand text-sm font-medium text-gray-500 uppercase tracking-wide">{{ product.brandName }}</h3>
             <p class="text-[#7e5bef] font-semibold mt-1">
               <span class="itbms-model">{{ product.model }}</span> /
-              <span class="itbms-ramGb">{{ product.ramGb }}</span>
+              <span class="itbms-ramGb">{{ product.ramGb ?? "-" }}</span>
               <span class="itbms-ramGb-unit">GB</span> /
-              <span class="itbms-storageGb">{{ product.storageGb }}</span>
+              <span class="itbms-storageGb">{{ product.storageGb ?? "-" }}</span>
               <span class="itbms-storageGb-unit">GB</span>
             </p>
+
             <button
-              class="mt-4 w-full bg-[#7e5bef] text-white py-2 rounded-lg font-bold hover:bg-[#6847d5] transition"
+            class="mt-4 w-full bg-[#7e5bef] text-white py-2 rounded-lg font-bold hover:bg-[#6847d5] transition"
             >
-              Baht {{ product.price.toLocaleString() }}
+              Baht 
+              <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
             </button>
           </div>
         </router-link>

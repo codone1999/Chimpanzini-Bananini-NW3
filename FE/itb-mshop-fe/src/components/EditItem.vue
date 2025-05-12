@@ -25,7 +25,7 @@ const product = ref({
   "storageGb": 0,         // OPTIONAL
   "color": ""             // OPTIONAL
 })
-const originalProduct = null
+const originalProduct = ref(null)
 
 const isFormValid = computed(() => {
   return (
@@ -40,17 +40,8 @@ const isFormValid = computed(() => {
 })
 
 const isChanged = computed(() => {
-  return (
-    product.value.brand.name !== originalProduct.brand.name ||
-    product.value.model !== originalProduct.model ||
-    product.value.price !== originalProduct.price ||
-    product.value.description !== originalProduct.description ||
-    product.value.ramGb !== originalProduct.ramGb ||
-    product.value.screenSizeInch !==originalProduct.screenSizeInch ||
-    product.value.storageGb !== originalProduct.storageGb ||
-    product.value.color !== originalProduct.color ||
-    product.value.quantity !== originalProduct.quantity
-  )
+  if (!originalProduct.value) return false
+  return JSON.stringify(product.value) !== JSON.stringify(originalProduct.value)
 })
 
 const isSaveDisabled = computed(() => {
@@ -59,9 +50,10 @@ const isSaveDisabled = computed(() => {
 
 async function handleSubmit() {
    try {
+    product.value.color = product.value.color === '' ? null : product.value.color
     const editedItem = await editItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id, product.value)
     if (editedItem) {
-      router.push({ name: 'ListGallery' })
+      router.push({ name: 'ListDetails', params: { id: product.id }, query: {edited: true}}) 
     }
     console.log(product.value)
   } catch (error) {
@@ -94,7 +86,7 @@ onMounted(async () => {
       "color": item.color 
     }
     product.value = data
-    originalProduct = data
+    originalProduct.value = JSON.parse(JSON.stringify(data))
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
@@ -135,10 +127,10 @@ onMounted(async () => {
                 class="itbms-back-button text-blue-500"  
               >
                 <span class="text-gray-400">> </span>
-                <span class="itbms-model">{{ product.model }}</span>&thinsp;
-                <span class="itbms-ramGb">{{ product.ramGb ?? "" }}</span>/
-                <span class="itbms-storageGb">{{ product.storageGb ?? "" }}</span>GB
-                <span class="itbms-color">{{ product.color ?? "" }}</span>
+                <span>{{ product.model }}</span>&thinsp;
+                <span>{{ product.ramGb ?? "" }}</span>/
+                <span>{{ product.storageGb ?? "" }}</span>GB
+                <span>{{ product.color ?? "" }}</span>
                       
                 <img :src="phoneImg" class="w-100 h-125 bg-gray-200" />
               </router-link>
@@ -205,7 +197,7 @@ onMounted(async () => {
             <!-- Buttons -->
             <div class="flex justify-end space-x-4">
                 <router-link 
-                  :to="{ name: 'ListGallery'}"  
+                  :to="{ name: 'ListDetails', params: { id: product.id }}"  
                   class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
                 >
                     Cancel

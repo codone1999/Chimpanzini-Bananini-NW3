@@ -11,6 +11,9 @@ const id = route.params.id
 const showModal = ref(false)
 const product = ref()
 
+const showSuccessMessage = ref(false)
+const successMessage = ref('')
+
 function confirmDelete() {
   showModal.value = true
 }
@@ -19,22 +22,42 @@ async function handleDelete() {
   try {
     const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
     if (!item || item?.status === 404 || item === 404) {
-      alert('The requested sale item does not exist.')
+      // alert('The requested sale item does not exist.')
+      showModal.value = false
+      router.push({ name: 'ListGallery', query: {failed_delete: true} })
+      return
     }
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
 
   showModal.value = false
-  router.push('/sale-items')
+  router.push({ name: 'ListGallery', query: {deleted: true} })
 }
 
+function handleQuerySuccess(type, message) {
+  if (route.query[type] === 'true') {
+    showSuccessMessage.value = true
+    successMessage.value = message
+
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      const updatedQuery = { ...route.query }
+      delete updatedQuery[type] // remove query param
+      router.replace({ name: route.name, query: updatedQuery })
+    }, 3000)
+  }
+}
+
+
 onMounted(async () => {
+  handleQuerySuccess('edited', 'The sale item has been updated.')
+  
   try {
     const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
     if (!item || item?.status === 404) {
       router.push('/sale-items')
-      alert('The requested sale item does not exist.')
+      // alert('The requested sale item does not exist.')
       return
     }
     product.value = item;
@@ -46,6 +69,14 @@ onMounted(async () => {
 
 <template>
   <div class="max-w-5xl mx-auto py-12 px-4 itbms-row">
+    <!-- Success Message -->
+    <div 
+      v-if="showSuccessMessage" 
+      class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
+    >
+      {{ successMessage }}
+    </div>
+    
     <h3 class="text-xl font-bold mb-4">
       <router-link
         :to="{ name: 'ListGallery'}"
@@ -123,7 +154,7 @@ onMounted(async () => {
         </button>
         <button
           @click="handleDelete"
-          class="itms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          class="itbms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
         >
           Delete
         </button>
