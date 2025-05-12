@@ -15,6 +15,7 @@ import java.util.List;
 @RequestMapping("/v1/brands")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
+//@CrossOrigin(origins = "http://localhost:5173/")
 public class BrandController {
     private final BrandService brandService;
 

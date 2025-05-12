@@ -3,8 +3,6 @@ package org.example.itbmshopbe.dtos;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.math.*;
-
 @Data
 public class SaleItemRequestDto {
     private Integer id;
@@ -15,6 +13,9 @@ public class SaleItemRequestDto {
 
     @NotNull(message = "Brand information is required")
     private BrandDto brand;
+
+    @Size(max = 60, message = "Brand name must be less than 60 characters")
+    private String brandName;
 
     @NotBlank(message = "Description is required")
     private String description;
@@ -28,11 +29,13 @@ public class SaleItemRequestDto {
     private Double screenSizeInch;
 
     @NotNull(message = "Quantity is required")
-    @Min(value = 0, message = "Quantity cannot be negative")
     private Integer quantity;
 
     private Integer storageGb;
 
     @Size(max = 255, message = "Color cannot exceed 255 characters")
     private String color;
+
+    @Size(max = 60, message = "New brand name must be less than 60 characters")
+    private String newBrandName;
 }
