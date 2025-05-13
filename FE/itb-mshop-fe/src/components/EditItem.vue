@@ -17,6 +17,7 @@ const product = ref({
     "id": null,
     "name": ""
   },
+  "newBrandName": "",
   "description": "",
   "price": 0,
   "ramGb": 0,             // OPTIONAL
@@ -29,9 +30,7 @@ const originalProduct = ref(null)
 
 const isFormValid = computed(() => {
   return (
-    product.value.brand &&
-    typeof product.value.brand === 'object' &&
-    product.value.brand.name?.trim() &&
+    product.value.newBrandName?.trim() &&
     product.value.model.trim() !== '' &&
     product.value.description.trim() !== '' &&
     product.value.price > 0 &&
@@ -77,6 +76,7 @@ onMounted(async () => {
         "id": null,
         "name": item.brandName
       },
+      "newBrandName": item.brandName,
       "description": item.description,
       "price": item.price,
       "ramGb": item.ramGb,                      // OPTIONAL
@@ -147,9 +147,9 @@ onMounted(async () => {
           <div>
             <div class="mb-4">
               <label class="block mb-1 font-medium">Brand</label>
-              <select v-model="product.brand" class="itbms-brand w-full border px-3 py-2 rounded">
+              <select v-model="product.newBrandName" class="itbms-brand w-full border px-3 py-2 rounded">
                 <option disabled value="">Select Brand</option>
-                <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
+                <option v-for="brand in brandSelected" :key="brand.id" :value="brand.name">
                   {{ brand.name }}
                 </option>
               </select>

@@ -9,7 +9,11 @@ const router = useRouter()
 const brandSelected = ref(null)
 const newSaleItem = ref({
   "id": null,
-  "brand": '',            // Receive like {id: 1, name: Example}
+  "brand": {
+    "id": null,
+    "name": ''
+  },
+  //"brandName": '',
   "model": '',
   "description": '',
   "price": 0,
@@ -22,9 +26,7 @@ const newSaleItem = ref({
 
 const isFormValid = computed(() => {
   return (
-    newSaleItem.value.brand &&
-    typeof newSaleItem.value.brand === 'object' &&
-    newSaleItem.value.brand.name?.trim() &&
+    newSaleItem.value.brandName?.trim() &&
     newSaleItem.value.model.trim() !== '' &&
     newSaleItem.value.description.trim() !== '' &&
     newSaleItem.value.price > 0 &&
