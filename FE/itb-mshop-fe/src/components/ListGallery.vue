@@ -33,7 +33,8 @@ onMounted(async() => {
   handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
   try {
-    products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
+    //products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
+    products.value = await getItems(`http://localhost:8080/v1/sale-items`) ?? []
   } catch (error) {
     console.error(error)
   }
@@ -79,6 +80,8 @@ onMounted(async() => {
         :key="product.id"
         class="itbms-row bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition duration-300"
       >
+
+
         <router-link :to="{ name: 'ListDetails', params: { id: product.id }}">
           <img :src="phoneImg" :alt="product.name" class="w-full h-56 object-contain bg-[#f2f2f2]" />
           <div class="p-5 text-center">
@@ -86,6 +89,7 @@ onMounted(async() => {
             <p class="text-[#7e5bef] font-semibold mt-1">
               <span class="itbms-model">{{ product.model }}</span> /
               <span class="itbms-ramGb">{{ product.ramGb ?? "-" }}</span>
+
               <span class="itbms-ramGb-unit">GB</span> /
               <span class="itbms-storageGb">{{ product.storageGb ?? "-" }}</span>
               <span class="itbms-storageGb-unit">GB</span>

@@ -62,7 +62,8 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    //const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    const item = await getItemById('http://localhost:8080/v1/sale-items', id)
     if (!item || item?.status === 404) {
       router.push('/sale-items')
       alert('The requested sale item does not exist.')
@@ -92,7 +93,8 @@ onMounted(async () => {
   }
 
   try {
-    const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    //const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    const brand = await getItems('http://localhost:8080/v1/brands')
     if (!brand || brand?.status === 404) {
       // alert('The requested sale brand does not exist.')
       return

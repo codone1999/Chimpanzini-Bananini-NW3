@@ -18,6 +18,7 @@ import java.util.List;
 @RequestMapping("/v1/sale-items")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
+//@CrossOrigin(origins = "http://localhost:5173/")
 public class SaleItemController {
     private final SaleItemService saleItemService;
 
@@ -33,12 +34,12 @@ public class SaleItemController {
 
     @PostMapping("")
     public ResponseEntity<SaleItemDetailDto> addSaleItem(@Valid @RequestBody SaleItemRequestDto requestDto) {
-        try {
+       try {
             SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(requestDto);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdSaleItem);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
-        }
+       } catch (Exception e) {
+           throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
+       }
     }
 
 
@@ -51,18 +52,14 @@ public class SaleItemController {
             return ResponseEntity.ok(updatedSaleItem);
         } catch (ItemNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
-        } catch (Exception e) {
+       } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item update failed", e);
-        }
+       }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSaleItem(@PathVariable Integer id){
-        try {
-            saleItemService.deleteSaleItem(id);
-            return ResponseEntity.noContent().build();
-        } catch (ItemNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
-        }
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSaleItem(@PathVariable Integer id) {
+        saleItemService.deleteSaleItem(id);
     }
 }

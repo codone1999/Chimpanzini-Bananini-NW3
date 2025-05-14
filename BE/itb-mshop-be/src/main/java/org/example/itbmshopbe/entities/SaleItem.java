@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -59,10 +60,12 @@ public class SaleItem {
 
     @NotNull
     @Column(name = "createdOn", nullable = false)
+    @CreationTimestamp
     private Instant createdOn;
 
     @NotNull
     @Column(name = "updatedOn", nullable = false)
+    @CreationTimestamp
     private Instant updatedOn;
 
 }

@@ -108,6 +108,8 @@ describe(`TC-FE-PBI4-ADD-SALE-ITEM-1\n
         cy.wait(100)
 
         cy.get('.itbms-model').clear().type('iPhone 15 Pro Max (2023)')
+
+
         cy.get('.itbms-save-button').as('save') ;
         cy.get('@save').should(($btn)=>{
             expect($btn.is(':disabled') || $btn.hasClass('disabled')).to.be.false
@@ -133,6 +135,7 @@ describe(`TC-FE-PBI4-ADD-SALE-ITEM-1\n
         cy.wait(100)
 
         cy.get('.itbms-model').clear().type('iPhone 15 Pro Max (2023)')
+
 
         cy.get('.itbms-model').clear().type('iPhone 15 Pro Max')
         cy.get('.itbms-model').should('have.value','iPhone 15 Pro Max')
