@@ -62,4 +62,5 @@ public class SaleItemController {
     public void deleteSaleItem(@PathVariable Integer id) {
         saleItemService.deleteSaleItem(id);
     }
+
 }

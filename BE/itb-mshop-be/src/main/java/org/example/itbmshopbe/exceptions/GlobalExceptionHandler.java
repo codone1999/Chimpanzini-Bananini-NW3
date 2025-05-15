@@ -23,4 +23,14 @@ public class GlobalExceptionHandler  {
         );
         return ResponseEntity.status(statusCode).body(ger);
     }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleGenericException(Exception ex, HttpServletRequest request) {
+        GeneralErrorResponse ger = new GeneralErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ger);
+    }
 }

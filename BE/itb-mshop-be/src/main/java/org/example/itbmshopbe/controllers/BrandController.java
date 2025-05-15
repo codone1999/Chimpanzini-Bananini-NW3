@@ -1,13 +1,15 @@
 package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.example.itbmshopbe.dtos.BrandDetailsDto;
 import org.example.itbmshopbe.dtos.BrandDto;
+import org.example.itbmshopbe.dtos.BrandRequestDto;
+import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.services.BrandService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,7 +22,18 @@ public class BrandController {
     private final BrandService brandService;
 
     @GetMapping("")
-    public ResponseEntity<List<BrandDto>> getAllBrands(){
+    public ResponseEntity<List<BrandDetailsDto>> getAllBrands() {
         return ResponseEntity.ok(brandService.getAllBrands());
+    }
+    @PostMapping("")
+    public ResponseEntity<BrandDetailsDto> createBrand(@RequestBody BrandRequestDto requestDto) {
+        BrandDetailsDto createdBrand = brandService.createBrand(requestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdBrand);
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<BrandDetailsDto> getBrandById(@PathVariable Integer id){
+        return ResponseEntity.ok(brandService.getBrandById(id));
     }
 }
