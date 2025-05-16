@@ -17,4 +17,5 @@ public class BrandDetailsDto {
     private String countryOfOrigin;
     private Instant createdOn;
     private Instant updatedOn;
+    private Integer noOfSaleItems;
 }

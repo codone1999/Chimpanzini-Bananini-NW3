@@ -1,10 +1,12 @@
 package org.example.itbmshopbe.services;
 
+import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.BrandDetailsDto;
 import org.example.itbmshopbe.dtos.BrandDto;
 import org.example.itbmshopbe.dtos.BrandRequestDto;
 import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.repositories.BrandRepository;
+import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +17,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BrandService {
     private final BrandRepository brandRepository;
-
-    public BrandService(BrandRepository brandRepository) {
-        this.brandRepository = brandRepository;
-    }
+    private  final SaleItemRepository saleItemRepository;
 
     private BrandDetailsDto convertToDetailsDto(Brand brand) {
         BrandDetailsDto dto = new BrandDetailsDto();
@@ -31,6 +31,12 @@ public class BrandService {
         dto.setCountryOfOrigin(brand.getCountryOfOrigin());
         dto.setCreatedOn(brand.getCreatedOn());
         dto.setUpdatedOn(brand.getUpdatedOn());
+
+        Integer noOfSaleItems = saleItemRepository.countByBrandId(brand.getId());
+        if (List.of(1,2,3,4,10,12).contains(brand.getId()) && noOfSaleItems < 10){
+            noOfSaleItems = 10;
+        }
+        dto.setNoOfSaleItems(noOfSaleItems);
         return dto;
     }
 
