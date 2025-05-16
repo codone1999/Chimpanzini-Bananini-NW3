@@ -131,68 +131,71 @@ async function handleDelete() {
 
 <template>
   <div class="p-6">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-6">
       <router-link
         :to="{ name: 'AddItem'}"
-        class="itbms-sale-item-add bg-[#7e5bef] hover:bg-[#6847d5] text-white px-6 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        class="itbms-sale-item-add flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-5 py-3 rounded-xl text-base font-semibold shadow-md transition duration-300"
       >
           Add Sale Item
       </router-link>
 
       <router-link
         :to="{ name: 'BrandList'}"
-        class="itbms-manage-brand bg-[#7e5bef] hover:bg-[#6847d5] text-white px-6 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        class="itbms-manage-brand flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-5 py-3 rounded-xl text-base font-semibold shadow-md transition duration-300"
       >
         Manage Brand
       </router-link>
     </div>
-
-    <table class="w-full border-collapse border border-gray-300">
-      <thead>
-        <tr class="bg-gray-100 text-center">
-          <th class="border border-gray-300 px-4 py-2">Id</th>
-          <th class="border border-gray-300 px-4 py-2">Brand</th>
-          <th class="border border-gray-300 px-4 py-2">Model</th>
-          <th class="border border-gray-300 px-4 py-2">Ram</th>
-          <th class="border border-gray-300 px-4 py-2">Storage</th>
-          <th class="border border-gray-300 px-4 py-2">Color</th>
-          <th class="border border-gray-300 px-4 py-2">Screen Size</th>
-          <th class="border border-gray-300 px-4 py-2">Price</th>
-          <th class="border border-gray-300 px-4 py-2">Quantity</th>
-          <th class="border border-gray-300 px-4 py-2">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="product in products"
-          :key="product.id"
-          class="itbms-row hover:bg-gray-50 text-center"
-        >
-          <td class="border border-gray-300 px-4 py-2">{{ product.id }}</td>
-          <td class="itbms-brand border border-gray-300 px-4 py-2">{{ product.brand }}</td>
-          <td class="itbms-model border border-gray-300 px-4 py-2 text-left">{{ product.model }}</td>
-          <td class="itbms-ramGb border border-gray-300 px-4 py-2">{{ product.ram }}</td>
-          <td class="itbms-storageGb border border-gray-300 px-4 py-2">{{ product.storage }}</td>
-          <td class="itbms-color border border-gray-300 px-4 py-2">{{ product.color }}</td>
-          <td class="itbms-screenSizeInch border border-gray-300 px-4 py-2">{{ product.screenSize }}</td>
-          <td class="itbms-price border border-gray-300 px-4 py-2">{{ product.price }}</td>
-          <td class="itbms-quantity border border-gray-300 px-4 py-2">{{ product.quantity }}</td>
-          <td class="border border-gray-300 px-4 py-2 flex justify-center items-center space-x-2">
-            <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
-              class="itbms-edit-button bg-blue-400 text-white px-2 py-1 rounded hover:bg-blue-600"
-            >
-              E
-            </router-link>
-            <button
-              @click="confirmDelete()"
-              class="itbms-delete-button bg-red-400 text-white px-2 py-1 rounded hover:bg-red-600"
-            >
-              D
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="overflow-x-auto shadow ring-1 ring-gray-200 rounded-lg">
+      <table class="min-w-full bg-white text-sm text-center">
+        <thead class="bg-gray-100 text-gray-700 font-semibold uppercase">
+          <tr class="bg-gray-100 text-center">
+            <th class="px-4 py-3 border-b">Id</th>
+            <th class="px-4 py-3 border-b">Brand</th>
+            <th class="px-4 py-3 border-b text-left">Model</th>
+            <th class="px-4 py-3 border-b">Ram</th>
+            <th class="px-4 py-3 border-b">Storage</th>
+            <th class="px-4 py-3 border-b">Color</th>
+            <th class="px-4 py-3 border-b">Screen Size</th>
+            <th class="px-4 py-3 border-b">Price</th>
+            <th class="px-4 py-3 border-b">Quantity</th>
+            <th class="px-4 py-3 border-b">Action</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-800">
+          <tr
+            v-for="product in products"
+            :key="product.id"
+            class="itbms-row hover:bg-gray-50 transition"
+          >
+            <td class="px-4 py-3 border-b">{{ product.id }}</td>
+            <td class="itbms-brand px-4 py-3 border-b">{{ product.brand }}</td>
+            <td class="itbms-model px-4 py-3 border-b text-left">{{ product.model }}</td>
+            <td class="itbms-ramGb px-4 py-3 border-b">{{ product.ram }}</td>
+            <td class="itbms-storageGb px-4 py-3 border-b">{{ product.storage }}</td>
+            <td class="itbms-color px-4 py-3 border-b">{{ product.color }}</td>
+            <td class="itbms-screenSizeInch px-4 py-3 border-b">{{ product.screenSize }}</td>
+            <td class="itbms-price px-4 py-3 border-b">{{ product.price }}</td>
+            <td class="itbms-quantity px-4 py-3 border-b">{{ product.quantity }}</td>
+            <td class="px-4 py-3 border-b">
+              <div class="flex justify-center items-center gap-2">
+                <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
+                  class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+                >
+                  Edit
+                </router-link>
+                <button
+                  @click="confirmDelete()"
+                  class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Delete Confirmation Modal -->
