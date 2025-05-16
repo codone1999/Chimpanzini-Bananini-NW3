@@ -1,31 +1,53 @@
 <script setup>
-import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from "vue";
+import { getItems, deleteItemById } from "@/lib/fetchUtils";
 
-const statuses = ref([
-  { id: 1, name: 'No Status', description: 'The default status' },
-  { id: 2, name: 'To Do', description: '' },
-  { id: 3, name: 'Doing', description: '' },
-  { id: 4, name: 'Done', description: '' }
+const route = useRoute()
+const router = useRouter()
+const id = route.params.id
+
+const showModal = ref(false)
+
+const brands = ref([
+  { id: 1, "name": "Samsung"},
+  { id: 2, "name": "Apple"},
+  { id: 3, "name": "Xiaomi"},
+  { id: 4, "name": "Huawei"}
 ])
 
-const goHome = () => {
-  alert('Navigating to Home...')
+function confirmDelete() {
+  showModal.value = true
 }
 
-const addStatus = () => {
-  alert('Add Status clicked')
-}
-
-const editStatus = (status) => {
-  alert('Edit: ' + JSON.stringify(status))
-}
-
-const deleteStatus = (id) => {
-  const confirmed = confirm('Are you sure you want to delete this status?')
-  if (confirmed) {
-    statuses.value = statuses.value.filter(status => status.id !== id)
+async function handleDelete() {
+  try {
+    const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', id)
+    if (!item || item?.status === 404 || item === 404) {
+      showModal.value = false
+      router.push({ name: 'BrandList' })
+      return
+    }
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
   }
+
+  showModal.value = false
+  router.push({ name: 'BrandList'})
 }
+
+onMounted(async () => {
+  try {
+    const item = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    if (!item || item?.status === 404) {
+      router.push('ListSaleItem')
+      return
+    }
+    brands.value = item;
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+})
 </script>
 
 <template>
@@ -33,42 +55,82 @@ const deleteStatus = (id) => {
     <!-- Breadcrumb & Header -->
     <div class="flex justify-between items-center mb-4">
       <div class="text-gray-500">
-        <span class="text-blue-600 cursor-pointer hover:underline" @click="goHome">Home</span>
+        <router-link
+          :to="{ name: 'ListSaleItem'}"
+          class="Itbms-item-list text-blue-500"
+        >
+          Sale Item List
+        </router-link>
         <span class="mx-2">›</span>
-        <span class="font-semibold text-gray-700">Task Status</span>
+        <router-link
+          :to="{ name: 'AddBrand'}"
+          class="itbms-add-button text-blue-500"
+        >
+          Add Brand
+        </router-link>
       </div>
-      <button @click="addStatus" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
-        Add Status
-      </button>
     </div>
 
     <!-- Task Status Table -->
     <table class="min-w-full border border-gray-200 rounded overflow-hidden">
       <thead class="bg-gray-100 text-center">
         <tr>
-          <th class="px-4 py-2 border">#</th>
+          <th class="px-4 py-2 border">id</th>
           <th class="px-4 py-2 border">Name</th>
-          <th class="px-4 py-2 border">Description</th>
           <th class="px-4 py-2 border">Action</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(status, index) in statuses" :key="status.id" class="text-center border-t">
-          <td class="px-4 py-2 border">{{ status.id }}</td>
-          <td class="px-4 py-2 border">{{ status.name }}</td>
-          <td class="px-4 py-2 border">{{ status.description }}</td>
+        <tr 
+          v-for="brand in brands" :key="brand.id" 
+          class="itbms-row text-center border-t"
+        >
+          <td class="px-4 py-2 border">{{ brand.id }}</td>
+          <td class="px-4 py-2 border">{{ brand.name }}</td>
           <td class="px-4 py-2 border">
-            <div class="flex justify-center space-x-2">
-              <button @click="editStatus(status)" class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400">
-                Edit
-              </button>
-              <button @click="deleteStatus(status.id)" class="bg-gray-300 px-3 py-1 rounded hover:bg-red-400">
-                Delete
+            <div class="flex justify-center items-center gap-2">
+              <router-link :to="{ name: 'EditBrand', params: { id: brand.id }}" 
+                class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+              >
+                EDIT
+              </router-link>
+              <button
+                @click="confirmDelete()"
+                class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+              >
+                DELETE
               </button>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+   <div
+    v-if="showModal"
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60"
+  >
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
+      <p class=" itbms-message mb-6">
+        Do you want to delete this brand?
+      </p>
+      <div class="flex justify-end gap-4">
+        <button
+          @click="showModal = false"
+          class="itbms-cancel-button px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+        <button
+          @click="handleDelete"
+          class="itbms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
   </div>
 </template>

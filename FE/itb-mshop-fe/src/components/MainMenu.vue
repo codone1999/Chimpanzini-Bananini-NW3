@@ -14,12 +14,19 @@
       </p>
 
       <!-- Shop Now button (bottom center on mobile) -->
-      <div class="fixed bottom-6 inset-x-0 flex justify-center md:static">
+      <div class="fixed bottom-6 inset-x-0 flex justify-between md:static">
         <router-link
           :to="{ name: 'ListGallery' }"
-          class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-lg transition-all duration-200 ease-in-out"
+          class="itbms-shopnow bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all duration-200 ease-in-out"
         >
           Shop Now
+        </router-link>
+
+        <router-link
+          :to="{ name: 'ListSaleItem' }"
+          class="itbms-seller bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg transition-all duration-200 ease-in-out"
+        >
+          Seller
         </router-link>
       </div>
     </div>
