@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from "vue";
-import { getItems } from "@/lib/fetchUtils";
+import { getItems, deleteItemById } from "@/lib/fetchUtils";
 
 const route = useRoute()
 const router = useRouter()
@@ -149,17 +149,17 @@ async function handleDelete() {
     <div class="overflow-x-auto shadow ring-1 ring-gray-200 rounded-lg">
       <table class="min-w-full bg-white text-sm text-center">
         <thead class="bg-gray-100 text-gray-700 font-semibold uppercase">
-          <tr class="bg-gray-100 text-center">
-            <th class="px-4 py-3 border-b">Id</th>
-            <th class="px-4 py-3 border-b">Brand</th>
-            <th class="px-4 py-3 border-b text-left">Model</th>
-            <th class="px-4 py-3 border-b">Ram</th>
-            <th class="px-4 py-3 border-b">Storage</th>
-            <th class="px-4 py-3 border-b">Color</th>
-            <th class="px-4 py-3 border-b">Screen Size</th>
-            <th class="px-4 py-3 border-b">Price</th>
-            <th class="px-4 py-3 border-b">Quantity</th>
-            <th class="px-4 py-3 border-b">Action</th>
+          <tr class="bg-gray-100 text-center ">
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Id</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Brand</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Model</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Ram</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Storage</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Color</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Screen Size</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Price</th>
+            <th class="px-4 py-3 border-gray-300 border-r border-b">Quantity</th>
+            <th class="px-4 py-3 border-gray-300 border-b">Action</th>
           </tr>
         </thead>
         <tbody class="text-gray-800">
@@ -168,27 +168,27 @@ async function handleDelete() {
             :key="product.id"
             class="itbms-row hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3 border-b">{{ product.id }}</td>
-            <td class="itbms-brand px-4 py-3 border-b">{{ product.brand }}</td>
-            <td class="itbms-model px-4 py-3 border-b text-left">{{ product.model }}</td>
-            <td class="itbms-ramGb px-4 py-3 border-b">{{ product.ram }}</td>
-            <td class="itbms-storageGb px-4 py-3 border-b">{{ product.storage }}</td>
-            <td class="itbms-color px-4 py-3 border-b">{{ product.color }}</td>
-            <td class="itbms-screenSizeInch px-4 py-3 border-b">{{ product.screenSize }}</td>
-            <td class="itbms-price px-4 py-3 border-b">{{ product.price }}</td>
-            <td class="itbms-quantity px-4 py-3 border-b">{{ product.quantity }}</td>
-            <td class="px-4 py-3 border-b">
+            <td class="px-4 py-3 border-t border-r border-gray-200 ">{{ product.id }}</td>
+            <td class="itbms-brand border-t border-r border-gray-200  px-4 py-3">{{ product.brand }}</td>
+            <td class="itbms-model border-t border-r border-gray-200  px-4 py-3 text-left">{{ product.model }}</td>
+            <td class="itbms-ramGb border-t border-r border-gray-200  px-4 py-3 ">{{ product.ram }}</td>
+            <td class="itbms-storageGb border-t border-r border-gray-200  px-4 py-3">{{ product.storage }}</td>
+            <td class="itbms-color border-t border-r border-gray-200  px-4 py-3 ">{{ product.color }}</td>
+            <td class="itbms-screenSizeInch border-t border-r border-gray-200  px-4 py-3">{{ product.screenSize }}</td>
+            <td class="itbms-price border-t border-r border-gray-200  px-4 py-3">{{ product.price }}</td>
+            <td class="itbms-quantity border-t border-r border-gray-200  px-4 py-3">{{ product.quantity }}</td>
+            <td class="px-4 py-3 border-t border-gray-200 ">
               <div class="flex justify-center items-center gap-2">
                 <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
                   class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
                 >
-                  Edit
+                  EDIT
                 </router-link>
                 <button
                   @click="confirmDelete()"
                   class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
                 >
-                  Delete
+                  DELETE
                 </button>
               </div>
             </td>
