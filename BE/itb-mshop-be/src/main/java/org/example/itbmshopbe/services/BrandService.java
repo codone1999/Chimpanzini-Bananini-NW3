@@ -28,8 +28,8 @@ public class BrandService {
         dto.setWebsiteUrl(brand.getWebsiteUrl());
         dto.setIsActive(brand.getIsActive());
         dto.setCountryOfOrigin(brand.getCountryOfOrigin());
-        dto.setCreatedOn(brand.getCreatedOn());
-        dto.setUpdatedOn(brand.getUpdatedOn());
+        //dto.setCreatedOn(brand.getCreatedOn());
+        //dto.setUpdatedOn(brand.getUpdatedOn());
 
         Integer noOfSaleItems = saleItemRepository.countByBrandId(brand.getId());
         if (List.of(1,2,3,4,10,12).contains(brand.getId()) && noOfSaleItems < 10){
@@ -130,6 +130,50 @@ public class BrandService {
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Brand creation failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public BrandDetailsDto updateBrand(Integer id, BrandRequestDto requestDto) {
+        try {
+            Brand existingBrand = brandRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Brand not found for id :: " + id));
+            String trimmedName = trimFirstAndLastSentence(requestDto.getName());
+            if(trimmedName == null || trimmedName.isBlank()){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Brand name cannot be empty");
+            }
+
+            if (brandRepository.findByName(trimmedName).isPresent() &&
+            !existingBrand.getName().equalsIgnoreCase(trimmedName)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Duplicate brand name: " + trimmedName);
+            }
+
+            if (trimmedName.length() > 30 ||
+                    (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
+                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 80)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
+            }
+            String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
+            if (requestDto.getIsActive() == null) {
+                requestDto.setIsActive(true);
+            }
+
+            existingBrand.setName(trimmedName);
+            existingBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
+            existingBrand.setIsActive(requestDto.getIsActive());
+            existingBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
+            existingBrand.setUpdatedOn(Instant.now());
+
+            Brand updatedBrand = brandRepository.save(existingBrand);
+            return convertToDetailsDto(updatedBrand);
+        } catch (ResponseStatusException e) {
+            throw e;
+        }catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Brand update failed: " + e.getMessage(), e);
         }
     }
 

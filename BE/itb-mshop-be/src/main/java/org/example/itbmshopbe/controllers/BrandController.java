@@ -33,4 +33,12 @@ public class BrandController {
     public ResponseEntity<BrandDetailsDto> getBrandById(@PathVariable Integer id){
         return ResponseEntity.ok(brandService.getBrandById(id));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BrandDetailsDto> updateBrand(@PathVariable Integer id,
+                                                       @RequestBody BrandRequestDto requestDto) {
+        BrandDetailsDto updatedBrand = brandService.updateBrand(id, requestDto);
+        return ResponseEntity.ok(updatedBrand);
+    }
+
 }
