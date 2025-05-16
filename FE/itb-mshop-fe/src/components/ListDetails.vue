@@ -140,23 +140,23 @@ onMounted(async () => {
    <!-- Delete Confirmation Modal -->
    <div
     v-if="showModal"
-    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60"
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
   >
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
-      <p class=" itbms-message mb-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+      <h2 class="text-2xl font-bold text-neutral-800 mb-4">Confirm Delete</h2>
+      <p class=" itbms-message text-neutral-600 mb-6">
         Do you want to delete this sale item?
       </p>
       <div class="flex justify-end gap-4">
         <button
           @click="showModal = false"
-          class="itbms-cancel-button px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          class="itbms-cancel-button bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-4 py-2 rounded-lg transition"
         >
           Cancel
         </button>
         <button
           @click="handleDelete"
-          class="itbms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          class="itbms-confirm-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
         >
           Delete
         </button>

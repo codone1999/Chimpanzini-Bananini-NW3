@@ -52,67 +52,67 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6 bg-blue-50 rounded shadow-md">
+  <div class="p-8 bg-white rounded-lg shadow-md max-w-3xl mx-auto">
     <!-- Breadcrumb -->
-    <div class="text-sm text-blue-700 mb-4 flex gap-2">
+    <div class="text-sm text-gray-500 mb-6 flex items-center gap-2">
       <router-link
           :to="{ name: 'ListSaleItem'}"
-          class="Itbms-item-list text-blue-500"
+          class="Itbms-item-list hover:underline hover:text-[#7e5bef] transition"
         >
           Sale Item List
         </router-link>
-      <span class="mx-2">›</span>
+      <span class="text-gray-400">›</span>
       <router-link
           :to="{ name: 'BrandList'}"
-          class="itbms-manage-brand text-blue-500"
+          class="itbms-manage-brand hover:underline hover:text-[#7e5bef] transition"
         >
           Brand List
         </router-link>
-      <span class="mx-2">›</span>
+      <span class="text-gray-400">›</span>
       <span class="font-semibold text-black">New Brand</span>
     </div>
 
     <!-- Form -->
-    <form class="space-y-4">
+    <form class="space-y-6">
       <!-- Name -->
       <div>
-        <label for="name" class="block font-medium text-gray-700">
+        <label for="name" class="block text-sm font-medium text-gray-700">
           Name<span class="text-red-500">*</span>
         </label>
         <input
           v-model="form.name"
           type="text"
-          class="itbms-name mt-1 block w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          class="itbms-name mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
           required
         />
       </div>
 
       <!-- Website URL -->
       <div>
-        <label for="websiteUrl" class="block font-medium text-gray-700">Website URL</label>
+        <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
           v-model="form.websiteUrl"
           type="url"
-          class="itbms-websiteUrl mt-1 block w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          class="itbms-websiteUrl mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
       </div>
 
       <!-- Active Toggle -->
       <div class="flex items-center gap-4">
-        <label for="isActive" class="block font-medium text-gray-700">Active</label>
-        <label class="inline-flex items-center cursor-pointer">
+        <label for="isActive" class="text-sm font-medium text-gray-700">Active</label>
+        <label class="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             v-model="form.isActive"
             class="itbms-isActive sr-only"
           />
           <div
-            class="w-10 h-6 bg-gray-300 rounded-full shadow-inner"
-            :class="form.isActive ? 'bg-blue-500' : 'bg-gray-300'"
+            class="w-11 h-6 bg-gray-300 rounded-full transition"
+            :class="form.isActive ? 'bg-[#7e5bef]' : 'bg-gray-300'"
           >
             <div
-              class="w-5 h-5 bg-white rounded-full shadow transform transition-transform"
-              :class="form.isActive ? 'translate-x-5' : 'translate-x-0'"
+              class="absolute w-5 h-5 bg-white rounded-full shadow transform transition"
+              :class="form.isActive ? 'translate-x-5' : 'translate-x-1'"
             ></div>
           </div>
         </label>
@@ -120,11 +120,11 @@ onMounted(async () => {
 
       <!-- Country Of Origin -->
       <div>
-        <label for="country" class="block font-medium text-gray-700">Country Of Origin</label>
+        <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
           v-model="form.countryOfOrigin"
           type="text"
-          class="itbms-countryOfOrigin mt-1 block w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
       </div>
 
@@ -134,13 +134,13 @@ onMounted(async () => {
           id="save-button"
           type="button"
           @click="handleSubmit"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded shadow"
+          class="bg-[#7e5bef] hover:bg-[#5e4ecf] text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition"
         >
           Save
         </button>
         <router-link
           :to="{ name: 'BrandList' }"
-          class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition"
+          class="itbms-cancel-button px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition"
         >
           Cancel
         </router-link>
@@ -148,4 +148,3 @@ onMounted(async () => {
     </form>
   </div>
 </template>
-

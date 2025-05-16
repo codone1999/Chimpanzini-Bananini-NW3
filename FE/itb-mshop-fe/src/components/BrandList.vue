@@ -51,20 +51,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-8 bg-white min-h-screen">
     <!-- Breadcrumb & Header -->
-    <div class="flex justify-between items-center mb-4">
-      <div class="text-gray-500">
+    <div class="flex justify-between items-center mb-6">
+      <div class="text-sm text-neutral-500 tracking-wide">
         <router-link
           :to="{ name: 'ListSaleItem'}"
-          class="Itbms-item-list text-blue-500"
+          class="Itbms-item-list text-[#9147ff] hover:underline"
         >
           Sale Item List
         </router-link>
         <span class="mx-2">›</span>
         <router-link
           :to="{ name: 'AddBrand'}"
-          class="itbms-add-button text-blue-500"
+          class="itbms-add-button text-[#9147ff] hover:underline"
         >
           Add Brand
         </router-link>
@@ -72,61 +72,63 @@ onMounted(async () => {
     </div>
 
     <!-- Task Status Table -->
-    <table class="min-w-full border border-gray-200 rounded overflow-hidden">
-      <thead class="bg-gray-100 text-center">
-        <tr>
-          <th class="px-4 py-2 border">id</th>
-          <th class="px-4 py-2 border">Name</th>
-          <th class="px-4 py-2 border">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr 
-          v-for="brand in brands" :key="brand.id" 
-          class="itbms-row text-center border-t"
-        >
-          <td class="px-4 py-2 border">{{ brand.id }}</td>
-          <td class="px-4 py-2 border">{{ brand.name }}</td>
-          <td class="px-4 py-2 border">
-            <div class="flex justify-center items-center gap-2">
-              <router-link :to="{ name: 'EditBrand', params: { id: brand.id }}" 
-                class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
-              >
-                EDIT
-              </router-link>
-              <button
-                @click="confirmDelete()"
-                class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
-              >
-                DELETE
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="overflow-hidden rounded-xl border border-neutral-200 shadow-sm">
+      <table class="min-w-full divide-y divide-neutral-200 bg-white">
+        <thead class="bg-neutral-100 text-neutral-600 text-sm font-semibold tracking-wide">
+          <tr>
+            <th class="px-6 py-3 text-left">id</th>
+            <th class="px-6 py-3 text-left">Name</th>
+            <th class="px-6 py-3 ">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-200 text-neutral-700">
+          <tr 
+            v-for="brand in brands" :key="brand.id" 
+            class="itbms-row hover:bg-neutral-50 transition"
+          >
+            <td class="px-6 py-4">{{ brand.id }}</td>
+            <td class="px-6 py-4">{{ brand.name }}</td>
+            <td class="px-6 py-4">
+              <div class="flex justify-center gap-3">
+                <router-link :to="{ name: 'EditBrand', params: { id: brand.id }}" 
+                  class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+                >
+                  EDIT
+                </router-link>
+                <button
+                  @click="confirmDelete()"
+                  class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
+                >
+                  DELETE
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Delete Confirmation Modal -->
    <div
     v-if="showModal"
-    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60"
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
   >
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
-      <p class=" itbms-message mb-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+      <h2 class="text-2xl font-bold text-neutral-800 mb-4">Confirm Delete</h2>
+      <p class=" itbms-message text-neutral-600 mb-6">
         Do you want to delete this brand?
       </p>
       <div class="flex justify-end gap-4">
         <button
           @click="showModal = false"
-          class="itbms-cancel-button px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          class="itbms-cancel-button bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-4 py-2 rounded-lg transition"
         >
           Cancel
         </button>
         <button
           @click="handleDelete"
-          class="itbms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          class="itbms-confirm-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition0"
         >
           Delete
         </button>
