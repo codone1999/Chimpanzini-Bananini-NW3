@@ -18,7 +18,6 @@ import java.util.List;
 @RequestMapping("/v1/sale-items")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
-//@CrossOrigin(origins = "http://localhost:5173/")
 public class SaleItemController {
     private final SaleItemService saleItemService;
 

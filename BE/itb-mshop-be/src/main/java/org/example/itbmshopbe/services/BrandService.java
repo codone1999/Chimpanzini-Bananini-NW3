@@ -2,7 +2,6 @@ package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.BrandDetailsDto;
-import org.example.itbmshopbe.dtos.BrandDto;
 import org.example.itbmshopbe.dtos.BrandRequestDto;
 import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.repositories.BrandRepository;
@@ -53,6 +52,26 @@ public class BrandService {
     }
 
 
+    private String checkWebsiteUrl(String input) {;
+        if (input == null || input.isBlank()) {
+            return input;
+        }
+        // Remove multiple .
+        input = input.replaceAll("\\.\\.+", ".");
+        // Correctly handle the website URL format
+        if (input.matches(".*\\.\\w{2,4}(\\.[a-z]{2,4})?$")) {
+            int lastDotIndex = input.lastIndexOf('.');
+            String tld = input.substring(lastDotIndex);
+            String base = input.substring(0, lastDotIndex);
+
+            base = base.replaceAll("\\.\\.", ".");
+            tld = tld.replaceAll("\\.([a-z]{2,4}){2,}", ".$1");
+
+            input = base + tld;
+        }
+        return input;
+    }
+
     private String trimFirstAndLastSentence(String input) {
         if (input == null || input.isBlank()) {
             return input;
@@ -61,15 +80,12 @@ public class BrandService {
         input = input.trim();
         int firstPeriodIndex = input.indexOf('.');
         int lastPeriodIndex = input.lastIndexOf('.');
-
         if (firstPeriodIndex == lastPeriodIndex) {
             return input;
         }
-
         String firstSentence = input.substring(0, firstPeriodIndex + 1).trim();
         String lastSentence = input.substring(lastPeriodIndex).trim();
         String middleContent = input.substring(firstPeriodIndex + 1, lastPeriodIndex + 1);
-
         return firstSentence + middleContent + lastSentence;
     }
 
@@ -82,9 +98,24 @@ public class BrandService {
                         "Duplicate brand name: " + trimmedName);
             }
 
+            if (trimmedName == null || trimmedName.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Brand name cannot be empty");
+            }
+
+            if (trimmedName.length() > 30 ||
+                    (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
+                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 80)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
+            }
+            String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
+            if (requestDto.getIsActive() == null) {
+                requestDto.setIsActive(true);
+            }
+
             Brand newBrand = new Brand();
             newBrand.setName(trimmedName);
-            newBrand.setWebsiteUrl(trimFirstAndLastSentence(requestDto.getWebsiteUrl()));
+            newBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
             newBrand.setIsActive(requestDto.getIsActive());
             newBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
 
@@ -98,7 +129,7 @@ public class BrandService {
             throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Brand creation failed", e);
+                    "Brand creation failed: " + e.getMessage(), e);
         }
     }
 

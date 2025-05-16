@@ -2,14 +2,12 @@ package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.BrandDetailsDto;
-import org.example.itbmshopbe.dtos.BrandDto;
 import org.example.itbmshopbe.dtos.BrandRequestDto;
-import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.services.BrandService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+
 
 import java.util.List;
 
@@ -17,7 +15,6 @@ import java.util.List;
 @RequestMapping("/v1/brands")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
-//@CrossOrigin(origins = "http://localhost:5173/")
 public class BrandController {
     private final BrandService brandService;
 
