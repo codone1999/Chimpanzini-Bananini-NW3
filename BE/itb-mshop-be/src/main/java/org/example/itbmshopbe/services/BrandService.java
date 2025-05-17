@@ -41,14 +41,22 @@ public class BrandService {
 
     public List<BrandDetailsDto> getAllBrands() {
         return brandRepository.findAll().stream()
+                .filter(brand -> Boolean.TRUE.equals(brand.getIsActive()))
                 .map(this::convertToDetailsDto)
                 .collect(Collectors.toList());
     }
 
+
     public BrandDetailsDto getBrandById(Integer id) {
-        return convertToDetailsDto(brandRepository.findById(id)
+        Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Brand not found for id :: " + id)));
+                        "Brand not found for id :: " + id));
+        if (!Boolean.TRUE.equals(brand.getIsActive())) {
+            throw new ResponseStatusException(HttpStatus.GONE,
+                    "Brand has been deleted. ID :: " + id);
+        }
+
+        return convertToDetailsDto(brand);
     }
 
 
@@ -175,6 +183,23 @@ public class BrandService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Brand update failed: " + e.getMessage(), e);
         }
+    }
+
+    @Transactional
+    public void deleteBrand(Integer id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Brand not found for id :: " + id));
+
+        // Check if there are any sale items linked to this brand
+        int linkedSaleItemCount = saleItemRepository.countByBrandId(id);
+        if (linkedSaleItemCount > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot delete brand with linked sale items");
+        }
+        brand.setIsActive(false);
+        brand.setUpdatedOn(Instant.now());
+        brandRepository.save(brand);
     }
 
 }
