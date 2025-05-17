@@ -1,10 +1,12 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { addItem, getItems } from '@/lib/fetchUtils'
 import phoneImg from '../../public/phone.jpg';
 
+const route = useRoute()
 const router = useRouter()
+const from = route.query.from
 
 const brandSelected = ref(null)
 const newSaleItem = ref({
@@ -12,8 +14,8 @@ const newSaleItem = ref({
   "brand": {
     "id": null,
     "name": ''
-  },
-  //"brandName": '',
+  },            // Receive like {id: 1, name: Example}
+  "brandName": '',
   "model": '',
   "description": '',
   "price": 0,
@@ -38,7 +40,10 @@ async function handleSubmit() {
   try {
     const addedItem = await addItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', newSaleItem.value)
     if (addedItem) {
-      router.push({ name: 'ListGallery', query: { added: 'true' } })
+      if (from === 'Gallery')
+        router.push({ name: 'ListGallery', query: { added: 'true' } })
+      else
+        router.push({ name: 'ListSaleItem'})
     }
   } catch (error) {
     console.error('Error:', error)
@@ -99,9 +104,9 @@ onMounted(async () => {
             <div class="space-y-6">
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Brand</label>
-                <select v-model="newSaleItem.brand" class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500">
+                <select v-model="newSaleItem.brandName" class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500">
                   <option disabled value=''>Select Brand</option>
-                  <option v-for="brand in brandSelected" :key="brand.id" :value="{id: null, name: brand.name}">
+                  <option v-for="brand in brandSelected" :key="brand.id" :value="brand.name">
                     {{ brand.name }}
                   </option>
                 </select>
@@ -109,7 +114,7 @@ onMounted(async () => {
 
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Model</label>
-                <input v-model.trim="newSaleItem.model" type="text" maxlength="60" class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500" required />
+                <input v-model.trim="newSaleItem.model" maxlength="60" type="text" class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500" required />
               </div>
 
               <div>
@@ -125,7 +130,7 @@ onMounted(async () => {
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block mb-1 font-semibold text-gray-700">RAM (GB)</label>
-                  <input v-model.number="newSaleItem.ramGb" type="number" class="itbms-ramGb  w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500" />
+                  <input v-model.number="newSaleItem.ramGb" type="number" class="itbms-ramGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500" />
                 </div>
                 <div>
                   <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
@@ -149,7 +154,7 @@ onMounted(async () => {
               <!-- Buttons -->
               <div class="flex justify-end space-x-4 pt-6">
                 <router-link
-                  :to="{ name: 'ListGallery' }"
+                  :to="from === 'Gallery' ? { name: 'ListGallery' } : { name: 'ListSaleItem' }"
                   class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition"
                 >
                   Cancel

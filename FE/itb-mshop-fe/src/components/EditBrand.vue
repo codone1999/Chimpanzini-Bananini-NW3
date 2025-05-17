@@ -16,6 +16,23 @@ const form = ref({
 
 const originalBrand = ref(null)
 
+const isFormValid = computed(() => {
+  return (
+    form.value.name?.trim() &&
+    form.value.websiteUrl?.trim() !== '' &&
+    form.value.countryOfOrigin?.trim() !== ''
+  )
+})
+
+const isChanged = computed(() => {
+  if (!originalBrand.value) return false
+  return JSON.stringify(form.value) !== JSON.stringify(originalBrand.value)
+})
+
+const isSaveDisabled = computed(() => {
+  return !isFormValid.value || !isChanged.value
+})
+
 async function handleSubmit() {
   try {
     const addedItem = await editItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', form.value, id)
@@ -38,7 +55,7 @@ onMounted(async () => {
 
     const data = {
       "name": item.name,
-      "websiteUrl": item.webSiteUrl,
+      "websiteUrl": item.websiteUrl,
       "isActive": item.isActive,
       "countryOfOrigin": item.countryOfOrigin
     }
@@ -80,7 +97,7 @@ onMounted(async () => {
           Name<span class="text-red-500">*</span>
         </label>
         <input
-          v-model="form.name"
+          v-model.trim="form.name"
           type="text"
           class="itbms-name mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
           required
@@ -91,7 +108,7 @@ onMounted(async () => {
       <div>
         <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
-          v-model="form.websiteUrl"
+          v-model.trim="form.websiteUrl"
           type="url"
           class="itbms-websiteUrl mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -112,7 +129,7 @@ onMounted(async () => {
           >
             <div
               class="absolute w-5 h-5 bg-white rounded-full shadow transform transition"
-              :class="form.isActive ? 'translate-x-5' : 'translate-x-1'"
+              :class="form.isActive ? 'translate-x-5' : 'translate-x-0.5'"
             ></div>
           </div>
         </label>
@@ -122,7 +139,7 @@ onMounted(async () => {
       <div>
         <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
-          v-model="form.countryOfOrigin"
+          v-model.trim="form.countryOfOrigin"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -134,13 +151,16 @@ onMounted(async () => {
           id="save-button"
           type="button"
           @click="handleSubmit"
-          class="bg-[#7e5bef] hover:bg-[#5e4ecf] text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition"
+          :class="[
+            'itbms-save-button text-white font-medium py-2 px-4 rounded shadow',
+            isSaveDisabled ? 'bg-purple-300 cursor-not-allowed' : 'bg-[#7e5bef] hover:bg-[#5e4ecf]'
+          ]"
         >
           Save
         </button>
         <router-link
           :to="{ name: 'BrandList' }"
-          class="itbms-cancel-button px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition"
+          class="itbms-cancel-button px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transitionn"
         >
           Cancel
         </router-link>

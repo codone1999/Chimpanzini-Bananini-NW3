@@ -12,6 +12,12 @@ const form = ref({
   countryOfOrigin: ''
 })
 
+const isFormValid = computed(() => {
+  return (
+    form.value.name?.trim()
+  )
+})
+
 async function handleSubmit() {
   try {
     const addedItem = await addItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', form.value)
@@ -54,7 +60,7 @@ async function handleSubmit() {
           Name<span class="text-red-500">*</span>
         </label>
         <input
-          v-model="form.name"
+          v-model.trim="form.name"
           type="text"
           class="itbms-name mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
           required
@@ -65,7 +71,7 @@ async function handleSubmit() {
       <div>
         <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
-          v-model="form.websiteUrl"
+          v-model.trim="form.websiteUrl"
           type="url"
           class="itbms-websiteUrl mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -96,7 +102,7 @@ async function handleSubmit() {
       <div>
         <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
-          v-model="form.countryOfOrigin"
+          v-model.trim="form.countryOfOrigin"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -108,7 +114,10 @@ async function handleSubmit() {
           id="save-button"
           type="button"
           @click="handleSubmit"
-          class="bg-[#7e5bef] hover:bg-[#5e4ecf] text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition"
+          :class="[
+            'itbms-save-button text-white font-medium py-2 px-4 rounded shadow',
+            !isFormValid ? 'bg-purple-300 cursor-not-allowed' : 'bg-[#7e5bef] hover:bg-[#5e4ecf]'
+          ]"
         >
           Save
         </button>

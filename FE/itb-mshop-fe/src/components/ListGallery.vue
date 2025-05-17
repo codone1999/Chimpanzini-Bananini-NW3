@@ -58,7 +58,7 @@ onMounted(async() => {
 
     <button class="itbms-sale-item-add mb-6">
       <router-link
-        :to="{ name: 'AddItem'}"
+        :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
         class="bg-[#7e5bef] hover:bg-[#6847d5] text-white px-6 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
       >
         Add Item

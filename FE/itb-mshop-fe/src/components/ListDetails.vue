@@ -121,7 +121,7 @@ onMounted(async () => {
         <p><strong>Available Quantity:</strong> <span class="itbms-quantity">{{ product.quantity }}</span> units</p>
 
         <div class="flex space-x-3">
-          <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
+          <router-link :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'Gallery' }}" 
             class="itbms-edit-button mt-4 bg-purple-600 text-white py-2 px-6 rounded hover:bg-purple-700"
           >
             Edit

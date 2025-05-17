@@ -7,6 +7,7 @@ import phoneImg from '../../public/phone.jpg';
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
+const from = route.query.from
 
 const brandSelected = ref(null)
 
@@ -52,7 +53,10 @@ async function handleSubmit() {
     product.value.color = product.value.color === '' ? null : product.value.color
     const editedItem = await editItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id, product.value)
     if (editedItem) {
-      router.push({ name: 'ListDetails', params: { id: product.id }, query: {edited: true}}) 
+      if (from === 'Gallery')
+        router.push({ name: 'ListDetails', params: { id: product.id }, query: {edited: true}}) 
+      else
+        router.push({ name: 'ListSaleItem'})
     }
     console.log(product.value)
   } catch (error) {
@@ -199,7 +203,7 @@ onMounted(async () => {
             <!-- Buttons -->
             <div class="flex justify-end space-x-4">
                 <router-link 
-                  :to="{ name: 'ListDetails', params: { id: product.id }}"  
+                  :to="from === 'Gallery' ? { name: 'ListDetails', params: { id: product.id }} : { name: 'ListSaleItem'}"  
                   class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
                 >
                     Cancel

@@ -3,113 +3,23 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from "vue";
 import { getItems, deleteItemById } from "@/lib/fetchUtils";
 
-const route = useRoute()
-const router = useRouter()
-const id = route.params.id
-
 const showModal = ref(false)
+const selectedProductId = ref(null)
 
-const products = ref([
-  {
-    id: 1,
-    brand: "Apple",
-    model: "iPhone 14 Pro Max",
-    ram: 6,
-    storage: 512,
-    color: "Space Black",
-    screenSize: 6.7,
-    price: "42,900",
-    quantity: 5,
-  },
-  {
-    id: 2,
-    brand: "Apple",
-    model: "iPhone 14",
-    ram: 6,
-    storage: 256,
-    color: "Midnight",
-    screenSize: 6.1,
-    price: "29,700",
-    quantity: 8,
-  },
-  {
-    id: 3,
-    brand: "Apple",
-    model: "iPhone 13 Pro",
-    ram: 6,
-    storage: 256,
-    color: "Sierra Blue",
-    screenSize: 6.1,
-    price: "33,000",
-    quantity: 3,
-  },
-  {
-    id: 4,
-    brand: "Apple",
-    model: "iPhone 13",
-    ram: 4,
-    storage: 128,
-    color: "Pink",
-    screenSize: 6.1,
-    price: "23,100",
-    quantity: 10,
-  },
-  {
-    id: 5,
-    brand: "Apple",
-    model: "iPhone 12 Pro Max",
-    ram: 6,
-    storage: 256,
-    color: "Pacific Blue",
-    screenSize: 6.7,
-    price: "29,700",
-    quantity: 4,
-  },
-  {
-    id: 6,
-    brand: "Apple",
-    model: "iPhone 12",
-    ram: 4,
-    storage: 128,
-    color: "Purple",
-    screenSize: 6.1,
-    price: "19,800",
-    quantity: 6,
-  },
-  {
-    id: 7,
-    brand: "Apple",
-    model: "iPhone SE 2022",
-    ram: 4,
-    storage: 64,
-    color: "Starlight",
-    screenSize: 4.7,
-    price: "14,900",
-    quantity: 15,
-  },
-  {
-    id: 8,
-    brand: "Apple",
-    model: "iPhone 14 Plus",
-    ram: 6,
-    storage: 256,
-    color: "",
-    screenSize: 6.7,
-    price: "29,700",
-    quantity: 7,
-  },
-]);
+const products = ref([]);
 
-function confirmDelete() {
+function confirmDelete(id) {
+  selectedProductId.value = id
   showModal.value = true
 }
 
 async function handleDelete() {
+  if (!selectedProductId.value) return
+
   try {
-    const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
+    const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items',  selectedProductId.value)
     if (!item || item?.status === 404 || item === 404) {
       showModal.value = false
-      router.push({ name: 'ListGallery', query: {failed_delete: true} })
       return
     }
   } catch (error) {
@@ -117,23 +27,22 @@ async function handleDelete() {
   }
 
   showModal.value = false
-  router.push({ name: 'ListGallery', query: {deleted: true} })
 }
 
-// onMounted(async () => {
-//   try {
-//     products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
-//   } catch (error) {
-//     console.error('Failed to fetch product:', error);
-//   }
-// })
+onMounted(async () => {
+  try {
+    products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
+  }
+})
 </script>
 
 <template>
   <div class="p-6">
     <div class="flex justify-between items-center mb-6">
       <router-link
-        :to="{ name: 'AddItem'}"
+        :to="{ name: 'AddItem', query: { from: 'SaleItem' } }"
         class="itbms-sale-item-add flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-5 py-3 rounded-xl text-base font-semibold shadow-md transition duration-300"
       >
           Add Sale Item
@@ -156,9 +65,7 @@ async function handleDelete() {
             <th class="px-4 py-3 border-gray-300 border-r border-b">Ram</th>
             <th class="px-4 py-3 border-gray-300 border-r border-b">Storage</th>
             <th class="px-4 py-3 border-gray-300 border-r border-b">Color</th>
-            <th class="px-4 py-3 border-gray-300 border-r border-b">Screen Size</th>
             <th class="px-4 py-3 border-gray-300 border-r border-b">Price</th>
-            <th class="px-4 py-3 border-gray-300 border-r border-b">Quantity</th>
             <th class="px-4 py-3 border-gray-300 border-b">Action</th>
           </tr>
         </thead>
@@ -168,24 +75,23 @@ async function handleDelete() {
             :key="product.id"
             class="itbms-row hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3 border-t border-r border-gray-200 ">{{ product.id }}</td>
-            <td class="itbms-brand border-t border-r border-gray-200  px-4 py-3">{{ product.brand }}</td>
+            <td class="itbms-id px-4 py-3 border-t border-r border-gray-200 ">{{ product.id }}</td>
+            <td class="itbms-brand border-t border-r border-gray-200  px-4 py-3">{{ product.brandName }}</td>
             <td class="itbms-model border-t border-r border-gray-200  px-4 py-3 text-left">{{ product.model }}</td>
-            <td class="itbms-ramGb border-t border-r border-gray-200  px-4 py-3 ">{{ product.ram }}</td>
-            <td class="itbms-storageGb border-t border-r border-gray-200  px-4 py-3">{{ product.storage }}</td>
+            <td class="itbms-ramGb border-t border-r border-gray-200  px-4 py-3 ">{{ product.ramGb }}</td>
+            <td class="itbms-storageGb border-t border-r border-gray-200  px-4 py-3">{{ product.storageGb }}</td>
             <td class="itbms-color border-t border-r border-gray-200  px-4 py-3 ">{{ product.color }}</td>
-            <td class="itbms-screenSizeInch border-t border-r border-gray-200  px-4 py-3">{{ product.screenSize }}</td>
             <td class="itbms-price border-t border-r border-gray-200  px-4 py-3">{{ product.price }}</td>
-            <td class="itbms-quantity border-t border-r border-gray-200  px-4 py-3">{{ product.quantity }}</td>
             <td class="px-4 py-3 border-t border-gray-200 ">
               <div class="flex justify-center items-center gap-2">
-                <router-link :to="{ name: 'EditItem', params: { id: product.id }}" 
+                <router-link 
+                  :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'SaleItem' } }" 
                   class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
                 >
                   EDIT
                 </router-link>
                 <button
-                  @click="confirmDelete()"
+                  @click="confirmDelete(product.id)"
                   class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
                 >
                   DELETE
