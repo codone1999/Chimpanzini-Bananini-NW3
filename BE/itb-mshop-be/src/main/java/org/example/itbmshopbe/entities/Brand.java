@@ -32,8 +32,8 @@ public class Brand {
     @Column(name = "isActive")
     private Boolean isActive;
 
-    @Size(max = 100)
-    @Column(length = 100)
+    @Size(max = 80)
+    @Column(length = 80)
     private String countryOfOrigin;
 
     @NotNull

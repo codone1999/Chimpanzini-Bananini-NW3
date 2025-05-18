@@ -20,6 +20,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.example.itbmshopbe.utils.Util.trimFirstAndLastSentence;
+
 @Service
 @RequiredArgsConstructor
 public class SaleItemService {
@@ -70,29 +72,6 @@ public class SaleItemService {
     public SaleItemDetailDto getSaleItemDetails(Integer id){
         return convertToDetailDto(findSaleItemById(id));
     }
-
-    private String trimFirstAndLastSentence(String input) {
-        if (input == null || input.isBlank()) {
-            return input;
-        }
-
-        input = input.trim();
-
-        int firstPeriodIndex = input.indexOf('.');
-        int lastPeriodIndex = input.lastIndexOf('.');
-
-        if (firstPeriodIndex == lastPeriodIndex) {
-            return input.trim();
-        }
-        String firstSentence = input.substring(0, firstPeriodIndex + 1).trim();
-
-        String lastSentence = input.substring(lastPeriodIndex).trim();
-
-        String middleContent = input.substring(firstPeriodIndex + 1, lastPeriodIndex + 1);
-
-        return firstSentence + middleContent + lastSentence;
-    }
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public SaleItemDetailDto addSaleItem(SaleItemRequestDto requestDto) {
         if (requestDto.getModel() == null || requestDto.getModel().isBlank()) {

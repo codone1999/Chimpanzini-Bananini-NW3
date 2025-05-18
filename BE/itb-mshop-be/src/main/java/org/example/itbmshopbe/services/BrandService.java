@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.example.itbmshopbe.utils.Util.*;
+
 @Service
 @RequiredArgsConstructor
 public class BrandService {
@@ -53,43 +55,6 @@ public class BrandService {
         return convertToDetailsDto(brand);
     }
 
-    private String checkWebsiteUrl(String input) {;
-        if (input == null || input.isBlank()) {
-            return input;
-        }
-        // Remove multiple .
-        input = input.replaceAll("\\.\\.+", ".");
-        // Correctly handle the website URL format
-        if (input.matches(".*\\.\\w{2,4}(\\.[a-z]{2,4})?$")) {
-            int lastDotIndex = input.lastIndexOf('.');
-            String tld = input.substring(lastDotIndex);
-            String base = input.substring(0, lastDotIndex);
-
-            base = base.replaceAll("\\.\\.", ".");
-            tld = tld.replaceAll("\\.([a-z]{2,4}){2,}", ".$1");
-
-            input = base + tld;
-        }
-        return input;
-    }
-
-    private String trimFirstAndLastSentence(String input) {
-        if (input == null || input.isBlank()) {
-            return input;
-        }
-
-        input = input.trim();
-        int firstPeriodIndex = input.indexOf('.');
-        int lastPeriodIndex = input.lastIndexOf('.');
-        if (firstPeriodIndex == lastPeriodIndex) {
-            return input;
-        }
-        String firstSentence = input.substring(0, firstPeriodIndex + 1).trim();
-        String lastSentence = input.substring(lastPeriodIndex).trim();
-        String middleContent = input.substring(firstPeriodIndex + 1, lastPeriodIndex + 1);
-        return firstSentence + middleContent + lastSentence;
-    }
-
     @Transactional
     public BrandDetailsDto createBrand(BrandRequestDto requestDto) {
         try {
@@ -103,19 +68,12 @@ public class BrandService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Brand name cannot be empty");
             }
-
-            if (trimmedName.length() > 30 ||
-                    (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
-                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 100)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
-            }
-
             String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
 
             Brand newBrand = new Brand();
             newBrand.setName(trimmedName);
             newBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
-            newBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
+            newBrand.setCountryOfOrigin(trimToLength(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()), 80));
             newBrand.setIsActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true);
 
             Instant now = Instant.now();
@@ -148,16 +106,11 @@ public class BrandService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Duplicate brand name: " + trimmedName);
             }
-            if (trimmedName.length() > 30 ||
-                    (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
-                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 100)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
-            }
             String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
 
             existingBrand.setName(trimmedName);
             existingBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
-            existingBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
+            existingBrand.setCountryOfOrigin(trimToLength(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()), 80));
             existingBrand.setIsActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true);
             existingBrand.setUpdatedOn(Instant.now());
 
