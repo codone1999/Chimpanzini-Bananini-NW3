@@ -20,8 +20,8 @@ function confirmDelete() {
 
 async function handleDelete() {
   try {
-    //const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-    const item = await deleteItemById('http://localhost:8080/v1/sale-items', id)
+    const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', id)
+    // const item = await deleteItemById('http://localhost:8080/v1/sale-items', id)
     if (!item || item?.status === 404 || item === 404) {
       // alert('The requested sale item does not exist.')
       showModal.value = false
@@ -55,8 +55,8 @@ onMounted(async () => {
   handleQuerySuccess('edited', 'The sale item has been updated.')
   
   try {
-    //const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', id)
-    const item = await getItemById('http://localhost:8080/v1/sale-items', id)
+    const item = await getItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', id)
+    // const item = await getItemById('http://localhost:8080/v1/sale-items', id)
     if (!item || item?.status === 404) {
       router.push('/sale-items')
       // alert('The requested sale item does not exist.')

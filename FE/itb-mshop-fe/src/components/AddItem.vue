@@ -38,7 +38,7 @@ const isFormValid = computed(() => {
 
 async function handleSubmit() {
   try {
-    const addedItem = await addItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items', newSaleItem.value)
+    const addedItem = await addItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', newSaleItem.value)
     if (addedItem) {
       if (from === 'Gallery')
         router.push({ name: 'ListGallery', query: { added: 'true' } })
@@ -52,7 +52,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    const brand = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
     if (!brand || brand?.status === 404) {
       // alert('The requested sale brand does not exist.')
       return

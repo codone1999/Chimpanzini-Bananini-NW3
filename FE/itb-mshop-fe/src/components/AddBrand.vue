@@ -20,7 +20,7 @@ const isFormValid = computed(() => {
 
 async function handleSubmit() {
   try {
-    const addedItem = await addItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', form.value)
+    const addedItem = await addItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value)
     if (addedItem) {
       router.push({ name: 'ListGallery', query: { added: 'true' } })
     }

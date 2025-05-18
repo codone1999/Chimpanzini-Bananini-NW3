@@ -33,8 +33,8 @@ onMounted(async() => {
   handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
   try {
-    //products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
-    products.value = await getItems(`http://localhost:8080/v1/sale-items`) ?? []
+    products.value = await getItems(`http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items`) ?? []
+    // products.value = await getItems(`http://localhost:8080/v1/sale-items`) ?? []
   } catch (error) {
     console.error(error)
   }

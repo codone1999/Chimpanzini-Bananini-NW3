@@ -58,5 +58,8 @@ const routes = [
     }
 ]
 
-const router = createRouter({history, routes})
+const router = createRouter({
+    history: createWebHistory('/nw3/'), 
+    routes
+})
 export default router

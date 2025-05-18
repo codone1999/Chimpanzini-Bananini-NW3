@@ -35,7 +35,7 @@ const isSaveDisabled = computed(() => {
 
 async function handleSubmit() {
   try {
-    const addedItem = await editItem('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', form.value, id)
+    const addedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value, id)
     if (addedItem) {
       router.push({ name: 'BrandList' })
     }
@@ -46,7 +46,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', id)
+    const item = await getItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', id)
     if (!item || item?.status === 404) {
       router.push({ name: 'BrandList' })
       alert('The requested sale item does not exist.')

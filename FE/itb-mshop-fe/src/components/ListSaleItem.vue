@@ -17,7 +17,7 @@ async function handleDelete() {
   if (!selectedProductId.value) return
 
   try {
-    const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items',  selectedProductId.value)
+    const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items',  selectedProductId.value)
     if (!item || item?.status === 404 || item === 404) {
       showModal.value = false
       return
@@ -31,7 +31,7 @@ async function handleDelete() {
 
 onMounted(async () => {
   try {
-    products.value = await getItems(`http://ip24nw3.sit.kmutt.ac.th:8080/v1/sale-items`) ?? []
+    products.value = await getItems(`http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items`) ?? []
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }

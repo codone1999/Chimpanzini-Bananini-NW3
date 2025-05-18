@@ -28,7 +28,7 @@ async function handleDelete() {
   if (!selectedBrandId.value) return
 
   try {
-    const item = await deleteItemById('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands', selectedBrandId.value)
+    const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', selectedBrandId.value)
     if (!item || item?.status === 404 || item === 404) {
       showModal.value = false
       router.push({ name: 'BrandList' })
@@ -44,7 +44,7 @@ async function handleDelete() {
 
 onMounted(async () => {
   try {
-    const item = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
+    const item = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
     if (!item || item?.status === 404) {
       router.push('ListSaleItem')
       return
