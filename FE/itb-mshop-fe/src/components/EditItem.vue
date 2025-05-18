@@ -54,9 +54,9 @@ async function handleSubmit() {
     const editedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', id, product.value)
     if (editedItem) {
       if (from === 'Gallery')
-        router.push({ name: 'ListDetails', params: { id: product.id }, query: {edited: true}}) 
+        router.push({ name: 'ListDetails', params: { id: product.id }, query: {edited: 'true'}}) 
       else
-        router.push({ name: 'ListSaleItem'})
+        router.push({ name: 'ListSaleItem', query: {edited: 'true'}})
     }
     console.log(product.value)
   } catch (error) {
@@ -97,8 +97,8 @@ onMounted(async () => {
   }
 
   try {
-    //const brand = await getItems('http://ip24nw3.sit.kmutt.ac.th:8080/v1/brands')
-    const brand = await getItems('http://localhost:8080/v1/brands')
+    const brand = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
+    // const brand = await getItems('http://localhost:8080/v1/brands')
     if (!brand || brand?.status === 404) {
       // alert('The requested sale brand does not exist.')
       return
