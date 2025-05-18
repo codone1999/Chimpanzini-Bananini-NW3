@@ -42,10 +42,9 @@ public class BrandController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBrand(@PathVariable Integer id) {
-        brandService.deleteBrand(id);
-        return ResponseEntity.noContent().build();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBrand(@PathVariable Integer id) {
+        brandService.deleteBrandById(id);
     }
-
 
 }

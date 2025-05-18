@@ -10,4 +10,6 @@ public interface SaleItemRepository extends JpaRepository<SaleItem, Integer> {
 
     @Query("SELECT COUNT(s) FROM SaleItem s WHERE s.brand.id = :brandId")
     Integer countByBrandId(Integer brandId);
+
+    boolean existsByBrandId(Integer id);
 }

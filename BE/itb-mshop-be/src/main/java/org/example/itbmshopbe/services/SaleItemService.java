@@ -30,10 +30,6 @@ public class SaleItemService {
         return saleItemRepository.findById(id)
                 .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
     }
-    private Brand findBrandByName(String brandName) {
-        return brandRepository.findByName(brandName)
-                .orElseThrow(() -> new ItemNotFoundException("Brand not found for name :: " + brandName));
-    }
 
     private SaleItemGalleryDto convertToGalleryDto(SaleItem saleItem){
         SaleItemGalleryDto dto = new SaleItemGalleryDto();
@@ -206,5 +202,4 @@ public class SaleItemService {
         }
         saleItemRepository.deleteById(id);
     }
-
 }

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -30,8 +32,8 @@ public class Brand {
     @Column(name = "isActive")
     private Boolean isActive;
 
-    @Size(max = 80)
-    @Column(name = "countryOfOrigin", length = 80)
+    @Size(max = 100)
+    @Column(length = 100)
     private String countryOfOrigin;
 
     @NotNull
@@ -41,5 +43,8 @@ public class Brand {
     @NotNull
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
+
+    @OneToMany(mappedBy = "brand")
+    private Set<SaleItem> saleItems = new LinkedHashSet<>();
 
 }

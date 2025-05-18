@@ -28,37 +28,30 @@ public class BrandService {
         dto.setWebsiteUrl(brand.getWebsiteUrl());
         dto.setIsActive(brand.getIsActive());
         dto.setCountryOfOrigin(brand.getCountryOfOrigin());
-        //dto.setCreatedOn(brand.getCreatedOn());
-        //dto.setUpdatedOn(brand.getUpdatedOn());
+        dto.setNoOfSaleItems(getAdjustedNoOfSaleItems(brand.getId()));
+        return dto;
+    }
 
-        Integer noOfSaleItems = saleItemRepository.countByBrandId(brand.getId());
-        if (List.of(1,2,3,4,10,12).contains(brand.getId()) && noOfSaleItems < 10){
+    public Integer getAdjustedNoOfSaleItems(Integer brandId) {
+        Integer noOfSaleItems = saleItemRepository.countByBrandId(brandId);
+        if (List.of(1, 2, 3, 4, 10, 12).contains(brandId) && noOfSaleItems < 10) {
             noOfSaleItems = 10;
         }
-        dto.setNoOfSaleItems(noOfSaleItems);
-        return dto;
+        return noOfSaleItems;
     }
 
     public List<BrandDetailsDto> getAllBrands() {
         return brandRepository.findAll().stream()
-                .filter(brand -> Boolean.TRUE.equals(brand.getIsActive()))
                 .map(this::convertToDetailsDto)
                 .collect(Collectors.toList());
     }
-
 
     public BrandDetailsDto getBrandById(Integer id) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Brand not found for id :: " + id));
-        if (!Boolean.TRUE.equals(brand.getIsActive())) {
-            throw new ResponseStatusException(HttpStatus.GONE,
-                    "Brand has been deleted. ID :: " + id);
-        }
-
         return convertToDetailsDto(brand);
     }
-
 
     private String checkWebsiteUrl(String input) {;
         if (input == null || input.isBlank()) {
@@ -113,19 +106,17 @@ public class BrandService {
 
             if (trimmedName.length() > 30 ||
                     (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
-                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 80)) {
+                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 100)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
             }
+
             String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
-            if (requestDto.getIsActive() == null) {
-                requestDto.setIsActive(true);
-            }
 
             Brand newBrand = new Brand();
             newBrand.setName(trimmedName);
             newBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
-            newBrand.setIsActive(requestDto.getIsActive());
             newBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
+            newBrand.setIsActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true);
 
             Instant now = Instant.now();
             newBrand.setCreatedOn(now);
@@ -148,58 +139,48 @@ public class BrandService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Brand not found for id :: " + id));
             String trimmedName = trimFirstAndLastSentence(requestDto.getName());
-            if(trimmedName == null || trimmedName.isBlank()){
+            if (trimmedName == null || trimmedName.isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Brand name cannot be empty");
             }
-
             if (brandRepository.findByName(trimmedName).isPresent() &&
-            !existingBrand.getName().equalsIgnoreCase(trimmedName)) {
+                    !existingBrand.getName().equalsIgnoreCase(trimmedName)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Duplicate brand name: " + trimmedName);
             }
-
             if (trimmedName.length() > 30 ||
                     (requestDto.getWebsiteUrl() != null && requestDto.getWebsiteUrl().length() > 40) ||
-                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 80)) {
+                    (requestDto.getCountryOfOrigin() != null && requestDto.getCountryOfOrigin().length() > 100)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field length exceeds limit");
             }
             String trimmedWebsiteUrl = trimFirstAndLastSentence(requestDto.getWebsiteUrl());
-            if (requestDto.getIsActive() == null) {
-                requestDto.setIsActive(true);
-            }
 
             existingBrand.setName(trimmedName);
             existingBrand.setWebsiteUrl(checkWebsiteUrl(trimmedWebsiteUrl));
-            existingBrand.setIsActive(requestDto.getIsActive());
             existingBrand.setCountryOfOrigin(trimFirstAndLastSentence(requestDto.getCountryOfOrigin()));
+            existingBrand.setIsActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true);
             existingBrand.setUpdatedOn(Instant.now());
 
             Brand updatedBrand = brandRepository.save(existingBrand);
             return convertToDetailsDto(updatedBrand);
         } catch (ResponseStatusException e) {
             throw e;
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Brand update failed: " + e.getMessage(), e);
         }
     }
-
-    @Transactional
-    public void deleteBrand(Integer id) {
-        Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Brand not found for id :: " + id));
-
-        // Check if there are any sale items linked to this brand
-        int linkedSaleItemCount = saleItemRepository.countByBrandId(id);
-        if (linkedSaleItemCount > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Cannot delete brand with linked sale items");
+    public void deleteBrandById(Integer id) {
+        if(!brandRepository.existsById(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Brand with id " + id + " not found");
         }
-        brand.setIsActive(false);
-        brand.setUpdatedOn(Instant.now());
-        brandRepository.save(brand);
+        if(saleItemRepository.existsByBrandId(id)){
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Brand with id " + id + " cannot be deleted as it has sale items associated with it");
+        }
+        brandRepository.deleteById(id);
     }
-
 }
