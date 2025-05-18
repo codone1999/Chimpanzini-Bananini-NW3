@@ -43,7 +43,7 @@ async function handleSubmit() {
       if (from === 'Gallery')
         router.push({ name: 'ListGallery', query: { added: 'true' } })
       else
-        router.push({ name: 'ListSaleItem'})
+        router.push({ name: 'ListSaleItem', query: { added: 'true' }})
     }
   } catch (error) {
     console.error('Error:', error)

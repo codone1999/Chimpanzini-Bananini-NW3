@@ -8,6 +8,9 @@ const router = useRouter()
 
 const showModal = ref(false)
 
+const showSuccessMessage = ref(false)
+const successMessage = ref('')
+
 const brands = ref([
   { id: 1, "name": "Samsung"},
   { id: 2, "name": "Apple"},
@@ -31,7 +34,11 @@ async function handleDelete() {
     const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', selectedBrandId.value)
     if (!item || item?.status === 404 || item === 404) {
       showModal.value = false
-      router.push({ name: 'BrandList' })
+      handleDeleteSuccess('The brand does not exit.')
+      return
+    } else if (item && item.noOfSaleItems > 0) {
+      showModal.value = false
+      handleDeleteSuccess(`Delete ${selectedBrand.value} is not allowed. There are sale items with ${selectedBrand.value} brand.`)
       return
     }
   } catch (error) {
@@ -39,10 +46,38 @@ async function handleDelete() {
   }
 
   showModal.value = false
-  router.push({ name: 'BrandList'})
+  handleDeleteSuccess('The brand has been deleted.')
+}
+
+function handleDeleteSuccess(message){
+  showSuccessMessage.value = true
+  successMessage.value = message
+
+  setTimeout(() => {
+    showSuccessMessage.value = false
+  }, 3000)
+}
+
+function handleQuerySuccess(type, message) {
+  if (route.query[type] === 'true') {
+    showSuccessMessage.value = true
+    successMessage.value = message
+
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      const updatedQuery = { ...route.query }
+      delete updatedQuery[type] // remove query param
+      router.replace({ name: route.name, query: updatedQuery })
+    }, 3000)
+  }
 }
 
 onMounted(async () => {
+  handleQuerySuccess('added', 'The brand has been added.')
+  handleQuerySuccess('failed_add', 'The brand could not be added.')
+  handleQuerySuccess('edited', 'The brand has been updated.')
+  handleQuerySuccess('failed_edit', 'The brand does not exit.')
+
   try {
     const item = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
     if (!item || item?.status === 404) {
@@ -58,19 +93,27 @@ onMounted(async () => {
 
 <template>
   <div class="p-6">
+    <!-- Success Message -->
+    <div 
+      v-if="showSuccessMessage" 
+      class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
+    >
+      {{ successMessage }}
+    </div>
+
     <!-- Breadcrumb & Header -->
     <div class="flex justify-between items-center mb-4">
-      <div class="text-gray-500">
+      <div class="text-blue-500">
         <router-link
           :to="{ name: 'ListSaleItem'}"
-          class="Itbms-item-list text-blue-500"
+          class="Itbms-item-list "
         >
           Sale Item List
         </router-link>
         <span class="mx-2">›</span>
         <router-link
           :to="{ name: 'AddBrand'}"
-          class="itbms-add-button text-blue-500"
+          class="itbms-add-button"
         >
           Add Brand
         </router-link>

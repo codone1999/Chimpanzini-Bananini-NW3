@@ -22,7 +22,9 @@ async function handleSubmit() {
   try {
     const addedItem = await addItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value)
     if (addedItem) {
-      router.push({ name: 'ListGallery', query: { added: 'true' } })
+      router.push({ name: 'BrandList', query: { added: 'true' } })
+    } else if (addItem === 400 || addItem === 500){
+      router.push({ name: 'BrandList', query: { failed_add: 'true' } })
     }
   } catch (error) {
     console.error('Error:', error)
@@ -85,6 +87,7 @@ async function handleSubmit() {
             type="checkbox"
             v-model="form.isActive"
             class="itbms-isActive sr-only"
+            checked="true"
           />
           <div
             class="w-11 h-6 bg-gray-300 rounded-full transition"

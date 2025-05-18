@@ -3,8 +3,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from "vue";
 import { getItems, deleteItemById } from "@/lib/fetchUtils";
 
+const route = useRoute()
+const router = useRouter()
+
 const showModal = ref(false)
 const selectedProductId = ref(null)
+
+const showSuccessMessage = ref(false)
+const successMessage = ref('')
 
 const products = ref([]);
 
@@ -20,6 +26,7 @@ async function handleDelete() {
     const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items',  selectedProductId.value)
     if (!item || item?.status === 404 || item === 404) {
       showModal.value = false
+      handleDeleteSuccess('The requested sale item does not exist.')
       return
     }
   } catch (error) {
@@ -27,9 +34,35 @@ async function handleDelete() {
   }
 
   showModal.value = false
+  handleDeleteSuccess('The sale item has been deleted.')
+}
+function handleDeleteSuccess(message){
+  showSuccessMessage.value = true
+  successMessage.value = message
+
+  setTimeout(() => {
+    showSuccessMessage.value = false
+  }, 3000)
+}
+
+function handleQuerySuccess(type, message) {
+  if (route.query[type] === 'true') {
+    showSuccessMessage.value = true
+    successMessage.value = message
+
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      const updatedQuery = { ...route.query }
+      delete updatedQuery[type] // remove query param
+      router.replace({ name: route.name, query: updatedQuery })
+    }, 3000)
+  }
 }
 
 onMounted(async () => {
+  handleQuerySuccess('added', 'The sale item has been added.')
+  handleQuerySuccess('edited', 'The sale item has been edited.')
+
   try {
     products.value = await getItems(`http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items`) ?? []
   } catch (error) {
@@ -40,7 +73,15 @@ onMounted(async () => {
 
 <template>
   <div class="p-6">
+    <!-- Success Message -->
+    <div 
+      v-if="showSuccessMessage" 
+      class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
+    >
+      {{ successMessage }}
+    </div>
     <div class="flex justify-between items-center mb-6">
+
       <router-link
         :to="{ name: 'AddItem', query: { from: 'SaleItem' } }"
         class="itbms-sale-item-add flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-5 py-3 rounded-xl text-base font-semibold shadow-md transition duration-300"

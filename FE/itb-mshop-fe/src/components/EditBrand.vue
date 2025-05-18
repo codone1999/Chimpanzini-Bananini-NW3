@@ -37,7 +37,9 @@ async function handleSubmit() {
   try {
     const addedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value, id)
     if (addedItem) {
-      router.push({ name: 'BrandList' })
+      router.push({ name: 'BrandList', query: {edited: 'true'} })
+    } else {
+      router.push({ name: 'BrandList', query: {failed_edit: 'true'} })
     }
   } catch (error) {
     console.error('Error:', error)
