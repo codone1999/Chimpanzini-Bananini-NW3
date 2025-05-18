@@ -6,20 +6,7 @@ public class Util {
         return input.length() <= maxLength ? input : input.substring(0, maxLength);
     }
     public static String trimFirstAndLastSentence(String input) {
-        if (input == null || input.isBlank()) {
-            return input;
-        }
-
-        input = input.trim();
-        int firstPeriodIndex = input.indexOf('.');
-        int lastPeriodIndex = input.lastIndexOf('.');
-        if (firstPeriodIndex == lastPeriodIndex) {
-            return input;
-        }
-        String firstSentence = input.substring(0, firstPeriodIndex + 1).trim();
-        String lastSentence = input.substring(lastPeriodIndex).trim();
-        String middleContent = input.substring(firstPeriodIndex + 1, lastPeriodIndex + 1);
-        return firstSentence + middleContent + lastSentence;
+        return input == null ? null : input.trim();
     }
 
     public static String checkWebsiteUrl(String input) {
