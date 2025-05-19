@@ -18,9 +18,7 @@ const originalBrand = ref(null)
 
 const isFormValid = computed(() => {
   return (
-    form.value.name?.trim() &&
-    form.value.websiteUrl?.trim() !== '' &&
-    form.value.countryOfOrigin?.trim() !== ''
+    form.value.name.trim() !== '' 
   )
 })
 
@@ -35,8 +33,8 @@ const isSaveDisabled = computed(() => {
 
 async function handleSubmit() {
   try {
-    const addedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value, id)
-    if (addedItem) {
+    const editedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', id, form.value)
+    if (editedItem) {
       router.push({ name: 'BrandList', query: {edited: 'true'} })
     } else {
       router.push({ name: 'BrandList', query: {failed_edit: 'true'} })
@@ -88,7 +86,7 @@ onMounted(async () => {
           Brand List
         </router-link>
       <span class="text-gray-400">›</span>
-      <span class="font-semibold text-black">New Brand</span>
+      <span class="font-semibold text-black">Edit Brand</span>
     </div>
 
     <!-- Form -->
@@ -126,12 +124,12 @@ onMounted(async () => {
             class="itbms-isActive sr-only"
           />
           <div
-            class="w-11 h-6 bg-gray-300 rounded-full transition"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300"
             :class="form.isActive ? 'bg-[#7e5bef]' : 'bg-gray-300'"
           >
             <div
-              class="absolute w-5 h-5 bg-white rounded-full shadow transform transition"
-              :class="form.isActive ? 'translate-x-5' : 'translate-x-0.5'"
+              class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300"
+              :class="form.isActive ? 'translate-x-5' : 'translate-x-0'"
             ></div>
           </div>
         </label>
@@ -153,6 +151,7 @@ onMounted(async () => {
           id="save-button"
           type="button"
           @click="handleSubmit"
+          :disabled="isSaveDisabled"
           :class="[
             'itbms-save-button text-white font-medium py-2 px-4 rounded shadow',
             isSaveDisabled ? 'bg-purple-300 cursor-not-allowed' : 'bg-[#7e5bef] hover:bg-[#5e4ecf]'

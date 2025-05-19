@@ -8,7 +8,7 @@ const router = useRouter()
 const form = ref({
   name: '',
   websiteUrl: '',
-  isActive: false,
+  isActive: true,
   countryOfOrigin: ''
 })
 
@@ -87,19 +87,19 @@ async function handleSubmit() {
             type="checkbox"
             v-model="form.isActive"
             class="itbms-isActive sr-only"
-            checked="true"
           />
           <div
-            class="w-11 h-6 bg-gray-300 rounded-full transition"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300"
             :class="form.isActive ? 'bg-[#7e5bef]' : 'bg-gray-300'"
           >
             <div
-              class="absolute w-5 h-5 bg-white rounded-full shadow transform transition"
-              :class="form.isActive ? 'translate-x-5' : 'translate-x-0.5'"
+              class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300"
+              :class="form.isActive ? 'translate-x-5' : 'translate-x-0'"
             ></div>
           </div>
         </label>
       </div>
+
 
       <!-- Country Of Origin -->
       <div>
@@ -114,9 +114,9 @@ async function handleSubmit() {
       <!-- Buttons -->
       <div class="flex gap-3 mt-6">
         <button
-          id="save-button"
           type="button"
           @click="handleSubmit"
+          :disabled="!isFormValid"
           :class="[
             'itbms-save-button text-white font-medium py-2 px-4 rounded shadow',
             !isFormValid ? 'bg-purple-300 cursor-not-allowed' : 'bg-[#7e5bef] hover:bg-[#5e4ecf]'

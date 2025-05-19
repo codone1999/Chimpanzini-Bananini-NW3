@@ -60,7 +60,7 @@ function handleQuerySuccess(type, message) {
 }
 
 onMounted(async () => {
-  handleQuerySuccess('added', 'The sale item has been added.')
+  handleQuerySuccess('added', 'The sale item has been successfully added.')
   handleQuerySuccess('edited', 'The sale item has been edited.')
 
   try {
@@ -96,7 +96,13 @@ onMounted(async () => {
         Manage Brand
       </router-link>
     </div>
-    <div class="overflow-x-auto shadow ring-1 ring-gray-200 rounded-lg">
+
+    <!-- No products -->
+    <div v-if="products.length === 0" class="text-center text-gray-500 text-lg py-10">
+      no sale item
+    </div>
+
+    <div v-else class="overflow-x-auto shadow ring-1 ring-gray-200 rounded-lg">
       <table class="min-w-full bg-white text-sm text-center">
         <thead class="bg-gray-100 text-gray-700 font-semibold uppercase">
           <tr class="bg-gray-100 text-center ">
@@ -119,10 +125,10 @@ onMounted(async () => {
             <td class="itbms-id px-4 py-3 border-t border-r border-gray-200 ">{{ product.id }}</td>
             <td class="itbms-brand border-t border-r border-gray-200  px-4 py-3">{{ product.brandName }}</td>
             <td class="itbms-model border-t border-r border-gray-200  px-4 py-3 text-left">{{ product.model }}</td>
-            <td class="itbms-ramGb border-t border-r border-gray-200  px-4 py-3 ">{{ product.ramGb }}</td>
+            <td class="itbms-ramGb border-t border-r border-gray-200  px-4 py-3 ">{{ product.ramGb ?? "-" }}</td>
             <td class="itbms-storageGb border-t border-r border-gray-200  px-4 py-3">{{ product.storageGb }}</td>
-            <td class="itbms-color border-t border-r border-gray-200  px-4 py-3 ">{{ product.color }}</td>
-            <td class="itbms-price border-t border-r border-gray-200  px-4 py-3">{{ product.price }}</td>
+            <td class="itbms-color border-t border-r border-gray-200  px-4 py-3 ">{{ product.color ?? "-" }}</td>
+            <td class="itbms-price border-t border-r border-gray-200  px-4 py-3">{{ product.price.toLocaleString() }}</td>
             <td class="px-4 py-3 border-t border-gray-200 ">
               <div class="flex justify-center items-center gap-2">
                 <router-link 
