@@ -130,7 +130,7 @@ onMounted(async () => {
           <tr
             v-for="product in products"
             :key="product.id"
-            class="itbms-row bg-purple-50 hover:bg-purple-100 transition duration-200"
+            class="itbms-row hover:bg-purple-50 transition duration-200"
           >
             <td class="itbms-id px-4 py-3">{{ product.id }}</td>
             <td class="itbms-brand px-4 py-3">{{ product.brandName }}</td>
