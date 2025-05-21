@@ -8,8 +8,9 @@
     
     <!-- Decorative particles or blurred elements -->
     <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute w-72 h-72 bg-purple-700 rounded-full opacity-30 blur-3xl top-10 left-1/3 animate-pulse"></div>
-      <div class="absolute w-52 h-52 bg-amber-500 rounded-full opacity-20 blur-2xl bottom-20 right-10 animate-ping"></div>
+      <div class="absolute w-75 h-75 bg-purple-700 rounded-full opacity-30 blur-3xl top-10 left-1/3 animate-pulse"></div>
+      <div class="absolute w-55 h-55 bg-amber-500 rounded-full opacity-20 blur-3xl bottom-50 right-35 animate-pulse"></div>
+      <div class="absolute w-30 h-30 bg-gray-300 rounded-full opacity-20 blur-3xl bottom-50 left-50 animate-pulse"></div>
     </div>
     
     <div class="z-10 max-w-2xl">
@@ -44,7 +45,7 @@
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(80px);
   }
   to {
     opacity: 1;
@@ -55,7 +56,7 @@
 @keyframes fade-up {
   0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(50px);
   }
   100% {
     opacity: 1;
