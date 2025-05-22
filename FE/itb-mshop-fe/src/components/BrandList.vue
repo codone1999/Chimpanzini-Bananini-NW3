@@ -105,91 +105,100 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- Success Message -->
-    <div 
-      v-if="showSuccessMessage" 
-      class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded"
-    >
-      {{ successMessage }}
-    </div>
+  <div class="p-8 min-h-screen bg-gray-50">
+    <div class="w-full max-w-screen-lg mx-auto">
 
-    <!-- Breadcrumb & Header -->
-    <div class="flex justify-between items-center mb-4">
-      <div class="text-blue-500">
-        <router-link
-          :to="{ name: 'ListSaleItem'}"
-          class="Itbms-item-list "
+      <!-- Success Message -->
+      <transition name="fade">
+        <div 
+          v-if="showSuccessMessage" 
+          class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm text-sm font-medium"
         >
-          Sale Item List
-        </router-link>
-        <span class="mx-2">›</span>
-        <router-link
-          :to="{ name: 'AddBrand'}"
-          class="itbms-add-button"
-        >
-          Add Brand
-        </router-link>
+          {{ successMessage }}
+        </div>
+      </transition>
+
+      <!-- Breadcrumb & Header -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="text-sm text-gray-500 flex items-center gap-2">
+          <router-link
+            :to="{ name: 'ListSaleItem'}"
+            class="Itbms-item-list hover:underline hover:text-[#7e5bef] transition"
+          >
+            Sale Item List
+          </router-link>
+          <span class="text-gray-400">›</span>
+          <router-link
+            :to="{ name: 'AddBrand'}"
+            class="itbms-add-button hover:underline hover:text-[#7e5bef] transition"
+          >
+            Add Brand
+          </router-link>
+        </div>
       </div>
-    </div>
 
-    <!-- Task Status Table -->
-    <table class="min-w-full border border-gray-200 rounded overflow-hidden">
-      <thead class="bg-gray-100 text-center">
-        <tr>
-          <th class="px-4 py-2 border border-gray-300">id</th>
-          <th class="px-4 py-2 border border-gray-300">Name</th>
-          <th class="px-4 py-2 border border-gray-300">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr 
-          v-for="brand in brands" :key="brand.id" 
-          class="itbms-row text-center border-t"
-        >
-          <td class="itbms-id px-4 py-2 border border-gray-200">{{ brand.id }}</td>
-          <td class="itbms-name px-4 py-2 border border-gray-200">{{ brand.name }}</td>
-          <td class="px-4 py-2 border border-gray-200">
-            <div class="flex justify-center items-center gap-2">
-              <router-link :to="{ name: 'EditBrand', params: { id: brand.id }}" 
-                class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white px-4 py-2 rounded-lg font-medium shadow transition duration-300"
-              >
-                EDIT
-              </router-link>
-              <button
-                @click="confirmDelete(brand.id, brand.name)"
-                class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded px-4 py-2 rounded-lg font-medium shadow transition duration-300"
-              >
-                DELETE
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- Brand Table -->
+      <div class="overflow-x-auto shadow-xl ring-1 ring-gray-200 rounded-2xl">
+        <table class="min-w-full bg-white text-sm text-center table-auto">
+          <thead class="bg-purple-300 text-gray-700 font-semibold uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-4 border-b border-gray-300">ID</th>
+              <th class="px-4 py-4 border-b border-gray-300">Name</th>
+              <th class="px-4 py-4 border-b border-gray-300">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr 
+              v-for="brand in brands" :key="brand.id" 
+              class="itbms-row hover:bg-purple-50 transition duration-200"
+            >
+              <td class="itbms-id px-4 py-3">{{ brand.id }}</td>
+              <td class="itbms-name px-4 py-3">{{ brand.name }}</td>
+              <td class="px-4 py-3">
+                <div class="flex justify-center items-center gap-2">
+                  <router-link
+                    :to="{ name: 'EditBrand', params: { id: brand.id }}"
+                    class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white p-2 rounded-lg font-medium shadow transition duration-300"
+                  >
+                    <span class="material-icons">edit</span>
+                  </router-link>
+                  <button
+                    @click="confirmDelete(brand.id, brand.name)"
+                    class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg font-medium shadow transition duration-300"
+                  >
+                    <span class="material-icons">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
   </div>
 
   <!-- Delete Confirmation Modal -->
-   <div
+  <div
     v-if="showModal"
-    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60"
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
   >
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
-      <p class=" itbms-message mb-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Confirm Delete</h2>
+      <p class="itbms-message text-gray-600 mb-6">
         {{ deleteMessage }}
       </p>
       <div class="flex justify-end gap-4">
         <button
           @click="showModal = false"
-          class="itbms-cancel-button px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          class="itbms-cancel-button bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition"
         >
           Cancel
         </button>
         <button
           v-if="isCanDelete"
           @click="handleDelete"
-          class="itbms-confirm-button px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          class="itbms-confirm-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
         >
           Delete
         </button>
@@ -197,3 +206,4 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
