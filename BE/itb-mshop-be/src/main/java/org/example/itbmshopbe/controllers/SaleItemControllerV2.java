@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class SaleItemControllerV2 {
     @GetMapping
     public ResponseEntity<SaleItemPagedResponseDto> getAllSaleItems(
             @RequestParam(required = false) List<String> filterBrands,
-            @RequestParam(required = false)Integer page,
+            @RequestParam @Valid Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortDirection

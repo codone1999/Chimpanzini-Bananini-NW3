@@ -13,29 +13,108 @@ const successMessage = ref('')
 const allProducts = ref([])
 const products = ref([])
 const brands = ref([])
-const selectedBrands = ref([';asldjfda;slkf',';lasjdfls;akdfj',';lsakdjf;lskadfj',';laksjdfdlkf', ';alskjdf;laskdfjs'])
+const filterBrands = ref([])
 const sortMode = ref('none') // 'asc' | 'desc' | 'none'
 const brandToAdd = ref('')
+const pageSize = ref(10) // Has 10 products per page by default
+const currentPage = ref(1)
+const totalPages = ref(1)
 
-function handleQuerySuccess(type, message) {
-  if (route.query[type] === 'true') {
-    showSuccessMessage.value = true
-    successMessage.value = message
-    setTimeout(() => {
-      showSuccessMessage.value = false
-      const updatedQuery = { ...route.query }
-      delete updatedQuery[type]
-      router.replace({ name: route.name, query: updatedQuery })
-    }, 3000)
+// ---------------------
+// PAGE FUNCTION
+// ---------------------
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const maxVisible = 10 // Follow Requirement
+  const half = Math.floor(maxVisible / 2)
+
+  let start = Math.max(1, current - half)
+  let end = Math.min(total, current + half)
+
+  if (end - start + 1 < maxVisible) {
+    if (start === 1) {
+      end = Math.min(total, start + maxVisible - 1)
+    } else if (end === total) {
+      start = Math.max(1, total - maxVisible + 1)
+    }
+  }
+
+  const pages = []
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+
+  return pages
+})
+
+function goToPage(page) {
+  currentPage.value = page
+}
+
+async function fetchFilteredSaleItems() {
+  let url = 'http://intproj24.sit.kmutt.ac.th/nw3/api/v2/sale-items?'
+  const query = []
+
+  // Always required
+  query.push('page=' + (currentPage.value - 1))
+
+  // Add filterBrands only if list is not empty
+  if (filterBrands.value.length > 0) {
+    for (const brand of filterBrands.value) {
+      query.push('filterBrands=' + brand)
+    }
+  }
+
+  // Add size only if explicitly set
+  if (pageSize.value) {
+    query.push('size=' + pageSize.value)
+  }
+
+  // Always send sortField only if user is sorting
+  if (sortMode.value !== 'none') {
+    query.push('sortField=brand.name')
+    query.push('sortDirection=' + sortMode.value)
+  }
+
+  url += query.join('&')
+
+  try {
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error('Fetch failed: ' + response.statusText)
+    }
+
+    const data = await response.json()
+
+    allProducts.value = data.content
+    products.value = [...data.content]
+    totalPages.value = data.totalPages
+  } catch (error) {
+    console.error('Fetch error:', error)
   }
 }
 
+// Reset page when pageSize changes or products change
+watch([pageSize, products], () => {
+  currentPage.value = 1
+})
+
+watch([filterBrands, sortMode, pageSize, currentPage], () => {
+  fetchFilteredSaleItems()
+})
+
+// ---------------------
+// SORT & FILTER FUNCTION
+// ---------------------
 function applyFilterAndSort() {
   let filtered = [...allProducts.value]
 
   // Filter by selected brands
-  if (selectedBrands.value.length > 0) {
-    filtered = filtered.filter(p => p.brandName && selectedBrands.value.includes(p.brandName))
+  if (filterBrands.value.length > 0) {
+    filtered = filtered.filter(p => p.brandName && filterBrands.value.includes(p.brandName))
   }
 
   // Sort
@@ -57,10 +136,10 @@ function applyFilterAndSort() {
 }
 
 function toggleBrand(brandName) {
-  if (selectedBrands.value.includes(brandName)) {
-    selectedBrands.value = selectedBrands.value.filter(b => b !== brandName)
+  if (filterBrands.value.includes(brandName)) {
+    filterBrands.value = filterBrands.value.filter(b => b !== brandName)
   } else {
-    selectedBrands.value.push(brandName)
+    filterBrands.value.push(brandName)
   }
 
   brandToAdd.value = '' // reset the dropdown
@@ -68,7 +147,7 @@ function toggleBrand(brandName) {
 }
 
 function clearBrandFilters() {
-  selectedBrands.value = []
+  filterBrands.value = []
   applyFilterAndSort()
 }
 
@@ -76,18 +155,39 @@ function changeSort(mode) {
   sortMode.value = mode
 }
 
+// Reapply filter/sort on change
+watch([filterBrands, sortMode], applyFilterAndSort)
+
+// ---------------------
+// HANDLER DATA FUNCTION
+// ---------------------
+function handleQuerySuccess(type, message) {
+  if (route.query[type] === 'true') {
+    showSuccessMessage.value = true
+    successMessage.value = message
+    setTimeout(() => {
+      showSuccessMessage.value = false
+      const updatedQuery = { ...route.query }
+      delete updatedQuery[type]
+      router.replace({ name: route.name, query: updatedQuery })
+    }, 3000)
+  }
+}
+
 onMounted(async () => {
   handleQuerySuccess('added', 'The sale item has been added.')
   handleQuerySuccess('deleted', 'The sale item has been deleted.')
   handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
-  try {
-    const data = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items') ?? []
-    allProducts.value = data // When do some action will also affect data.
-    products.value = [...data] // Clone data by not affect data. (Default Value)
-  } catch (error) {
-    console.error(error)
-  }
+  await fetchFilteredSaleItems()
+
+  // try {
+  //   const data = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items') ?? []
+  //   allProducts.value = data // When do some action will also affect data.
+  //   products.value = [...data] // Clone data by not affect data. (Default Value)
+  // } catch (error) {
+  //   console.error(error)
+  // }
 
   try {
     const item = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
@@ -96,9 +196,6 @@ onMounted(async () => {
     console.error('Failed to fetch product:', error);
   }
 })
-
-// Reapply filter/sort on change
-watch([selectedBrands, sortMode], applyFilterAndSort)
 </script>
 
 
@@ -119,7 +216,7 @@ watch([selectedBrands, sortMode], applyFilterAndSort)
       </div>
     </transition>
 
-    <!-- Filter & Sort Controls -->
+    <!-- Filter & Sort Controls & Page Size -->
     <div class="flex flex-wrap md:flex-nowrap items-start gap-4 mb-8 w-full">
       <!-- Filter Controls (Left) -->
       <div class="flex-shrink-0 flex gap-2">
@@ -157,7 +254,7 @@ watch([selectedBrands, sortMode], applyFilterAndSort)
       <!-- Brand Chips (Middle) -->
       <div class="flex-1 flex flex-wrap gap-2 items-center overflow-auto min-w-0">
         <span
-          v-for="brand in selectedBrands"
+          v-for="brand in filterBrands"
           :key="brand"
           class="inline-flex items-center bg-purple-100 text-purple-700 px-3 pt-1 rounded-full text-sm"
         >
@@ -173,8 +270,23 @@ watch([selectedBrands, sortMode], applyFilterAndSort)
         </span>
       </div>
 
-      <!-- Sort Buttons (Right) -->
+      <!-- PageSize & Sort Buttons (Right) -->
       <div class="flex-shrink-0 flex gap-2 items-center">
+        <!-- Page Size -->
+        <div class="flex items-center gap-2 text-base">
+          <label for="pageSize" class="font-medium text-gray-700">Show:</label>
+          <select
+            id="pageSize"
+            v-model="pageSize"
+            class="border border-gray-300 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+
+        <!-- None Sort -->
         <button
           class="px-3 py-2 text-2xl rounded transition"
           :class="sortMode === 'none' 
@@ -273,6 +385,60 @@ watch([selectedBrands, sortMode], applyFilterAndSort)
         </router-link>
       </div>
     </div>
+
+    <!-- Pagination Controls with Page Numbers -->
+    <div class="flex justify-center items-center mt-10 gap-2 flex-wrap">
+      <!-- First Page -->
+      <button
+        @click="goToPage(1)"
+        :disabled="currentPage === 1"
+        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+      >
+        First
+      </button>
+
+      <!-- Previous Page -->
+      <button
+        @click="goToPage(currentPage - 1)"
+        :disabled="currentPage === 1"
+        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+      >
+        Prev
+      </button>
+
+      <!-- Page Numbers -->
+      <button
+        v-for="page in visiblePages"
+        :key="page"
+        @click="goToPage(page)"
+        class="px-3 py-1 rounded-md border font-medium"
+        :class="{
+          'bg-[#7e5bef] text-white': page === currentPage,
+          'bg-white text-[#7e5bef] border-[#7e5bef]': page !== currentPage
+        }"
+      >
+        {{ page }}
+      </button>
+
+      <!-- Next Page -->
+      <button
+        @click="goToPage(currentPage + 1)"
+        :disabled="currentPage === totalPages"
+        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+      >
+        Next
+      </button>
+
+      <!-- Last Page -->
+      <button
+        @click="goToPage(totalPages)"
+        :disabled="currentPage === totalPages"
+        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+      >
+        Last
+      </button>
+    </div>
+
   </section>
 </template>
 
