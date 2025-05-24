@@ -7,10 +7,10 @@ const mobileMenuOpen = ref(false)
 <template>
   <header class="bg-white shadow fixed w-full top-0 z-50">
     <nav class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div class="flex items-center space-x-2">
+      <router-link to="/" class="flex items-center space-x-2">
         <img src="/public/favicon.ico" alt="Logo" class="h-8 w-8" />
         <span class="text-lg font-bold text-gray-800">ITB MShop</span>
-      </div>
+      </router-link>
 
       <!-- Desktop Links -->
       <div class="hidden md:flex space-x-6 text-sm font-medium text-gray-700">

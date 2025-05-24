@@ -13,9 +13,12 @@ const successMessage = ref('')
 const allProducts = ref([])
 const products = ref([])
 const brands = ref([])
+
 const filterBrands = ref([])
 const sortMode = ref('none') // 'asc' | 'desc' | 'none'
 const brandToAdd = ref('')
+const isBrandFilterOpen = ref(false)
+
 const pageSize = ref(10) // Has 10 products per page by default
 const currentPage = ref(1)
 const totalPages = ref(1)
@@ -23,7 +26,6 @@ const totalPages = ref(1)
 // ---------------------
 // PAGE FUNCTION
 // ---------------------
-
 const visiblePages = computed(() => {
   const total = totalPages.value
   const current = currentPage.value
@@ -97,8 +99,8 @@ async function fetchFilteredSaleItems() {
   }
 }
 
-// Reset page when pageSize changes or products change
-watch([pageSize, products], () => {
+// Reset page when pageSize
+watch([pageSize], () => {
   currentPage.value = 1
 })
 
@@ -200,7 +202,7 @@ onMounted(async () => {
 
 
 <template>
-  <section class="bg-gray-100 py-16 px-4 md:px-10 max-w-7xl mx-auto">
+  <section class="bg-gray-100 py-16 px-4 md:px-10">
     <h2 class="text-3xl font-extrabold text-gray-900 mb-10 text-center tracking-tight">
       Shop Our Products
     </h2>
@@ -216,58 +218,80 @@ onMounted(async () => {
       </div>
     </transition>
 
-    <!-- Filter & Sort Controls & Page Size -->
-    <div class="flex flex-wrap md:flex-nowrap items-start gap-4 mb-8 w-full">
+    <!-- Filter & Sort & Page Size -->
+    <div class="flex justify-between md:flex-nowrap items-start gap-4 mb-8 w-full">
+
       <!-- Filter Controls (Left) -->
-      <div class="flex-shrink-0 flex gap-2">
-        <select
-          v-model="brandToAdd"
-          class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option disabled selected value="">Filter by brand(s)</option>
-          <option 
-            v-for="brand in brands" 
-            :key="brand.id" 
-            :value="brand.name"
+      <div class="relative w-full max-w-[42%]">
+
+        <!-- Row with Tags and Buttons -->
+        <div class="flex items-start gap-2 flex-wrap">
+          
+          <!-- Brand Tags Container -->
+          <div
+            class="flex-1 flex-wrap whitespace-nowrap flex gap-2 px-2 py-2 border border-gray-300 rounded-md bg-white min-h-[49px]"
           >
-            {{ brand.name }}
-          </option>
-        </select>
+            <span 
+              v-if="filterBrands.length === 0"
+              class="mt-1 ml-1 text-gray-300"
+            >
+              Filter by brand(s)
+            </span>
 
-        <!-- Add Filter -->
-        <button
-          class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition"
-          @click="brandToAdd && toggleBrand(brandToAdd)"
-        >
-          <span class="material-icons">filter_alt</span>
-        </button>
+            <span
+              v-else
+              v-for="brand in filterBrands"
+              :key="brand"
+              class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 pr-1.5 rounded-full text-sm font-medium shrink-0"
+            >
+              {{ brand }}
+              <button @click="toggleBrand(brand)" class="pt-0.6 -mb-1 text-purple-500 hover:text-purple-700">
+                <span class="material-icons">close</span>
+              </button>
+            </span>
+          </div>
 
-        <!-- Clear Filter -->
-        <button
-          class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded transition"
-          @click="clearBrandFilters"
-        >
-          <span class="material-icons">cleaning_services</span>
-        </button>
-      </div>
-
-      <!-- Brand Chips (Middle) -->
-      <div class="flex-1 flex flex-wrap gap-2 items-center overflow-auto min-w-0">
-        <span
-          v-for="brand in filterBrands"
-          :key="brand"
-          class="inline-flex items-center bg-purple-100 text-purple-700 px-3 pt-1 rounded-full text-sm"
-        >
-          <span class="pb-1.5">{{ brand }}</span>
-
-          <!-- Delete Brand Filter -->
+          <!-- Filter Button -->
           <button
-            class="ml-2 text-purple-500 hover:text-purple-700"
-            @click="toggleBrand(brand)"
+            @click="isBrandFilterOpen = !isBrandFilterOpen"
+            class="flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
+            title="Filter brands"
           >
-            <span class="material-icons">close</span>
+            <span class="material-icons">filter_alt</span>
           </button>
-        </span>
+
+          <!-- Clear Button -->
+          <button
+            @click="clearBrandFilters"
+            class="flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
+            title="Clear all filters"
+          >
+            <span class="material-icons">cleaning_services</span>
+          </button>
+        </div>
+
+        <!-- Dropdown Below Tags -->
+        <div
+          v-if="isBrandFilterOpen"
+          class="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-300 rounded shadow-md max-h-60 overflow-y-auto w-64"
+        >
+          <div
+            v-for="brand in brands"
+            :key="brand.id"
+            class="flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              :id="`brand-${brand.name}`"
+              :checked="filterBrands.includes(brand.name)"
+              @change="toggleBrand(brand.name)"
+              class="form-checkbox text-purple-600"
+            />
+            <label :for="`brand-${brand.name}`" class="text-sm text-gray-700">
+              {{ brand.name }}
+            </label>
+          </div>
+        </div>
       </div>
 
       <!-- PageSize & Sort Buttons (Right) -->
@@ -346,7 +370,7 @@ onMounted(async () => {
     <!-- Product Grid -->
     <div
       v-else
-      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
     >
       <div
         v-for="product in products"
@@ -441,4 +465,3 @@ onMounted(async () => {
 
   </section>
 </template>
-
