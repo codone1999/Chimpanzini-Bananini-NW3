@@ -34,7 +34,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="p-8 bg-white rounded-lg shadow-md max-w-3xl mx-auto">
+  <div class="p-8 bg-white rounded-lg shadow-md max-w-3xl mx-auto mb-32">
     <!-- Breadcrumb -->
     <div class="text-sm text-gray-500 mb-6 flex items-center gap-2">
       <router-link

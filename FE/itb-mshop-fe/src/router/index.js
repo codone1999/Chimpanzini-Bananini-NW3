@@ -8,6 +8,7 @@ import ListSaleItem from "@/components/ListSaleItem.vue";
 import BrandList from "@/components/BrandList.vue";
 import AddBrand from "@/components/AddBrand.vue";
 import EditBrand from "@/components/EditBrand.vue";
+import PageNotFound from "@/components/PageNotFound.vue";
 
 const history = createWebHistory()
 const routes = [
@@ -55,6 +56,11 @@ const routes = [
         path: '/brands/:id/edit',
         name: 'EditBrand',
         component: EditBrand
+    },
+    {
+        path: '/:NotFound(.*)',
+        name: 'NotFound',
+        component: PageNotFound
     }
 ]
 
