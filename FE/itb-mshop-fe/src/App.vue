@@ -5,7 +5,7 @@ import Foot from './components/Footer.vue';
 
 <template>
   <Navbar />
-  <main class="pt-16">
+  <main>
     <router-view />
   </main>
   <Foot />

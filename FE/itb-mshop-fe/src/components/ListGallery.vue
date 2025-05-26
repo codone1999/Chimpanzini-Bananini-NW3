@@ -7,6 +7,13 @@ import phoneImg from '../../public/phone.jpg'
 const route = useRoute()
 const router = useRouter()
 
+const SESSION_KEYS = {
+  FILTER_BRANDS: 'session_filterBrands',
+  SORT_MODE: 'session_sortMode',
+  PAGE_SIZE: 'session_pageSize',
+  CURRENT_PAGE: 'session_currentPage'
+}
+
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
 
@@ -15,13 +22,37 @@ const products = ref([])
 const brands = ref([])
 
 const filterBrands = ref([])
+const showBrandList = ref(false)
 const sortMode = ref('none') // 'asc' | 'desc' | 'none'
 const brandToAdd = ref('')
-const isBrandFilterOpen = ref(false)
 
 const pageSize = ref(10) // Has 10 products per page by default
 const currentPage = ref(1)
 const totalPages = ref(1)
+
+// -------------------------
+// Session Storage
+// -------------------------
+function loadSession() {
+  const savedFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_BRANDS)
+  if (savedFilters) filterBrands.value = JSON.parse(savedFilters)
+
+  const savedSort = sessionStorage.getItem(SESSION_KEYS.SORT_MODE)
+  if (savedSort) sortMode.value = savedSort  // saveSort = 'asc' | 'desc' | 'none'
+
+  const savedSize = sessionStorage.getItem(SESSION_KEYS.PAGE_SIZE)
+  if (savedSize) pageSize.value = parseInt(savedSize)
+
+  const savedPage = sessionStorage.getItem(SESSION_KEYS.CURRENT_PAGE)
+  if (savedPage) currentPage.value = parseInt(savedPage)
+}
+
+function saveSession() {
+  sessionStorage.setItem(SESSION_KEYS.FILTER_BRANDS, JSON.stringify(filterBrands.value))
+  sessionStorage.setItem(SESSION_KEYS.SORT_MODE, sortMode.value)
+  sessionStorage.setItem(SESSION_KEYS.PAGE_SIZE, pageSize.value.toString())
+  sessionStorage.setItem(SESSION_KEYS.CURRENT_PAGE, currentPage.value.toString())
+}
 
 // ---------------------
 // PAGE FUNCTION
@@ -53,29 +84,33 @@ const visiblePages = computed(() => {
 
 function goToPage(page) {
   currentPage.value = page
+  fetchFilteredSaleItems()
 }
 
 async function fetchFilteredSaleItems() {
+  if (currentPage.value < 1) {
+    currentPage.value = 1
+  }
+
   let url = 'http://intproj24.sit.kmutt.ac.th/nw3/api/v2/sale-items?'
   const query = []
 
-  // Always required
   query.push('page=' + (currentPage.value - 1))
 
-  // Add filterBrands only if list is not empty
   if (filterBrands.value.length > 0) {
     for (const brand of filterBrands.value) {
       query.push('filterBrands=' + brand)
     }
   }
 
-  // Add size only if explicitly set
   if (pageSize.value) {
     query.push('size=' + pageSize.value)
   }
 
-  // Always send sortField only if user is sorting
-  if (sortMode.value !== 'none') {
+  if (sortMode.value === 'none') {
+    query.push('sortField=createdOn')
+    query.push('sortDirection=asc')
+  } else {
     query.push('sortField=brand.name')
     query.push('sortDirection=' + sortMode.value)
   }
@@ -94,49 +129,25 @@ async function fetchFilteredSaleItems() {
     allProducts.value = data.content
     products.value = [...data.content]
     totalPages.value = data.totalPages
+
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = 1
+    }
+
   } catch (error) {
     console.error('Fetch error:', error)
   }
 }
 
-// Reset page when pageSize
-watch([pageSize], () => {
-  currentPage.value = 1
-})
-
 watch([filterBrands, sortMode, pageSize, currentPage], () => {
+  saveSession()
   fetchFilteredSaleItems()
-})
+}, {deep: true})
+
 
 // ---------------------
 // SORT & FILTER FUNCTION
 // ---------------------
-function applyFilterAndSort() {
-  let filtered = [...allProducts.value]
-
-  // Filter by selected brands
-  if (filterBrands.value.length > 0) {
-    filtered = filtered.filter(p => p.brandName && filterBrands.value.includes(p.brandName))
-  }
-
-  // Sort
-  if (sortMode.value === 'asc') {
-    filtered.sort((a, b) => {
-      if (a.brandName < b.brandName) return -1
-      if (a.brandName > b.brandName) return 1
-      return 0
-    })
-  } else if (sortMode.value === 'desc') {
-    filtered.sort((a, b) => {
-      if (a.brandName > b.brandName) return -1
-      if (a.brandName < b.brandName) return 1
-      return 0
-    })
-  }
-
-  products.value = filtered
-}
-
 function toggleBrand(brandName) {
   if (filterBrands.value.includes(brandName)) {
     filterBrands.value = filterBrands.value.filter(b => b !== brandName)
@@ -145,20 +156,22 @@ function toggleBrand(brandName) {
   }
 
   brandToAdd.value = '' // reset the dropdown
-  applyFilterAndSort() // manually trigger filtering
 }
+
+// Auto add brand after selected
+watch(brandToAdd, (value) => {
+  if (value && !filterBrands.value.includes(value)) {
+    toggleBrand(value)
+  }
+})
 
 function clearBrandFilters() {
   filterBrands.value = []
-  applyFilterAndSort()
 }
 
 function changeSort(mode) {
   sortMode.value = mode
 }
-
-// Reapply filter/sort on change
-watch([filterBrands, sortMode], applyFilterAndSort)
 
 // ---------------------
 // HANDLER DATA FUNCTION
@@ -177,23 +190,20 @@ function handleQuerySuccess(type, message) {
 }
 
 onMounted(async () => {
+  loadSession()
+
   handleQuerySuccess('added', 'The sale item has been successfully added.')
   handleQuerySuccess('deleted', 'The sale item has been deleted.')
   handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
   await fetchFilteredSaleItems()
 
-  // try {
-  //   const data = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items') ?? []
-  //   allProducts.value = data // When do some action will also affect data.
-  //   products.value = [...data] // Clone data by not affect data. (Default Value)
-  // } catch (error) {
-  //   console.error(error)
-  // }
-
   try {
     const item = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
-    brands.value = item;
+    // Sort Alphabetically by brand name (case-insensitive)
+    brands.value = item.sort((a, b) =>
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    )
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
@@ -208,138 +218,137 @@ onMounted(async () => {
     </h2>
 
     <!-- Success Message -->
-    <transition name="fade">
-      <div
-        v-if="showSuccessMessage"
-        class="itbms-message mb-6 p-4 text-sm font-medium text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm"
-        role="alert"
-      >
-        {{ successMessage }}
-      </div>
-    </transition>
+    <div
+      v-if="showSuccessMessage"
+      class="itbms-message mb-6 p-4 text-sm font-medium text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm"
+      role="alert"
+    >
+      {{ successMessage }}
+    </div>
 
     <!-- Filter & Sort & Page Size -->
-    <div class="flex justify-between md:flex-nowrap items-start gap-4 mb-8 w-full">
+    <div class="flex flex-col gap-4 md:flex-row md:justify-between md:items-start w-full mb-8">
 
-      <!-- Filter Controls (Left) -->
-      <div class="relative w-full max-w-[42%]">
+      <!-- Filter Controls -->
+      <div class="flex flex-wrap md:flex-nowrap gap-2 w-full items-start">
 
-        <!-- Row with Tags and Buttons -->
-        <div class="flex items-start gap-2 flex-wrap">
-          
-          <!-- Brand Tags Container -->
-          <div
-            class="itbms-brand-filter flex-1 flex-wrap whitespace-nowrap flex gap-2 px-2 py-2 border border-gray-300 rounded-md bg-white min-h-[49px]"
-          >
-            <span 
-              v-if="filterBrands.length === 0"
-              class="mt-1 ml-1 text-gray-300"
-            >
-              Filter by brand(s)
-            </span>
-
-            <span
-              v-else
-              v-for="brand in filterBrands"
-              :key="brand"
-              class="itbms-filter-item inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 pr-1.5 rounded-full text-sm font-medium shrink-0"
-            >
-              {{ brand }}
-              <button @click="toggleBrand(brand)" class="itbms-filter-item-clear pt-0.6 -mb-1 text-purple-500 hover:text-purple-700">
-                <span class="material-icons">close</span>
-              </button>
-            </span>
-          </div>
-
-          <!-- Filter Button -->
-          <button
-            @click="isBrandFilterOpen = !isBrandFilterOpen"
-            class="itbms-brand-filter-button flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
-            title="Filter brands"
-          >
-            <span class="material-icons">filter_alt</span>
-          </button>
-
-          <!-- Clear Button -->
-          <button
-            @click="clearBrandFilters"
-            class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
-            title="Clear all filters"
-          >
-            <span class="material-icons">cleaning_services</span>
-          </button>
-        </div>
-
-        <!-- Dropdown Below Tags -->
+        <!-- Filter Box -->
         <div
-          v-if="isBrandFilterOpen"
-          class="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-300 rounded shadow-md max-h-60 overflow-y-auto w-64"
-        >
-          <div
-            v-for="brand in brands"
-            :key="brand.id"
-            class="flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+          class="itbms-brand-filter flex flex-wrap items-center content-start gap-2 px-3 py-2 border border-gray-300 rounded bg-white min-h-[49px] max-w-[500px] flex-grow cursor-pointer relative"
+          @click="showBrandList = !showBrandList"
+        > 
+          <!-- Placeholder -->
+          <span 
+            v-if="filterBrands.length === 0" 
+            class="pt-1 text-gray-400"
           >
-            <input
-              type="checkbox"
-              :id="`brand-${brand.name}`"
-              :checked="filterBrands.includes(brand.name)"
-              @change="toggleBrand(brand.name)"
-              class="form-checkbox text-purple-600"
-            />
-            <label :for="`brand-${brand.name}`" class="text-sm text-gray-700">
+            Filter by brand(s)
+          </span>
+
+          <!-- Selected Brands -->
+          <span
+            v-else
+            v-for="brand in filterBrands"
+            :key="brand"
+            class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 pr-1.5 mt-0.5 rounded-full text-sm font-medium shrink-0 z-1"
+          >
+            <span class="itbms-filter-item">
+              {{ brand }}
+            </span>
+            <button @click.stop="toggleBrand(brand)" class="itbms-filter-item-clear pt-0.6 -mb-1 text-purple-500 hover:text-red-700">
+              <span class="material-icons">close</span>
+            </button>
+          </span>
+
+          <!-- Dropdown Brand list -->
+          <div
+            v-if="showBrandList === true" 
+            class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+          >
+            <button
+              v-for="brand in brands"
+              :key="brand.id"
+              :disabled="filterBrands.includes(brand.name)"
+              @click="() => { toggleBrand(brand.name); showBrandList = false }"
+              class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
+              :class="filterBrands.includes(brand.name)
+                ? 'text-gray-300'
+                : 'text-black'
+              "
+            >
               {{ brand.name }}
-            </label>
+            </button>
           </div>
         </div>
+
+        <!-- Add Filter -->
+        <button
+          class="itbms-brand-filter-button flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
+          title="Filter brands"
+        >
+          <span class="material-icons">filter_alt</span>
+        </button>
+
+        <!-- Clear Filter -->
+        <button
+          @click="clearBrandFilters"
+          class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
+          title="Clear all filters"
+        >
+          <span class="material-icons">cleaning_services</span>
+        </button>
       </div>
 
-      <!-- PageSize & Sort Buttons (Right) -->
-      <div class="flex-shrink-0 flex gap-2 items-center">
+      <!-- Page Size & Sort Buttons -->
+      <div class="flex flex-wrap md:flex-nowrap gap-2 items-center w-full md:w-auto">
+
         <!-- Page Size -->
         <div class="flex items-center gap-2 text-base">
-          <label for="pageSize" class="font-medium text-gray-700">Show:</label>
+          <label for="pageSize" class="font-medium text-gray-700 whitespace-nowrap">Show:</label>
           <select
             id="pageSize"
             v-model="pageSize"
             class="itbms-page-size border border-gray-300 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
           </select>
         </div>
 
-        <!-- None Sort -->
+        <!-- Sort: None -->
         <button
           class="itbms-brand-none px-3 py-2 text-2xl rounded transition"
-          :class="sortMode === 'none' 
-            ? 'bg-white text-black border border-gray-300' 
+          :class="sortMode === 'none'
+            ? 'bg-white text-black border border-gray-300'
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
           @click="changeSort('none')"
+          title="No Sort"
         >
           <span class="material-icons">view_headline</span>
         </button>
 
-        <!-- Ascending -->
+        <!-- Sort: Asc -->
         <button
-          class="itbms-brand-asc px-3 py-2 text-2xl rounded transition"
-          :class="sortMode === 'asc' 
-            ? 'bg-white text-black border border-gray-300' 
+          class="itbms-brand-asc flex px-3 py-3 text-2xl rounded transition"
+          :class="sortMode === 'asc'
+            ? 'bg-white text-black border border-gray-300'
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
           @click="changeSort('asc')"
+          title="Sort Ascending"
         >
           <span class="material-icons">north</span>
           <span class="material-icons">sort</span>
         </button>
 
-        <!-- Descending -->
+        <!-- Sort: Desc -->
         <button
-          class="itbms-brand-desc px-3 py-2 text-2xl rounded transition"
-          :class="sortMode === 'desc' 
-            ? 'bg-white text-black border border-gray-300' 
+          class="itbms-brand-desc flex px-3 py-3 text-2xl rounded transition"
+          :class="sortMode === 'desc'
+            ? 'bg-white text-black border border-gray-300'
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
           @click="changeSort('desc')"
+          title="Sort Descending"
         >
           <span class="material-icons">south</span>
           <span class="material-icons">sort</span>
@@ -417,6 +426,7 @@ onMounted(async () => {
         @click="goToPage(1)"
         :disabled="currentPage === 1"
         class="itbms-page-first px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+        :class="totalPages === 1 ? 'invisible': 'visible' "
       >
         First
       </button>
@@ -426,6 +436,7 @@ onMounted(async () => {
         @click="goToPage(currentPage - 1)"
         :disabled="currentPage === 1"
         class="itbms-page-prev px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+        :class="totalPages === 1 ? 'invisible' : 'visible' "
       >
         Prev
       </button>
@@ -436,11 +447,13 @@ onMounted(async () => {
         :key="page"
         @click="goToPage(page)"
         class="px-5 py-2 text-lg rounded-lg border font-medium"
-        :class="`itbms-page-${page}`,
+        :class="`itbms-page-${page-1}`,
         {
           'bg-[#7e5bef] text-white hover:bg-[#6b4edb] hover:shadow-md': page === currentPage,
           'bg-white text-[#7e5bef] border-[#7e5bef] hover:bg-[#f3f0ff] hover:shadow-md': page !== currentPage
-        }"
+        }, 
+        totalPages === 1 ? 'invisible' : 'visible'
+        "
       >
         {{ page }}
       </button>
@@ -450,6 +463,7 @@ onMounted(async () => {
         @click="goToPage(currentPage + 1)"
         :disabled="currentPage === totalPages"
         class="itbms-page-next px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+        :class="totalPages === 1 ? 'invisible' : 'visible' "
       >
         Next
       </button>
@@ -459,6 +473,7 @@ onMounted(async () => {
         @click="goToPage(totalPages)"
         :disabled="currentPage === totalPages"
         class="itbms-page-last px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+        :class="totalPages === 1 ? 'invisible' : 'visible' "
       >
         Last
       </button>
