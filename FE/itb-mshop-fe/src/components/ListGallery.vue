@@ -416,7 +416,7 @@ onMounted(async () => {
       <button
         @click="goToPage(1)"
         :disabled="currentPage === 1"
-        class="itbms-page-first px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-first px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
       >
         First
       </button>
@@ -425,7 +425,7 @@ onMounted(async () => {
       <button
         @click="goToPage(currentPage - 1)"
         :disabled="currentPage === 1"
-        class="itbms-page-prev px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-prev px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
       >
         Prev
       </button>
@@ -435,11 +435,11 @@ onMounted(async () => {
         v-for="page in visiblePages"
         :key="page"
         @click="goToPage(page)"
-        class="px-3 py-1 rounded-md border font-medium"
+        class="px-5 py-2 text-lg rounded-lg border font-medium"
         :class="`itbms-page-${page}`,
         {
-          'bg-[#7e5bef] text-white': page === currentPage,
-          'bg-white text-[#7e5bef] border-[#7e5bef]': page !== currentPage
+          'bg-[#7e5bef] text-white hover:bg-[#6b4edb] hover:shadow-md': page === currentPage,
+          'bg-white text-[#7e5bef] border-[#7e5bef] hover:bg-[#f3f0ff] hover:shadow-md': page !== currentPage
         }"
       >
         {{ page }}
@@ -449,7 +449,7 @@ onMounted(async () => {
       <button
         @click="goToPage(currentPage + 1)"
         :disabled="currentPage === totalPages"
-        class="itbms-page-next px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-next px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
       >
         Next
       </button>
@@ -458,7 +458,7 @@ onMounted(async () => {
       <button
         @click="goToPage(totalPages)"
         :disabled="currentPage === totalPages"
-        class="itbms-page-last px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-last px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
       >
         Last
       </button>

@@ -5,7 +5,9 @@
 
         <!-- Branding -->
         <div>
+          <router-link to="/">
           <h2 class="text-white text-xl font-semibold mb-2">ITB MShop</h2>
+          </router-link>
           <p class="text-neutral-500 text-sm leading-relaxed">
             Discover premium tech and fashion at unbeatable prices.<br />
             Inspired by innovation. Driven by quality.
