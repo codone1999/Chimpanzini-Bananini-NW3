@@ -177,7 +177,7 @@ function handleQuerySuccess(type, message) {
 }
 
 onMounted(async () => {
-  handleQuerySuccess('added', 'The sale item has been added.')
+  handleQuerySuccess('added', 'The sale item has been successfully added.')
   handleQuerySuccess('deleted', 'The sale item has been deleted.')
   handleQuerySuccess('failed_delete', 'The requested sale item does not exist.')
 
@@ -229,7 +229,7 @@ onMounted(async () => {
           
           <!-- Brand Tags Container -->
           <div
-            class="flex-1 flex-wrap whitespace-nowrap flex gap-2 px-2 py-2 border border-gray-300 rounded-md bg-white min-h-[49px]"
+            class="itbms-brand-filter flex-1 flex-wrap whitespace-nowrap flex gap-2 px-2 py-2 border border-gray-300 rounded-md bg-white min-h-[49px]"
           >
             <span 
               v-if="filterBrands.length === 0"
@@ -242,10 +242,10 @@ onMounted(async () => {
               v-else
               v-for="brand in filterBrands"
               :key="brand"
-              class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 pr-1.5 rounded-full text-sm font-medium shrink-0"
+              class="itbms-filter-item inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 pr-1.5 rounded-full text-sm font-medium shrink-0"
             >
               {{ brand }}
-              <button @click="toggleBrand(brand)" class="pt-0.6 -mb-1 text-purple-500 hover:text-purple-700">
+              <button @click="toggleBrand(brand)" class="itbms-filter-item-clear pt-0.6 -mb-1 text-purple-500 hover:text-purple-700">
                 <span class="material-icons">close</span>
               </button>
             </span>
@@ -254,7 +254,7 @@ onMounted(async () => {
           <!-- Filter Button -->
           <button
             @click="isBrandFilterOpen = !isBrandFilterOpen"
-            class="flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
+            class="itbms-brand-filter-button flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
             title="Filter brands"
           >
             <span class="material-icons">filter_alt</span>
@@ -263,7 +263,7 @@ onMounted(async () => {
           <!-- Clear Button -->
           <button
             @click="clearBrandFilters"
-            class="flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
+            class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
             title="Clear all filters"
           >
             <span class="material-icons">cleaning_services</span>
@@ -302,7 +302,7 @@ onMounted(async () => {
           <select
             id="pageSize"
             v-model="pageSize"
-            class="border border-gray-300 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            class="itbms-page-size border border-gray-300 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="5">5</option>
             <option value="10">10</option>
@@ -312,7 +312,7 @@ onMounted(async () => {
 
         <!-- None Sort -->
         <button
-          class="px-3 py-2 text-2xl rounded transition"
+          class="itbms-brand-none px-3 py-2 text-2xl rounded transition"
           :class="sortMode === 'none' 
             ? 'bg-white text-black border border-gray-300' 
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
@@ -323,7 +323,7 @@ onMounted(async () => {
 
         <!-- Ascending -->
         <button
-          class="px-3 py-2 text-2xl rounded transition"
+          class="itbms-brand-asc px-3 py-2 text-2xl rounded transition"
           :class="sortMode === 'asc' 
             ? 'bg-white text-black border border-gray-300' 
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
@@ -335,7 +335,7 @@ onMounted(async () => {
 
         <!-- Descending -->
         <button
-          class="px-3 py-2 text-2xl rounded transition"
+          class="itbms-brand-desc px-3 py-2 text-2xl rounded transition"
           :class="sortMode === 'desc' 
             ? 'bg-white text-black border border-gray-300' 
             : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
@@ -416,7 +416,7 @@ onMounted(async () => {
       <button
         @click="goToPage(1)"
         :disabled="currentPage === 1"
-        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-first px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
       >
         First
       </button>
@@ -425,7 +425,7 @@ onMounted(async () => {
       <button
         @click="goToPage(currentPage - 1)"
         :disabled="currentPage === 1"
-        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-prev px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
       >
         Prev
       </button>
@@ -436,7 +436,8 @@ onMounted(async () => {
         :key="page"
         @click="goToPage(page)"
         class="px-3 py-1 rounded-md border font-medium"
-        :class="{
+        :class="`itbms-page-${page}`,
+        {
           'bg-[#7e5bef] text-white': page === currentPage,
           'bg-white text-[#7e5bef] border-[#7e5bef]': page !== currentPage
         }"
@@ -448,7 +449,7 @@ onMounted(async () => {
       <button
         @click="goToPage(currentPage + 1)"
         :disabled="currentPage === totalPages"
-        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-next px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
       >
         Next
       </button>
@@ -457,7 +458,7 @@ onMounted(async () => {
       <button
         @click="goToPage(totalPages)"
         :disabled="currentPage === totalPages"
-        class="px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
+        class="itbms-page-last px-3 py-1 rounded-md border text-white bg-[#7e5bef] disabled:opacity-50"
       >
         Last
       </button>

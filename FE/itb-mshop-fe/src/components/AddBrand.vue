@@ -12,6 +12,9 @@ const form = ref({
   countryOfOrigin: ''
 })
 
+const showValidateMessage = ref(false);
+const validateMessage = ref("");
+
 const isFormValid = computed(() => {
   return (
     form.value.name?.trim()
@@ -28,6 +31,40 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('Error:', error)
+  }
+}
+
+function validateInput(field) {
+  let value = form.value[field]
+
+  switch (field) {
+    case 'name':
+      validateMessage.value = value.length >= 1 && value.length <= 30
+        ? ''
+        : 'Brand name must be 1-30 characters long.'
+      break
+    case 'websiteUrl':
+      const url = value.trim()
+      const isEmpty = url === ''
+      const isValidUrl = /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(url)
+      validateMessage.value = isEmpty || isValidUrl
+        ? ''
+        : 'Brand URL must be a valid URL or not specified.'
+      break
+    case 'countryOfOrigin':
+      validateMessage.value = value.length >= 1 && value.length <= 80 || value.trim() === ''
+        ? ''
+        : 'Brand country of origin must be 1-80 characters long or not specified.'
+      break
+  }
+  
+  if (validateMessage.value !== ''){
+    showValidateMessage.value = true;
+    setTimeout(() => {
+      showValidateMessage.value = false;
+    }, 3000);
+  } else {
+    showValidateMessage.value = false;
   }
 }
 
@@ -54,8 +91,18 @@ async function handleSubmit() {
       <span class="font-semibold text-black">New Brand</span>
     </div>
 
+    <!-- Pop Up Message -->
+    <div
+      v-if="showValidateMessage"
+      class="itbms-message mb-6 p-4 text-sm font-medium text-red-800 bg-red-100 border border-red-300 rounded-lg shadow-sm"
+      role="alert"
+    >
+      {{ validateMessage }}
+    </div>
+
     <!-- Form -->
     <form class="space-y-6">
+
       <!-- Name -->
       <div>
         <label for="name" class="block text-sm font-medium text-gray-700">
@@ -63,6 +110,7 @@ async function handleSubmit() {
         </label>
         <input
           v-model.trim="form.name"
+          @blur="validateInput('name')"
           type="text"
           class="itbms-name mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
           required
@@ -74,6 +122,7 @@ async function handleSubmit() {
         <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
           v-model.trim="form.websiteUrl"
+          @blur="validateInput('websiteUrl')"
           type="url"
           class="itbms-websiteUrl mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -106,6 +155,7 @@ async function handleSubmit() {
         <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
           v-model.trim="form.countryOfOrigin"
+          @blur="validateInput('countryOfOrigin')"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
