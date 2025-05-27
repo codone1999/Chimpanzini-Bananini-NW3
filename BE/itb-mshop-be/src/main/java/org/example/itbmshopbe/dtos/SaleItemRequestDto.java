@@ -28,7 +28,7 @@ public class SaleItemRequestDto {
 
     private Double screenSizeInch;
 
-    @NotNull(message = "Quantity is required")
+    //@NotNull(message = "Quantity is required")
     private Integer quantity;
 
     private Integer storageGb;
