@@ -131,6 +131,7 @@ async function fetchFilteredSaleItems() {
     totalPages.value = data.totalPages
 
     if (currentPage.value > totalPages.value) {
+      // currentPage.value = totalPages.value
       currentPage.value = 1
     }
 
@@ -235,7 +236,6 @@ onMounted(async () => {
         <!-- Filter Box -->
         <div
           class="itbms-brand-filter flex flex-wrap items-center content-start gap-2 px-3 py-2 border border-gray-300 rounded bg-white min-h-[49px] max-w-[500px] flex-grow cursor-pointer relative"
-          @click="showBrandList = !showBrandList"
         > 
           <!-- Placeholder -->
           <span 
@@ -269,7 +269,7 @@ onMounted(async () => {
               v-for="brand in brands"
               :key="brand.id"
               :disabled="filterBrands.includes(brand.name)"
-              @click="() => { toggleBrand(brand.name); showBrandList = false }"
+              @click="toggleBrand(brand.name)"
               class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
               :class="filterBrands.includes(brand.name)
                 ? 'text-gray-300'
@@ -284,6 +284,7 @@ onMounted(async () => {
         <!-- Add Filter -->
         <button
           class="itbms-brand-filter-button flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
+          @click="showBrandList = !showBrandList"
           title="Filter brands"
         >
           <span class="material-icons">filter_alt</span>
