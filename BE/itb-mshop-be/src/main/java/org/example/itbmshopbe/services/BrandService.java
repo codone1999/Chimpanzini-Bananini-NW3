@@ -36,7 +36,7 @@ public class BrandService {
 
     public Integer getAdjustedNoOfSaleItems(Integer brandId) {
         Integer noOfSaleItems = saleItemRepository.countByBrandId(brandId);
-        if (List.of(1, 2, 3, 4, 10, 12).contains(brandId) && noOfSaleItems < 10) {
+        if (noOfSaleItems < 10) {
             noOfSaleItems = 10;
         }
         return noOfSaleItems;

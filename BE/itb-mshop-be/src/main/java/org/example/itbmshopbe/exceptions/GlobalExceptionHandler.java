@@ -1,7 +1,6 @@
 package org.example.itbmshopbe.exceptions;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
