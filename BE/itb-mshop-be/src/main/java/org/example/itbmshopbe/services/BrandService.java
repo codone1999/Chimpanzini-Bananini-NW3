@@ -59,7 +59,7 @@ public class BrandService {
     public BrandDetailsDto createBrand(BrandRequestDto requestDto) {
         try {
             String trimmedName = trimFirstAndLastSentence(requestDto.getName());
-            if (brandRepository.findByName(trimmedName).isPresent()) {
+            if (brandRepository.findByNameIgnoreCase(trimmedName).isPresent()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Duplicate brand name: " + trimmedName);
             }
@@ -101,7 +101,7 @@ public class BrandService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Brand name cannot be empty");
             }
-            if (brandRepository.findByName(trimmedName).isPresent() &&
+            if (brandRepository.findByNameIgnoreCase(trimmedName).isPresent() &&
                     !existingBrand.getName().equalsIgnoreCase(trimmedName)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Duplicate brand name: " + trimmedName);

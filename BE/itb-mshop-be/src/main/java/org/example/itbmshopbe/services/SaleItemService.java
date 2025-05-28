@@ -1,6 +1,5 @@
 package org.example.itbmshopbe.services;
 
-
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
@@ -11,6 +10,7 @@ import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
+import org.example.itbmshopbe.utils.SaleItemUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +32,7 @@ import static org.example.itbmshopbe.utils.Util.trimFirstAndLastSentence;
 public class SaleItemService {
     private final SaleItemRepository saleItemRepository;
     private final BrandRepository brandRepository;
+    private final SaleItemUtil saleItemUtil;
 
     private SaleItem findSaleItemById(Integer id){
         return saleItemRepository.findById(id)
@@ -78,49 +79,29 @@ public class SaleItemService {
         return convertToDetailDto(findSaleItemById(id));
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public SaleItemDetailDto addSaleItem(SaleItemRequestDto requestDto) {
-        if (requestDto.getModel() == null || requestDto.getModel().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Model is required.");
-        }
+    public SaleItemDetailDto addSaleItem(SaleItemRequestDto dto) {
 
-        if (requestDto.getDescription() == null || requestDto.getDescription().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Description is required.");
-        }
+        saleItemUtil.validateRequiredFields(dto);
 
-        if (requestDto.getPrice() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price is required.");
-        }
+        String color = saleItemUtil.sanitizeColor(dto.getColor());
+        int quantity = saleItemUtil.resolveQuantity(dto.getQuantity());
 
-        Brand brand;
-        if (requestDto.getBrand() != null && requestDto.getBrand().getId() != null) {
-            brand = brandRepository.findById(requestDto.getBrand().getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Brand with id " + requestDto.getBrand().getId() + " not found"));
-        } else if (requestDto.getBrandName() != null && !requestDto.getBrandName().trim().isEmpty()) {
-            String trimmedBrandName = requestDto.getBrandName().trim();
-            brand = brandRepository.findByName(trimmedBrandName)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Brand with name '" + trimmedBrandName + "' not found"));
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand name is required.");
-        }
-        String color = requestDto.getColor();
-        SaleItem newSaleItem = new SaleItem();
-        newSaleItem.setBrand(brand);
-        newSaleItem.setModel(trimFirstAndLastSentence(requestDto.getModel()));
-        newSaleItem.setDescription(trimFirstAndLastSentence(requestDto.getDescription()));
-        newSaleItem.setPrice(requestDto.getPrice());
-        newSaleItem.setRamGb(requestDto.getRamGb());
-        newSaleItem.setScreenSizeInch(requestDto.getScreenSizeInch());
-        newSaleItem.setQuantity((requestDto.getQuantity() == null || requestDto.getQuantity() < 0) ? 1 : requestDto.getQuantity());
-        newSaleItem.setStorageGb(requestDto.getStorageGb());
-        newSaleItem.setColor((color != null && !color.trim().isEmpty()) ? color.trim() : null);
-        newSaleItem.setCreatedOn(Instant.now());
-        newSaleItem.setUpdatedOn(Instant.now());
+        SaleItem newItem = new SaleItem();
+        newItem.setBrand(saleItemUtil.resolveBrand(dto));
+        newItem.setModel(trimFirstAndLastSentence(dto.getModel()));
+        newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
+        newItem.setPrice(dto.getPrice());
+        newItem.setRamGb(dto.getRamGb());
+        newItem.setScreenSizeInch(dto.getScreenSizeInch());
+        newItem.setQuantity(quantity);
+        newItem.setStorageGb(dto.getStorageGb());
+        newItem.setColor(color);
+        newItem.setCreatedOn(Instant.now());
+        newItem.setUpdatedOn(Instant.now());
 
-        SaleItem savedItem = saleItemRepository.saveAndFlush(newSaleItem);
-        return convertToDetailDto(savedItem); 
+        return convertToDetailDto(saleItemRepository.saveAndFlush(newItem));
     }
+
 
     @Transactional
     public SaleItemDetailDto updateSaleItem(Integer id, SaleItemRequestDto requestDto) {
@@ -128,40 +109,11 @@ public class SaleItemService {
 
         String model = trimFirstAndLastSentence(requestDto.getModel());
         String description = trimFirstAndLastSentence(requestDto.getDescription());
+        saleItemUtil.validateRequiredFields(requestDto);
+        Brand brand = saleItemUtil.resolveBrand(requestDto);
 
-        if (model == null || model.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Model is required.");
-        }
-
-        if (description == null || description.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Description is required.");
-        }
-
-        if (requestDto.getPrice() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price is required.");
-        }
-
-        String brandName = (requestDto.getNewBrandName() != null && !requestDto.getNewBrandName().isBlank())
-                ? requestDto.getNewBrandName().trim()
-                : (requestDto.getBrand() != null && requestDto.getBrand().getName() != null
-                ? requestDto.getBrand().getName().trim()
-                : null);
-
-        if (brandName == null || brandName.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand name is required.");
-        }
-
-        Brand brand = brandRepository.findByName(brandName)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Brand not found for name :: " + brandName));
-
-        String color = (requestDto.getColor() != null && !requestDto.getColor().trim().isEmpty())
-                ? requestDto.getColor().trim()
-                : null;
-
-        int quantity = (requestDto.getQuantity() == null || requestDto.getQuantity() < 0)
-                ? 1
-                : requestDto.getQuantity();
-
+        String color = saleItemUtil.sanitizeColor(requestDto.getColor());
+        int quantity = saleItemUtil.resolveQuantity(requestDto.getQuantity());
 
         saleItemToUpdate.setBrand(brand);
         saleItemToUpdate.setModel(model);
@@ -171,7 +123,7 @@ public class SaleItemService {
         saleItemToUpdate.setScreenSizeInch(requestDto.getScreenSizeInch());
         saleItemToUpdate.setRamGb(requestDto.getRamGb());
         saleItemToUpdate.setStorageGb(requestDto.getStorageGb());
-        saleItemToUpdate.setColor((color != null && !color.trim().isEmpty()) ? color.trim() : null);
+        saleItemToUpdate.setColor(color);
         saleItemToUpdate.setUpdatedOn(Instant.now());
 
         return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
@@ -186,6 +138,7 @@ public class SaleItemService {
         }
         saleItemRepository.deleteById(id);
     }
+
    public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
            List<String> filterBrands,
            Integer page,

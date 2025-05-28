@@ -28,14 +28,11 @@ public class SaleItemRequestDto {
 
     private Double screenSizeInch;
 
-    //@NotNull(message = "Quantity is required")
     private Integer quantity;
 
     private Integer storageGb;
 
     @Size(max = 255, message = "Color cannot exceed 255 characters")
     private String color;
-
-    @Size(max = 60, message = "New brand name must be less than 60 characters")
-    private String newBrandName;
 }
+

@@ -1,10 +1,8 @@
 package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
 import org.example.itbmshopbe.dtos.SaleItemPagedResponseDto;
 import org.example.itbmshopbe.services.SaleItemService;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
