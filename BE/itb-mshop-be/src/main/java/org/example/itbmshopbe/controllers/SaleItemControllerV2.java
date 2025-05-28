@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/v2/sale-items")
-@CrossOrigin(origins = "http://ip24nw3.sit.kmutt.ac.th")
+@CrossOrigin(origins = "${frontend.url}")
 @RequiredArgsConstructor
 public class SaleItemControllerV2 {
 

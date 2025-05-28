@@ -42,7 +42,7 @@ const isFormValid = computed(() => {
 
     (
       typeof newSaleItem.value.price === 'number' &&
-      newSaleItem.value.price >= 0
+      newSaleItem.value.price > 0
     ) &&
 
     (
@@ -84,7 +84,7 @@ const isFormValid = computed(() => {
 
     (
       typeof newSaleItem.value.quantity === 'number' &&
-      newSaleItem.value.quantity >= 0
+      newSaleItem.value.quantity > 0
     )
   );
 });
@@ -111,7 +111,7 @@ function validateInput(field) {
         : 'Description must be 1-16,384 characters long.';
       break;
     case 'price':
-      message = typeof value === 'number' && value >= 0
+      message = typeof value === 'number' && value > 0
         ? ''
         : 'Price must be non-negative integer.';
       break;
@@ -137,7 +137,7 @@ function validateInput(field) {
           : 'Color must be 1-40 characters long or not specified.';
       break;
     case 'quantity':
-      message = typeof value === 'number' && value >= 0
+      message = typeof value === 'number' && value > 0
         ? ''
         : 'Quantity must be non-negative integer.';
       break;
