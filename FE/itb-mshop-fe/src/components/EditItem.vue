@@ -2,7 +2,7 @@
 import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
 import { getItemById, getItems, editItem } from "@/lib/fetchUtils";
-import phoneImg from "../../public/phone.jpg";
+import phoneImg from "../../public/phone.png";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,6 +13,7 @@ const brandSelected = ref(null);
 
 const showValidateMessage = ref(false);
 const validateMessage = ref("");
+const validateField = ref("");
 
 const product = ref({
   id: null,
@@ -21,7 +22,7 @@ const product = ref({
     id: null,
     name: "",
   },
-  newBrandName: "",
+  brandName: "",
   description: "",
   price: 0,
   ramGb: 0, // OPTIONAL
@@ -34,11 +35,60 @@ const originalProduct = ref(null);
 
 const isFormValid = computed(() => {
   return (
-    product.value.newBrandName?.trim() &&
-    product.value.model.trim() !== "" &&
-    product.value.description.trim() !== "" &&
-    product.value.price > 0 &&
-    product.value.quantity > 0
+    product.value.brandName?.trim() !== '' &&
+
+    product.value.model.trim().length >= 1 &&
+    product.value.model.trim().length <= 60 &&
+
+    product.value.description.trim().length >= 1 &&
+    product.value.description.trim().length <= 16384 &&
+
+    (
+      typeof product.value.price === 'number' &&
+      product.value.price >= 0
+    ) &&
+
+    (
+      product.value.ramGb === null ||
+      product.value.ramGb === '' ||
+      (
+        typeof product.value.ramGb === 'number' &&
+        product.value.ramGb > 0
+      )
+    ) &&
+
+    (
+      product.value.screenSizeInch === null ||
+      product.value.screenSizeInch === '' ||
+      (
+        typeof product.value.screenSizeInch === 'number' &&
+        product.value.screenSizeInch > 0 &&
+        /^\d+(\.\d{1,2})?$/.test(String(product.value.screenSizeInch))
+      )
+    ) &&
+
+    (
+      product.value.storageGb === null ||
+      product.value.storageGb === '' ||
+      (
+        typeof product.value.storageGb === 'number' &&
+        product.value.storageGb > 0
+      )
+    ) &&
+
+    (
+      product.value.color === null ||
+      product.value.color.trim() === '' ||
+      (
+        product.value.color.trim().length >= 1 &&
+        product.value.color.trim().length <= 40
+      )
+    ) &&
+
+    (
+      typeof product.value.quantity === 'number' &&
+      product.value.quantity >= 0
+    )
   );
 });
 
@@ -54,71 +104,70 @@ const isSaveDisabled = computed(() => {
 });
 
 function validateInput(field) {
-  const value = newSaleItem.value[field]
+  const value = product.value[field];
+  let message = '';
 
   switch (field) {
     case 'brandName':
-      validateMessage.value = value?.trim()
+      message = value.trim() !== ''
         ? ''
-        : 'Brand must be selected.'
-      break
+        : 'Brand must be selected.';
+      break;
     case 'model':
-      validateMessage.value = value.trim().length >= 1 && value.trim().length <= 60
+      message = value.trim().length >= 1 && value.trim().length <= 60
         ? ''
-        : 'Model must be 1–60 characters long.'
-      break
+        : 'Model must be 1-60 characters long.'; 
+      break;
     case 'description':
-      validateMessage.value = value.length >= 1 && value.length <= 65535
+      message = value.trim().length >= 1 && value.trim().length <= 16384
         ? ''
-        : 'Description must be 1–65,535 characters long.'
-      break
+        : 'Description must be 1-16,384 characters long.';
+      break;
     case 'price':
-      validateMessage.value = Number.isInteger(value) && value >= 0
+      message = typeof value === 'number' && value >= 0
         ? ''
-        : 'Price must be non-negative integer.'
-      break
+        : 'Price must be non-negative integer.';
+      break;
     case 'ramGb':
-      validateMessage.value =
-        value === null || value === '' || (Number.isInteger(value) && value > 0)
-          ? ''
-          : 'RAM size must be positive integer or not specified.'
-      break
-    case 'screenSizeInch':
-      validateMessage.value =
-        value === null || value === '' ||
-        (!isNaN(screenValue) &&
-          screenValue > 0 &&
-          /^\d+(\.\d{1,2})?$/.test( String(screenValue) )
-        )
-          ? ''
-          : 'Screen size must be positive number with at most 2 decimal points or not specified.'
-      break
-    case 'storageGb':
-      validateMessage.value =
-        value === null || value === '' || (Number.isInteger(value) && value > 0)
-          ? ''
-          : 'Storage size must be positive integer or not specified.'
-      break
-    case 'color':
-      validateMessage.value =
-        value === null || value === '' || (value.trim().length >= 1 && value.trim().length <= 40)
-          ? ''
-          : 'Color must be 1–40 characters long or not specified.'
-      break
-    case 'quantity':
-      validateMessage.value = Number.isInteger(value) && value >= 0
+      message = value === null || value === '' || ( typeof value === 'number' && value > 0 )
         ? ''
-        : 'Quantity must be non-negative integer.'
-      break
+        : 'RAM size must be positive integer or not specified.';
+      break;
+    case 'screenSizeInch':
+      message = value === null || value === '' || ( typeof value === 'number' && value > 0 && /^\d+(\.\d{1,2})?$/.test( String(value) ) )
+        ? ''
+        : 'Screen size must be positive number with at most 2 decimal points or not specified.';
+      break;
+    case 'storageGb':
+      message = value === null || value === '' || ( typeof value === 'number' && value > 0 )
+        ? ''
+        : 'Storage size must be positive integer or not specified.';
+      break;
+    case 'color':
+      message =
+        value === null || value.trim() === '' || ( value.trim().length >= 1 && value.trim().length <= 40 )
+          ? ''
+          : 'Color must be 1-40 characters long or not specified.';
+      break;
+    case 'quantity':
+      message = typeof value === 'number' && value >= 0
+        ? ''
+        : 'Quantity must be non-negative integer.';
+      break;
   }
 
-  if (validateMessage.value !== '') {
-    showValidateMessage.value = true
-    setTimeout(() => {
-      showValidateMessage.value = false
-    }, 3000)
+  if (message) {
+    // Field is invalid
+    validateField.value = field;
+    validateMessage.value = message;
+    showValidateMessage.value = true;
   } else {
-    showValidateMessage.value = false
+    // Field became valid — only clear message if it's the one that caused the error
+    if (validateField.value === field) {
+      validateMessage.value = '';
+      showValidateMessage.value = false;
+      validateField.value = '';
+    }
   }
 }
 
@@ -148,11 +197,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById(
-      "http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items",
-      id
-    );
-    // const item = await getItemById('http://localhost:8080/v1/sale-items', id)
+    const item = await getItemById("http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items",id);
     if (!item || item?.status === 404) {
       router.push("/sale-items");
       alert("The requested sale item does not exist.");
@@ -166,7 +211,7 @@ onMounted(async () => {
         id: null,
         name: item.brandName,
       },
-      newBrandName: item.brandName,
+      brandName: item.brandName,
       description: item.description,
       price: item.price,
       ramGb: item.ramGb, // OPTIONAL
@@ -182,10 +227,7 @@ onMounted(async () => {
   }
 
   try {
-    const brand = await getItems(
-      "http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands"
-    );
-    // const brand = await getItems('http://localhost:8080/v1/brands')
+    const brand = await getItems("http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands");
     if (!brand || brand?.status === 404) {
       // alert('The requested sale brand does not exist.')
       return;
@@ -234,7 +276,6 @@ onMounted(async () => {
       <div
         v-if="showValidateMessage"
         class="itbms-message mb-6 p-4 text-sm font-medium text-red-800 bg-red-100 border border-red-300 rounded-lg shadow-sm"
-        role="alert"
       >
         {{ validateMessage }}
       </div>
@@ -264,10 +305,10 @@ onMounted(async () => {
             <div>
               <label class="block mb-1 font-semibold text-gray-700">Brand</label>
               <select
-                v-model="product.newBrandName"
+                v-model="product.brandName"
                 class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
               >
-                <option disabled value="">Select Brand</option>
+                <option value="">Select Brand</option>
                 <option
                   v-for="brand in brandSelected"
                   :key="brand.id"
@@ -283,7 +324,6 @@ onMounted(async () => {
               <input
                 v-model.trim="product.model"
                 @blur="validateInput('model')"
-                maxlength="60"
                 type="text"
                 class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required

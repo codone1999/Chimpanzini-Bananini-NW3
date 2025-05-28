@@ -2,14 +2,14 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getItemById, deleteItemById } from '@/lib/fetchUtils'
-import phoneImg from '../../public/phone.jpg';
+import phoneImg from '../../public/phone.png';
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
 const showModal = ref(false)
-const product = ref({"id":1,"model":"iPhone 14 Pro Max","brandName":"Apple","description":"ไอโฟนเรือธงรุ่นล่าสุด มาพร้อม Dynamic Island จอใหญ่สุดในตระกูล กล้องระดับโปร","price":42900,"ramGb":6,"screenSizeInch":6.7,"quantity":5,"storageGb":512,"color":"Space Black","createdOn":"2025-05-20T03:28:19Z","updatedOn":"2025-05-20T03:28:19Z"})
+const product = ref()
 
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
@@ -21,9 +21,7 @@ function confirmDelete() {
 async function handleDelete() {
   try {
     const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', id)
-    // const item = await deleteItemById('http://localhost:8080/v1/sale-items', id)
     if (!item || item?.status === 404 || item === 404) {
-      // alert('The requested sale item does not exist.')
       showModal.value = false
       router.push({ name: 'ListGallery', query: {failed_delete: true} })
       return
@@ -56,7 +54,6 @@ onMounted(async () => {
   
   try {
     const item = await getItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items', id)
-    // const item = await getItemById('http://localhost:8080/v1/sale-items', id)
     if (!item || item?.status === 404) {
       router.push('/sale-items')
       // alert('The requested sale item does not exist.')

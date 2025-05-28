@@ -17,7 +17,23 @@ const validateMessage = ref("");
 
 const isFormValid = computed(() => {
   return (
-    form.value.name?.trim()
+    (
+      form.value.name.length >= 1 && 
+      form.value.name.length <= 30 
+    ) &&
+
+    (
+      form.value.websiteUrl === '' || 
+      /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(form.value.websiteUrl)
+    ) &&
+
+    (
+      form.value.countryOfOrigin === '' || 
+      (
+        form.value.countryOfOrigin.length >= 1 && 
+        form.value.countryOfOrigin.length <= 80 
+      )
+    )
   )
 })
 
@@ -44,15 +60,12 @@ function validateInput(field) {
         : 'Brand name must be 1-30 characters long.'
       break
     case 'websiteUrl':
-      const url = value.trim()
-      const isEmpty = url === ''
-      const isValidUrl = /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(url)
-      validateMessage.value = isEmpty || isValidUrl
+      validateMessage.value = value === '' || /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(value)
         ? ''
         : 'Brand URL must be a valid URL or not specified.'
       break
     case 'countryOfOrigin':
-      validateMessage.value = value.length >= 1 && value.length <= 80 || value.trim() === ''
+      validateMessage.value = value === '' || (value.length >= 1 && value.length <= 80) 
         ? ''
         : 'Brand country of origin must be 1-80 characters long or not specified.'
       break
@@ -135,7 +148,7 @@ function validateInput(field) {
           <input
             type="checkbox"
             v-model="form.isActive"
-            class="itbms-isActive sr-only"
+            class="itbms-isActive absolute opacity-0 z-10"
           />
           <div
             class="relative w-11 h-6 rounded-full transition-colors duration-300"

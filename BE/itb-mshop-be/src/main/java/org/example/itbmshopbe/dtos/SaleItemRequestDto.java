@@ -21,13 +21,15 @@ public class SaleItemRequestDto {
     private String description;
 
     @NotNull(message = "Price is required")
-    @Positive(message = "Price must be a positive value")
+    @Min(value = 0, message = "Price must be a positive value")
     private Integer price;
 
     private Integer ramGb;
 
     private Double screenSizeInch;
 
+    @NotNull(message = "Quantity is required")
+    @Min(value = 0, message = "Quantity must be a positive value")
     private Integer quantity;
 
     private Integer storageGb;

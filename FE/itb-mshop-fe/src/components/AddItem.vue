@@ -2,7 +2,7 @@
 import { onMounted, ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { addItem, getItems } from "@/lib/fetchUtils";
-import phoneImg from "../../public/phone.jpg";
+import phoneImg from "../../public/phone.png";
 
 const route = useRoute();
 const router = useRouter();
@@ -38,13 +38,16 @@ const isFormValid = computed(() => {
     newSaleItem.value.model.trim().length <= 60 &&
 
     newSaleItem.value.description.trim().length >= 1 &&
-    newSaleItem.value.description.trim().length <= 65535 &&
+    newSaleItem.value.description.trim().length <= 16384 &&
 
-    typeof newSaleItem.value.price === 'number' &&
-    newSaleItem.value.price >= 0 &&
+    (
+      typeof newSaleItem.value.price === 'number' &&
+      newSaleItem.value.price >= 0
+    ) &&
 
     (
       newSaleItem.value.ramGb === null ||
+      newSaleItem.value.ramGb === '' ||
       (
         typeof newSaleItem.value.ramGb === 'number' &&
         newSaleItem.value.ramGb > 0
@@ -53,6 +56,7 @@ const isFormValid = computed(() => {
 
     (
       newSaleItem.value.screenSizeInch === null ||
+      newSaleItem.value.screenSizeInch === '' ||
       (
         typeof newSaleItem.value.screenSizeInch === 'number' &&
         newSaleItem.value.screenSizeInch > 0 &&
@@ -62,6 +66,7 @@ const isFormValid = computed(() => {
 
     (
       newSaleItem.value.storageGb === null ||
+      newSaleItem.value.storageGb === '' ||
       (
         typeof newSaleItem.value.storageGb === 'number' &&
         newSaleItem.value.storageGb > 0
@@ -77,10 +82,13 @@ const isFormValid = computed(() => {
       )
     ) &&
 
-    typeof newSaleItem.value.quantity === 'number' &&
-    newSaleItem.value.quantity >= 0
+    (
+      typeof newSaleItem.value.quantity === 'number' &&
+      newSaleItem.value.quantity >= 0
+    )
   );
 });
+
 
 function validateInput(field) {
   const value = newSaleItem.value[field];
@@ -93,32 +101,32 @@ function validateInput(field) {
         : 'Brand must be selected.';
       break;
     case 'model':
-      message = value.trim() !== '' && value.trim().length >= 1 && value.trim().length <= 60
+      message = value.trim().length >= 1 && value.trim().length <= 60
         ? ''
         : 'Model must be 1-60 characters long.'; 
       break;
     case 'description':
-      message = value.trim() !== '' && value.trim().length >= 1 && value.trim().length <= 65535
+      message = value.trim().length >= 1 && value.trim().length <= 16384
         ? ''
-        : 'Description must be 1-65,535 characters long.';
+        : 'Description must be 1-16,384 characters long.';
       break;
     case 'price':
-      message = value >= 0 && typeof value === 'number'
+      message = typeof value === 'number' && value >= 0
         ? ''
         : 'Price must be non-negative integer.';
       break;
     case 'ramGb':
-      message = value === null || value > 0 && typeof value === 'number'
+      message = value === null || typeof value === 'number' && value > 0
         ? ''
         : 'RAM size must be positive integer or not specified.';
       break;
     case 'screenSizeInch':
-      message = value === null || value > 0 && /^\d+(\.\d{1,2})?$/.test(String(value)) && typeof value === 'number'
+      message = value === null || ( typeof value === 'number' && value > 0 && /^\d+(\.\d{1,2})?$/.test( String(value) ) )
         ? ''
         : 'Screen size must be positive number with at most 2 decimal points or not specified.';
       break;
     case 'storageGb':
-      message = value === null || value > 0 && typeof value === 'number'
+      message = value === null || typeof value === 'number' && value > 0
         ? ''
         : 'Storage size must be positive integer or not specified.';
       break;
@@ -129,12 +137,12 @@ function validateInput(field) {
           : 'Color must be 1-40 characters long or not specified.';
       break;
     case 'quantity':
-      message = value >= 0 && !isNaN(value) && typeof value === 'number'
+      message = typeof value === 'number' && value >= 0
         ? ''
         : 'Quantity must be non-negative integer.';
       break;
   }
-
+  
   if (message) {
     // Field is invalid
     validateField.value = field;
@@ -177,7 +185,7 @@ onMounted(async () => {
     }
     brandSelected.value = brand;
   } catch (error) {
-    console.error("Failed to fetch product:", error);
+    console.error("Failed to fetch newSaleItem:", error);
   }
 });
 </script>
@@ -198,7 +206,7 @@ onMounted(async () => {
       </div>
 
       <!-- Title -->
-      <h1 class="text-3xl font-bold text-gray-900 mb-8">Add New Product</h1>
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">Add New newSaleItem</h1>
 
       <!-- Pop Up Message -->
       <div

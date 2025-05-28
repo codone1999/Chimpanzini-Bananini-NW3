@@ -7,6 +7,7 @@ export default defineConfig({
     // baseAPI: 'http://ip24nw3.sit.kmutt.ac.th:8080',
     baseUrl: 'http://intproj24.sit.kmutt.ac.th/nw3/',
     baseAPI: 'http://intproj24.sit.kmutt.ac.th/nw3/api/',
+    experimentalRunAllSpecs: true,
     setupNodeEvents(on, config) {
       // implement node event listeners here
     },

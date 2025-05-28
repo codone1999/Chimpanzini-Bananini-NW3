@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { getItems } from '@/lib/fetchUtils'
 import { useRoute, useRouter } from 'vue-router'
-import phoneImg from '../../public/phone.jpg'
+import phoneImg from '../../public/phone.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -394,7 +394,7 @@ onMounted(async () => {
           <img
             :src="phoneImg"
             :alt="product.model"
-            class="w-full h-56 object-contain bg-gray-100"
+            class="w-full h-56 object-contain bg-gray-300"
           />
 
           <div class="p-5 flex flex-col flex-grow text-center">

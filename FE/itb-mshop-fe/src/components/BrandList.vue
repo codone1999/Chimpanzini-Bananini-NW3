@@ -13,12 +13,7 @@ const successMessage = ref('')
 const deleteMessage = ref('')
 const isCanDelete = ref(true)
 
-const brands = ref([
-  { id: 1, "name": "Samsung"},
-  { id: 2, "name": "Apple"},
-  { id: 3, "name": "Xiaomi"},
-  { id: 4, "name": "Huawei"}
-])
+const brands = ref([])
 
 const selectedBrandId = ref(null)
 const selectedBrand = ref(null)
@@ -62,13 +57,23 @@ async function handleDelete() {
   handleDeleteSuccess('The brand has been deleted.')
 }
 
-function handleDeleteSuccess(message){
+async function handleDeleteSuccess(message){
   showSuccessMessage.value = true
   successMessage.value = message
 
   setTimeout(() => {
     showSuccessMessage.value = false
   }, 3000)
+
+  // Fetch the updated brand list
+  try {
+    const updatedItems = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
+    if (updatedItems && updatedItems !== 404) {
+      brands.value = updatedItems
+    }
+  } catch (err) {
+    console.error('Failed to reload brand list:', err)
+  }
 }
 
 function handleQuerySuccess(type, message) {
