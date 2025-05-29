@@ -18,6 +18,15 @@ const validationMessages = ref({});
 
 const originalBrand = ref(null)
 
+function isValidUrl(url) {
+  try {
+    new URL(url)
+    return url.startsWith('http://') || url.startsWith('https://')
+  } catch {
+    return false
+  }
+}
+
 const isFormValid = computed(() => {
   return (
     (
@@ -27,7 +36,7 @@ const isFormValid = computed(() => {
 
     (
       form.value.websiteUrl === '' || 
-      /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(form.value.websiteUrl)
+      isValidUrl(form.value.websiteUrl)
     ) &&
 
     (
@@ -73,7 +82,7 @@ function validateInput(field) {
         : 'Brand name must be 1-30 characters long.'
       break
     case 'websiteUrl':
-      message = value === '' || /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(value)
+      message = value === '' || isValidUrl(form.value.websiteUrl)
         ? ''
         : 'Brand URL must be a valid URL or not specified.'
       break

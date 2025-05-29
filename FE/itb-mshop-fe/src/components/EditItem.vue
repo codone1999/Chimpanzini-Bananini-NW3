@@ -31,6 +31,11 @@ const product = ref({
 });
 const originalProduct = ref(null);
 
+function isValidDecimal(value) {
+  const parts = String(value).split('.')
+  return parts.length === 1 || (parts.length === 2 && parts[1].length <= 2)
+}
+
 const isFormValid = computed(() => {
   return (
     product.value.brandName?.trim() !== '' &&
@@ -61,7 +66,7 @@ const isFormValid = computed(() => {
       (
         typeof product.value.screenSizeInch === 'number' &&
         product.value.screenSizeInch > 0 &&
-        /^\d+(\.\d{1,2})?$/.test(String(product.value.screenSizeInch))
+        isValidDecimal(product.value.screenSizeInch)
       )
     ) &&
 
@@ -132,7 +137,7 @@ function validateInput(field) {
         : 'RAM size must be positive integer or not specified.';
       break;
     case 'screenSizeInch':
-      message = value === null || value === '' || ( typeof value === 'number' && value > 0 && /^\d+(\.\d{1,2})?$/.test( String(value) ) )
+      message = value === null || value === '' || ( typeof value === 'number' && value > 0 && isValidDecimal(product.value.screenSizeInch) )
         ? ''
         : 'Screen size must be positive number with at most 2 decimal points or not specified.';
       break;
