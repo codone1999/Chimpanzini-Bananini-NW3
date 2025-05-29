@@ -1,38 +1,37 @@
 <script setup>
-import { onMounted, ref, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { addItem, getItems } from "@/lib/fetchUtils";
-import phoneImg from "../../public/phone.png";
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getItems, addItem } from '@/lib/fetchUtils'
+import phoneImg from '../../public/phone.png'
 
-const route = useRoute();
-const router = useRouter();
-const from = route.query.from;
+const route = useRoute()
+const router = useRouter()
+const from = route.query.from
 
-const showValidateMessage = ref(false);
-const validateMessage = ref("");
-const validateField = ref("");
+const brandSelected = ref([{id: 1, name: 'HEHE'}])
 
-const brandSelected = ref(null);
 const newSaleItem = ref({
   id: null,
   brand: {
     id: null,
-    name: "",
-  }, // Receive like {id: 1, name: Example}
-  brandName: "",
-  model: "",
-  description: "",
-  price: "",
-  quantity: "",
-  screenSizeInch: null, // OPTIONAL
-  ramGb: null, // OPTIONAL
-  storageGb: null, // OPTIONAL
-  color: null, // OPTIONAL
-});
+    name: '',
+  },
+  brandName: '',
+  model: '',
+  description: '',
+  price: '',
+  quantity: '',
+  screenSizeInch: null,
+  ramGb: null,
+  storageGb: null,
+  color: null,
+})
+
+const validationMessages = ref({})
 
 const isFormValid = computed(() => {
   return (
-    newSaleItem.value.brandName?.trim() !== '' &&
+    newSaleItem.value.brandName.trim() !== '' &&
 
     newSaleItem.value.model.trim().length >= 1 &&
     newSaleItem.value.model.trim().length <= 60 &&
@@ -40,16 +39,14 @@ const isFormValid = computed(() => {
     newSaleItem.value.description.trim().length >= 1 &&
     newSaleItem.value.description.trim().length <= 16384 &&
 
-    (
-      typeof newSaleItem.value.price === 'number' &&
-      newSaleItem.value.price >= 0
-    ) &&
+    typeof newSaleItem.value.price === 'number' &&
+    newSaleItem.value.price >= 0 &&
 
     (
       newSaleItem.value.ramGb === null ||
       newSaleItem.value.ramGb === '' ||
       (
-        typeof newSaleItem.value.ramGb === 'number' &&
+        typeof newSaleItem.value.ramGb === 'number' && 
         newSaleItem.value.ramGb > 0
       )
     ) &&
@@ -68,7 +65,7 @@ const isFormValid = computed(() => {
       newSaleItem.value.storageGb === null ||
       newSaleItem.value.storageGb === '' ||
       (
-        typeof newSaleItem.value.storageGb === 'number' &&
+        typeof newSaleItem.value.storageGb === 'number' && 
         newSaleItem.value.storageGb > 0
       )
     ) &&
@@ -82,57 +79,54 @@ const isFormValid = computed(() => {
       )
     ) &&
 
-    (
-      typeof newSaleItem.value.quantity === 'number' &&
-      newSaleItem.value.quantity >= 0
-    )
-  );
-});
-
+    
+    typeof newSaleItem.value.quantity === 'number' &&
+    newSaleItem.value.quantity >= 0
+  )
+})
 
 function validateInput(field) {
-  const value = newSaleItem.value[field];
-  let message = '';
+  const value = newSaleItem.value[field]
+  let message = ''
 
   switch (field) {
     case 'brandName':
-      message = value.trim() !== ''
-        ? ''
+      message = value.trim() !== '' 
+        ? '' 
         : 'Brand must be selected.';
-      break;
+      break
     case 'model':
       message = value.trim().length >= 1 && value.trim().length <= 60
         ? ''
         : 'Model must be 1-60 characters long.'; 
-      break;
+      break
     case 'description':
       message = value.trim().length >= 1 && value.trim().length <= 16384
         ? ''
         : 'Description must be 1-16,384 characters long.';
-      break;
+      break
     case 'price':
       message = typeof value === 'number' && value >= 0
         ? ''
         : 'Price must be non-negative integer.';
-      break;
+      break
     case 'ramGb':
-      message = value === null || typeof value === 'number' && value > 0
+      message = value === null || value === '' || (typeof value === 'number' && value > 0)
         ? ''
         : 'RAM size must be positive integer or not specified.';
-      break;
+      break
     case 'screenSizeInch':
-      message = value === null || ( typeof value === 'number' && value > 0 && /^\d+(\.\d{1,2})?$/.test( String(value) ) )
-        ? ''
-        : 'Screen size must be positive number with at most 2 decimal points or not specified.';
-      break;
+      message = value === null || value === '' || (typeof value === 'number' && value > 0 && /^\d+(\.\d{1,2})?$/.test(String(value)))
+          ? ''
+          : 'Screen size must be positive number with at most 2 decimal points or not specified.';
+      break
     case 'storageGb':
-      message = value === null || typeof value === 'number' && value > 0
+      message = value === null || value === '' || (typeof value === 'number' && value > 0)
         ? ''
         : 'Storage size must be positive integer or not specified.';
       break;
     case 'color':
-      message =
-        value === null || value.trim() === '' || (value.trim().length >= 1 && value.trim().length <= 40)
+      message = value === null || value.trim() === '' || (value.trim().length >= 1 && value.trim().length <= 40)
           ? ''
           : 'Color must be 1-40 characters long or not specified.';
       break;
@@ -142,52 +136,42 @@ function validateInput(field) {
         : 'Quantity must be non-negative integer.';
       break;
   }
-  
+
   if (message) {
-    // Field is invalid
-    validateField.value = field;
-    validateMessage.value = message;
-    showValidateMessage.value = true;
+    validationMessages.value[field] = message
   } else {
-    // Field became valid — only clear message if it's the one that caused the error
-    if (validateField.value === field) {
-      validateMessage.value = '';
-      showValidateMessage.value = false;
-      validateField.value = '';
-    }
+    validationMessages.value[field] = null
   }
+}
+
+const inputRefs = ref([])
+
+function focusNext(index) {
+  inputRefs.value[index + 1]?.focus()
 }
 
 async function handleSubmit() {
   try {
-    const addedItem = await addItem(
-      "http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items",
-      newSaleItem.value
-    );
+    const addedItem = await addItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items',newSaleItem.value)
     if (addedItem) {
-      if (from === "Gallery")
-        router.push({ name: "ListGallery", query: { added: "true" } });
-      else router.push({ name: "ListSaleItem", query: { added: "true" } });
+      router.push({
+        name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItem',
+        query: { added: 'true' },
+      })
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error('Error:', error)
   }
 }
 
 onMounted(async () => {
   try {
-    const brand = await getItems(
-      "http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands"
-    );
-    if (!brand || brand?.status === 404) {
-      // alert('The requested sale brand does not exist.')
-      return;
-    }
-    brandSelected.value = brand;
+    const brands = await getItems('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands')
+    brandSelected.value = brands
   } catch (error) {
-    console.error("Failed to fetch newSaleItem:", error);
+    console.error('Error loading brands:', error)
   }
-});
+})
 </script>
 
 <template>
@@ -207,14 +191,6 @@ onMounted(async () => {
 
       <!-- Title -->
       <h1 class="text-3xl font-bold text-gray-900 mb-8">Add New newSaleItem</h1>
-
-      <!-- Pop Up Message -->
-      <div
-        v-if="showValidateMessage"
-        class="itbms-message mb-6 p-4 text-sm font-medium text-red-800 bg-red-100 border border-red-300 rounded-lg shadow-sm"
-      >
-        {{ validateMessage }}
-      </div>
 
       <!-- Main -->
       <div class="bg-white rounded-2xl shadow-xl p-10">
@@ -245,6 +221,8 @@ onMounted(async () => {
               <select
                 v-model="newSaleItem.brandName"
                 @blur="validateInput('brandName')"
+                :ref="el => inputRefs[0] = el"
+                @keydown.enter.prevent="focusNext(0)"
                 class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">Select Brand</option>
@@ -256,6 +234,9 @@ onMounted(async () => {
                   {{ brand.name }}
                 </option>
               </select>
+              <p v-if="validationMessages.brandName" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.brandName }}
+              </p>
             </div>
 
             <div>
@@ -263,10 +244,15 @@ onMounted(async () => {
               <input
                 v-model.trim="newSaleItem.model"
                 @blur="validateInput('model')"
+                :ref="el => inputRefs[1] = el"
+                @keydown.enter.prevent="focusNext(1)"
                 type="text"
                 class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.model" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.model }}
+              </p>
             </div>
 
             <div>
@@ -274,10 +260,15 @@ onMounted(async () => {
               <input
                 v-model.number="newSaleItem.price"
                 @blur="validateInput('price')"
+                :ref="el => inputRefs[2] = el"
+                @keydown.enter.prevent="focusNext(2)"
                 type="number"
                 class="itbms-price w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.price" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.price }}
+              </p>
             </div>
 
             <div>
@@ -285,10 +276,15 @@ onMounted(async () => {
               <textarea
                 v-model.trim="newSaleItem.description"
                 @blur="validateInput('description')"
+                :ref="el => inputRefs[3] = el"
+                @keydown.enter.prevent="focusNext(3)"
                 rows="3"
                 class="itbms-description w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               ></textarea>
+              <p v-if="validationMessages.description" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.description }}
+              </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -297,37 +293,57 @@ onMounted(async () => {
                 <input
                   v-model.number="newSaleItem.ramGb"
                   @blur="validateInput('ramGb')"
+                  :ref="el => inputRefs[4] = el"
+                  @keydown.enter.prevent="focusNext(4)"
                   type="number"
                   class="itbms-ramGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.ramGb" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.ramGb }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
                 <input
                   v-model.number="newSaleItem.screenSizeInch"
                   @blur="validateInput('screenSizeInch')"
+                  :ref="el => inputRefs[5] = el"
+                  @keydown.enter.prevent="focusNext(5)"
                   type="number"
                   step="any"
                   class="itbms-screenSizeInch w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.screenSizeInch" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.screenSizeInch }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Storage (GB)</label>
                 <input
                   v-model.number="newSaleItem.storageGb"
                   @blur="validateInput('storageGb')"
+                  :ref="el => inputRefs[6] = el"
+                  @keydown.enter.prevent="focusNext(6)"
                   type="number"
                   class="itbms-storageGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.storageGb" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.storageGb }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Color</label>
                 <input
                   v-model.trim="newSaleItem.color"
                   @blur="validateInput('color')"
+                  :ref="el => inputRefs[7] = el"
+                  @keydown.enter.prevent="focusNext(7)"
                   type="text"
                   class="itbms-color w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.color" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.color }}
+                </p>
               </div>
             </div>
 
@@ -336,10 +352,15 @@ onMounted(async () => {
               <input
                 v-model.number="newSaleItem.quantity"
                 @blur="validateInput('quantity')"
+                :ref="el => inputRefs[8] = el"
+                @keydown.enter.prevent="validateInput('quantity')"
                 type="number"
                 class="itbms-quantity w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.quantity" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.quantity }}
+              </p>
             </div>
 
             <!-- Buttons -->

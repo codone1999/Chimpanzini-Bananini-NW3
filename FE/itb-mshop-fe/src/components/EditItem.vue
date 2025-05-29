@@ -11,9 +11,7 @@ const from = route.query.from;
 
 const brandSelected = ref(null);
 
-const showValidateMessage = ref(false);
-const validateMessage = ref("");
-const validateField = ref("");
+const validationMessages = ref({});
 
 const product = ref({
   id: null,
@@ -157,18 +155,16 @@ function validateInput(field) {
   }
 
   if (message) {
-    // Field is invalid
-    validateField.value = field;
-    validateMessage.value = message;
-    showValidateMessage.value = true;
+    validationMessages.value[field] = message
   } else {
-    // Field became valid — only clear message if it's the one that caused the error
-    if (validateField.value === field) {
-      validateMessage.value = '';
-      showValidateMessage.value = false;
-      validateField.value = '';
-    }
+    validationMessages.value[field] = null
   }
+}
+
+const inputRefs = ref([])
+
+function focusNext(index) {
+  inputRefs.value[index + 1]?.focus()
 }
 
 async function handleSubmit() {
@@ -272,14 +268,6 @@ onMounted(async () => {
         <span>{{ product.color ?? "" }}</span>
       </h1>
 
-      <!-- Pop Up Message -->
-      <div
-        v-if="showValidateMessage"
-        class="itbms-message mb-6 p-4 text-sm font-medium text-red-800 bg-red-100 border border-red-300 rounded-lg shadow-sm"
-      >
-        {{ validateMessage }}
-      </div>
-
       <!-- Main -->
       <div class="bg-white rounded-2xl shadow-xl p-10">
         <form
@@ -306,6 +294,9 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Brand</label>
               <select
                 v-model="product.brandName"
+                @blur="validateInput('brandName')"
+                :ref="el => inputRefs[0] = el"
+                @keydown.enter.prevent="focusNext(0)"
                 class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">Select Brand</option>
@@ -317,6 +308,9 @@ onMounted(async () => {
                   {{ brand.name }}
                 </option>
               </select>
+              <p v-if="validationMessages.brandName" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.brandName }}
+              </p>
             </div>
 
             <div>
@@ -324,10 +318,15 @@ onMounted(async () => {
               <input
                 v-model.trim="product.model"
                 @blur="validateInput('model')"
+                :ref="el => inputRefs[1] = el"
+                @keydown.enter.prevent="focusNext(1)"
                 type="text"
                 class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.model" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.model }}
+              </p>
             </div>
 
             <div>
@@ -335,10 +334,15 @@ onMounted(async () => {
               <input
                 v-model.number="product.price"
                 @blur="validateInput('price')"
+                :ref="el => inputRefs[2] = el"
+                @keydown.enter.prevent="focusNext(2)"
                 type="number"
                 class="itbms-price w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.price" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.price }}
+              </p>
             </div>
 
             <div>
@@ -346,10 +350,15 @@ onMounted(async () => {
               <textarea
                 v-model.trim="product.description"
                 @blur="validateInput('description')"
+                :ref="el => inputRefs[3] = el"
+                @keydown.enter.prevent="focusNext(3)"
                 rows="3"
                 class="itbms-description w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               ></textarea>
+              <p v-if="validationMessages.description" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.description }}
+              </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -358,37 +367,57 @@ onMounted(async () => {
                 <input
                   v-model.number="product.ramGb"
                   @blur="validateInput('ramGb')"
+                  :ref="el => inputRefs[4] = el"
+                 @keydown.enter.prevent="focusNext(4)"
                   type="number"
                   class="itbms-ramGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.ramGb" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.ramGb }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
                 <input
                   v-model.number="product.screenSizeInch"
                   @blur="validateInput('screenSizeInch')"
+                  :ref="el => inputRefs[5] = el"
+                  @keydown.enter.prevent="focusNext(5)"
                   type="number"
                   step="any"
                   class="itbms-screenSizeInch w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.screenSizeInch" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.screenSizeInch }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Storage (GB)</label>
                 <input
                   v-model.number="product.storageGb"
                   @blur="validateInput('storageGb')"
+                  :ref="el => inputRefs[6] = el"
+                  @keydown.enter.prevent="focusNext(6)"
                   type="number"
                   class="itbms-storageGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.storageGb" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.storageGb }}
+                </p>
               </div>
               <div>
                 <label class="block mb-1 font-semibold text-gray-700">Color</label>
                 <input
                   v-model.trim="product.color"
                   @blur="validateInput('color')"
+                  :ref="el => inputRefs[7] = el"
+                  @keydown.enter.prevent="focusNext(7)"
                   type="text"
                   class="itbms-color w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 />
+                <p v-if="validationMessages.color" class="itbms-message text-sm text-red-600 mt-1">
+                  {{ validationMessages.color }}
+                </p>
               </div>
             </div>
 
@@ -397,10 +426,15 @@ onMounted(async () => {
               <input
                 v-model.number="product.quantity"
                 @blur="validateInput('quantity')"
+                :ref="el => inputRefs[8] = el"
+                @keydown.enter.prevent="validateInput('quantity')"
                 type="number"
                 class="itbms-quantity w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
               />
+              <p v-if="validationMessages.quantity" class="itbms-message text-sm text-red-600 mt-1">
+                {{ validationMessages.quantity }}
+              </p>
             </div>
 
             <!-- Buttons -->

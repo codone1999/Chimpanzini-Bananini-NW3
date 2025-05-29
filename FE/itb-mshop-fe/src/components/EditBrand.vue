@@ -14,8 +14,7 @@ const form = ref({
   "countryOfOrigin": ''
 })
 
-const showValidateMessage = ref(false);
-const validateMessage = ref("");
+const validationMessages = ref({});
 
 const originalBrand = ref(null)
 
@@ -65,34 +64,40 @@ async function handleSubmit() {
 
 function validateInput(field) {
   let value = form.value[field]
+  let message = ''
 
   switch (field) {
     case 'name':
-      validateMessage.value = value.length >= 1 && value.length <= 30
+      message = value.length >= 1 && value.length <= 30
         ? ''
         : 'Brand name must be 1-30 characters long.'
       break
     case 'websiteUrl':
-      validateMessage.value = value === '' || /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(value)
+      message = value === '' || /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(value)
         ? ''
         : 'Brand URL must be a valid URL or not specified.'
       break
     case 'countryOfOrigin':
-      validateMessage.value = value === '' || (value.length >= 1 && value.length <= 80) 
+      message = value === '' || (value.length >= 1 && value.length <= 80) 
         ? ''
         : 'Brand country of origin must be 1-80 characters long or not specified.'
       break
   }
   
-  if (validateMessage.value !== ''){
-    showValidateMessage.value = true;
-    setTimeout(() => {
-      showValidateMessage.value = false;
-    }, 3000);
+  if (message) {
+    validationMessages.value[field] = message
   } else {
-    showValidateMessage.value = false;
+    validationMessages.value[field] = null
   }
 }
+
+
+const inputRefs = ref([])
+
+function focusNext(index) {
+  inputRefs.value[index + 1]?.focus()
+}
+
 
 onMounted(async () => {
   try {
@@ -119,7 +124,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-8 bg-white rounded-lg shadow-md max-w-3xl mx-auto mb-32">
+  <div class="p-8 bg-white rounded-lg shadow-md max-w-3xl mx-auto mt-16 mb-32">
     <!-- Breadcrumb -->
     <div class="text-sm text-gray-500 mb-6 flex items-center gap-2">
       <router-link
@@ -139,15 +144,6 @@ onMounted(async () => {
       <span class="font-semibold text-black">Edit Brand</span>
     </div>
 
-    <!-- Pop Up Message -->
-    <div
-      v-if="showValidateMessage"
-      class="itbms-message mb-6 p-4 text-sm font-medium text-red-800 bg-red-100 border border-red-300 rounded-lg shadow-sm"
-      role="alert"
-    >
-      {{ validateMessage }}
-    </div>
-
     <!-- Form -->
     <form class="space-y-6">
       <!-- Name -->
@@ -158,10 +154,15 @@ onMounted(async () => {
         <input
           v-model.trim="form.name"
           @blur="validateInput('name')"
+          :ref="el => inputRefs[0] = el"
+          @keydown.enter.prevent="focusNext(0)"
           type="text"
           class="itbms-name mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
           required
         />
+        <p v-if="validationMessages.name" class="itbms-message text-sm text-red-600 mt-1">
+          {{ validationMessages.name }}
+        </p>
       </div>
 
       <!-- Website URL -->
@@ -170,9 +171,14 @@ onMounted(async () => {
         <input
           v-model.trim="form.websiteUrl"
           @blur="validateInput('websiteUrl')"
+          :ref="el => inputRefs[1] = el"
+          @keydown.enter.prevent="focusNext(1)"
           type="url"
           class="itbms-websiteUrl mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
+        <p v-if="validationMessages.websiteUrl" class="itbms-message text-sm text-red-600 mt-1">
+          {{ validationMessages.websiteUrl }}
+        </p>
       </div>
 
       <!-- Active Toggle -->
@@ -202,9 +208,14 @@ onMounted(async () => {
         <input
           v-model.trim="form.countryOfOrigin"
           @blur="validateInput('countryOfOrigin')"
+          :ref="el => inputRefs[2] = el"
+          @keydown.enter.prevent="validateInput('countryOfOrigin')"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
+        <p v-if="validationMessages.countryOfOrigin" class="itbms-message text-sm text-red-600 mt-1">
+          {{ validationMessages.countryOfOrigin }}
+        </p>
       </div>
 
       <!-- Buttons -->
