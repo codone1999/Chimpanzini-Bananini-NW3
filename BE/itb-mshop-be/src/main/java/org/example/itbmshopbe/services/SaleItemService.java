@@ -139,62 +139,47 @@ public class SaleItemService {
         saleItemRepository.deleteById(id);
     }
 
-   public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
-           List<String> filterBrands,
-           Integer page,
-           Integer size,
-           String sortField,
-           String sortDirection) {
+    public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
+            List<String> filterBrands,
+            Integer page,
+            Integer size,
+            String sortField,
+            String sortDirection) {
 
-       if (page == null || page < 0) {
-           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
-       }
-       int pageSize = (size == null || size <= 0) ? 10 : size;
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
+        }
+        int pageSize = (size == null || size <= 0) ? 10 : size;
 
-       Sort.Direction direction = Sort.Direction.ASC;
-       if ("desc".equalsIgnoreCase(sortDirection)) {
-           direction = Sort.Direction.DESC;
-       }
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
+        Sort.Order order = new Sort.Order(direction, sortBy).ignoreCase();
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
 
-       String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
-       Sort.Order order = new Sort.Order(direction, sortBy).ignoreCase();
-       Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
+        Page<SaleItem> saleItemsPage;
 
-       Page<SaleItem> saleItemsPage;
+        if (filterBrands != null && !filterBrands.isEmpty()) {
+            saleItemsPage = saleItemRepository.findByBrand_NameIgnoreCaseIn(filterBrands, pageable);
+        } else {
+            saleItemsPage = saleItemRepository.findAll(pageable);
+        }
 
-       if (filterBrands != null && !filterBrands.isEmpty()) {
-           List<String> validBrandNames = brandRepository.findAll().stream()
-                   .map(brand -> brand.getName().toLowerCase())
-                   .filter(name -> filterBrands.stream()
-                           .map(String::toLowerCase)
-                           .collect(Collectors.toSet())
-                           .contains(name))
-                   .collect(Collectors.toList());
+        List<SaleItemDetailDto> content = saleItemsPage.getContent().stream()
+                .map(this::convertToDetailDto)
+                .collect(Collectors.toList());
 
-           if (validBrandNames.isEmpty()) {
-               saleItemsPage = Page.empty(pageable);
-           } else {
-               saleItemsPage = saleItemRepository.findByBrand_NameIgnoreCaseIn(validBrandNames, pageable);
-           }
+        SaleItemPagedResponseDto responseDto = new SaleItemPagedResponseDto();
+        responseDto.setContent(content);
+        responseDto.setLast(saleItemsPage.isLast());
+        responseDto.setFirst(saleItemsPage.isFirst());
+        responseDto.setTotalPages(saleItemsPage.getTotalPages());
+        responseDto.setTotalElements(saleItemsPage.getTotalElements());
+        responseDto.setSize(saleItemsPage.getSize());
+        responseDto.setPage(saleItemsPage.getNumber());
+        responseDto.setSort(saleItemsPage.getSort().isSorted() ? saleItemsPage.getSort().toString().replace(": ", ":") : null);
 
-       } else {
-           saleItemsPage = saleItemRepository.findAll(pageable);
-       }
+        return responseDto;
+    }
 
-       List<SaleItemDetailDto> content = saleItemsPage.getContent().stream()
-               .map(this::convertToDetailDto)
-               .collect(Collectors.toList());
 
-       SaleItemPagedResponseDto responseDto = new SaleItemPagedResponseDto();
-       responseDto.setContent(content);
-       responseDto.setLast(saleItemsPage.isLast());
-       responseDto.setFirst(saleItemsPage.isFirst());
-       responseDto.setTotalPages(saleItemsPage.getTotalPages());
-       responseDto.setTotalElements(saleItemsPage.getTotalElements());
-       responseDto.setSize(saleItemsPage.getSize());
-       responseDto.setPage(saleItemsPage.getNumber());
-       responseDto.setSort(saleItemsPage.getSort().isSorted() ? saleItemsPage.getSort().toString().replace(": ", ":") : null);
-
-       return responseDto;
-   }
 }
