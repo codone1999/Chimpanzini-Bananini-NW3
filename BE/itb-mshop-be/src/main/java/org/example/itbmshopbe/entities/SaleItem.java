@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -58,14 +59,12 @@ public class SaleItem {
     @Column(name = "color")
     private String color;
 
-    @NotNull
     @Column(name = "createdOn", nullable = false)
     @CreationTimestamp
     private Instant createdOn;
 
-    @NotNull
     @Column(name = "updatedOn", nullable = false)
-    @CreationTimestamp
+    @UpdateTimestamp
     private Instant updatedOn;
 
 }

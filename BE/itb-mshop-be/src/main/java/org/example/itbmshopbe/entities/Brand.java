@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -36,11 +38,11 @@ public class Brand {
     @Column(name="countryOfOrigin",length = 80)
     private String countryOfOrigin;
 
-    @NotNull
+    @CreationTimestamp
     @Column(name = "createdOn", nullable = false)
     private Instant createdOn;
 
-    @NotNull
+    @UpdateTimestamp
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
 

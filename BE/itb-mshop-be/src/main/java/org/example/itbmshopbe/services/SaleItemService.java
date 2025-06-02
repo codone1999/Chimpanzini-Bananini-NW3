@@ -5,12 +5,13 @@ import org.example.itbmshopbe.dtos.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
 import org.example.itbmshopbe.dtos.SaleItemPagedResponseDto;
 import org.example.itbmshopbe.dtos.SaleItemRequestDto;
-import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
+import org.example.itbmshopbe.utils.ListMapper;
 import org.example.itbmshopbe.utils.SaleItemUtil;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
+
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 import static org.example.itbmshopbe.utils.Util.trimFirstAndLastSentence;
 
@@ -33,50 +34,22 @@ public class SaleItemService {
     private final SaleItemRepository saleItemRepository;
     private final BrandRepository brandRepository;
     private final SaleItemUtil saleItemUtil;
+    private final ListMapper listMapper;
+    private final ModelMapper modelMapper;
 
     private SaleItem findSaleItemById(Integer id){
         return saleItemRepository.findById(id)
                 .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
     }
 
-    private SaleItemGalleryDto convertToGalleryDto(SaleItem saleItem){
-        SaleItemGalleryDto dto = new SaleItemGalleryDto();
-        dto.setId(saleItem.getId());
-        dto.setModel(saleItem.getModel());
-        dto.setBrandName(saleItem.getBrand().getName());
-        dto.setPrice(saleItem.getPrice());
-        dto.setRamGb(saleItem.getRamGb());
-        dto.setStorageGb(saleItem.getStorageGb());
-        dto.setColor(saleItem.getColor());
-        return dto;
-    }
-
-    private SaleItemDetailDto convertToDetailDto(SaleItem saleItem) {
-        SaleItemDetailDto dto = new SaleItemDetailDto();
-        dto.setId(saleItem.getId());
-        dto.setModel(saleItem.getModel());
-        dto.setBrandName(saleItem.getBrand() != null ? saleItem.getBrand().getName() : "Unknown");
-        dto.setDescription(saleItem.getDescription());
-        dto.setPrice(saleItem.getPrice());
-        dto.setRamGb(saleItem.getRamGb());
-        dto.setScreenSizeInch(saleItem.getScreenSizeInch());
-        dto.setQuantity(saleItem.getQuantity());
-        dto.setStorageGb(saleItem.getStorageGb());
-        dto.setColor(saleItem.getColor());
-        dto.setCreatedOn(saleItem.getCreatedOn());
-        dto.setUpdatedOn(saleItem.getUpdatedOn());
-        return dto;
-    }
-
-
     public List<SaleItemGalleryDto> getAllSaleItemsForGallery(){
-        return saleItemRepository.findAll().stream()
-                .map(saleItem -> convertToGalleryDto(saleItem))
-                .collect(Collectors.toList());
+        List<SaleItem> saleItems = saleItemRepository.findAll();
+        return listMapper.mapList(saleItems, SaleItemGalleryDto.class, modelMapper);
     }
 
     public SaleItemDetailDto getSaleItemDetails(Integer id){
-        return convertToDetailDto(findSaleItemById(id));
+        SaleItem saleItem = findSaleItemById(id);
+        return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public SaleItemDetailDto addSaleItem(SaleItemRequestDto dto) {
@@ -89,45 +62,28 @@ public class SaleItemService {
         SaleItem newItem = new SaleItem();
         newItem.setBrand(saleItemUtil.resolveBrand(dto));
         newItem.setModel(trimFirstAndLastSentence(dto.getModel()));
-        newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
-        newItem.setPrice(dto.getPrice());
-        newItem.setRamGb(dto.getRamGb());
-        newItem.setScreenSizeInch(dto.getScreenSizeInch());
-        newItem.setQuantity(quantity);
-        newItem.setStorageGb(dto.getStorageGb());
         newItem.setColor(color);
-        newItem.setCreatedOn(Instant.now());
-        newItem.setUpdatedOn(Instant.now());
+        newItem.setQuantity(quantity);
+        newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
 
-        return convertToDetailDto(saleItemRepository.saveAndFlush(newItem));
+        SaleItem saleItem = saleItemRepository.save(newItem);
+        return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
 
 
-    @Transactional
-    public SaleItemDetailDto updateSaleItem(Integer id, SaleItemRequestDto requestDto) {
+   @Transactional
+   public SaleItemDetailDto updateSaleItem(Integer id,SaleItemRequestDto dto) {
         SaleItem saleItemToUpdate = findSaleItemById(id);
+        saleItemUtil.validateRequiredFields(dto);
+        modelMapper.map(dto, saleItemToUpdate);
+        saleItemToUpdate.setBrand(saleItemUtil.resolveBrand(dto));
+        saleItemToUpdate.setModel(trimFirstAndLastSentence(dto.getModel()));
+        saleItemToUpdate.setDescription(trimFirstAndLastSentence(dto.getDescription()));
+        saleItemToUpdate.setQuantity(saleItemUtil.resolveQuantity(dto.getQuantity()));
+        saleItemToUpdate.setColor(saleItemUtil.sanitizeColor(dto.getColor()));
 
-        String model = trimFirstAndLastSentence(requestDto.getModel());
-        String description = trimFirstAndLastSentence(requestDto.getDescription());
-        saleItemUtil.validateRequiredFields(requestDto);
-        Brand brand = saleItemUtil.resolveBrand(requestDto);
-
-        String color = saleItemUtil.sanitizeColor(requestDto.getColor());
-        int quantity = saleItemUtil.resolveQuantity(requestDto.getQuantity());
-
-        saleItemToUpdate.setBrand(brand);
-        saleItemToUpdate.setModel(model);
-        saleItemToUpdate.setDescription(description);
-        saleItemToUpdate.setQuantity(quantity);
-        saleItemToUpdate.setPrice(requestDto.getPrice());
-        saleItemToUpdate.setScreenSizeInch(requestDto.getScreenSizeInch());
-        saleItemToUpdate.setRamGb(requestDto.getRamGb());
-        saleItemToUpdate.setStorageGb(requestDto.getStorageGb());
-        saleItemToUpdate.setColor(color);
-        saleItemToUpdate.setUpdatedOn(Instant.now());
-
-        return convertToDetailDto(saleItemRepository.save(saleItemToUpdate));
-    }
+        return modelMapper.map(saleItemToUpdate, SaleItemDetailDto.class);
+   }
 
     public void deleteSaleItem(Integer id) {
         if (! saleItemRepository.existsById(id)) {
@@ -164,9 +120,7 @@ public class SaleItemService {
             saleItemsPage = saleItemRepository.findAll(pageable);
         }
 
-        List<SaleItemDetailDto> content = saleItemsPage.getContent().stream()
-                .map(this::convertToDetailDto)
-                .collect(Collectors.toList());
+        List<SaleItemDetailDto> content = listMapper.mapList(saleItemsPage.getContent(), SaleItemDetailDto.class, modelMapper);
 
         SaleItemPagedResponseDto responseDto = new SaleItemPagedResponseDto();
         responseDto.setContent(content);

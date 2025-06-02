@@ -1,10 +1,7 @@
 package org.example.itbmshopbe.utils;
 
 public class Util {
-    public static String trimToLength(String input, int maxLength) {
-        if (input == null) return null;
-        return input.length() <= maxLength ? input : input.substring(0, maxLength);
-    }
+
     public static String trimFirstAndLastSentence(String input) {
         return input == null ? null : input.trim();
     }
