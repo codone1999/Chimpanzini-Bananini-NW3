@@ -66,6 +66,9 @@ public class SaleItemService {
         newItem.setQuantity(quantity);
         newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
         newItem.setPrice(dto.getPrice());
+        newItem.setRamGb(dto.getRamGb());
+        newItem.setStorageGb(dto.getStorageGb());
+        newItem.setScreenSizeInch(dto.getScreenSizeInch());
 
         SaleItem saleItem = saleItemRepository.save(newItem);
         return modelMapper.map(saleItem, SaleItemDetailDto.class);
@@ -89,6 +92,9 @@ public class SaleItemService {
             existingSaleItem.setQuantity(resolvedQuantity);
             existingSaleItem.setPrice(dto.getPrice());
             existingSaleItem.setBrand(brand);
+            existingSaleItem.setRamGb(dto.getRamGb());
+            existingSaleItem.setStorageGb(dto.getStorageGb());
+            existingSaleItem.setScreenSizeInch(dto.getScreenSizeInch());
 
             SaleItem updatedSaleItem = saleItemRepository.save(existingSaleItem);
             return modelMapper.map(updatedSaleItem, SaleItemDetailDto.class);
