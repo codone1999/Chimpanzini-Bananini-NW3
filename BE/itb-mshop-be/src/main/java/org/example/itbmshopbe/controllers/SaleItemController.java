@@ -32,7 +32,7 @@ public class SaleItemController {
     }
 
     @PostMapping("")
-    public ResponseEntity<SaleItemDetailDto> addSaleItem(@Valid @RequestBody SaleItemRequestDto requestDto) {
+    public ResponseEntity<SaleItemDetailDto> addSaleItem(@RequestBody SaleItemRequestDto requestDto) {
        try {
             SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(requestDto);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdSaleItem);

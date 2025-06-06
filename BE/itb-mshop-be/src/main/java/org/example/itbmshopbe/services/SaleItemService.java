@@ -65,25 +65,35 @@ public class SaleItemService {
         newItem.setColor(color);
         newItem.setQuantity(quantity);
         newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
+        newItem.setPrice(dto.getPrice());
 
         SaleItem saleItem = saleItemRepository.save(newItem);
         return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
 
 
-   @Transactional
-   public SaleItemDetailDto updateSaleItem(Integer id,SaleItemRequestDto dto) {
-        SaleItem saleItemToUpdate = findSaleItemById(id);
-        saleItemUtil.validateRequiredFields(dto);
-        modelMapper.map(dto, saleItemToUpdate);
-        saleItemToUpdate.setBrand(saleItemUtil.resolveBrand(dto));
-        saleItemToUpdate.setModel(trimFirstAndLastSentence(dto.getModel()));
-        saleItemToUpdate.setDescription(trimFirstAndLastSentence(dto.getDescription()));
-        saleItemToUpdate.setQuantity(saleItemUtil.resolveQuantity(dto.getQuantity()));
-        saleItemToUpdate.setColor(saleItemUtil.sanitizeColor(dto.getColor()));
+    @Transactional
+    public SaleItemDetailDto updateSaleItem(Integer id, SaleItemRequestDto dto) {
+            SaleItem existingSaleItem = saleItemRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "SaleItem not found for id :: " + id));
+            saleItemUtil.validateRequiredFields(dto);
+            String trimmedModel = trimFirstAndLastSentence(dto.getModel());
+            String trimmedDescription = trimFirstAndLastSentence(dto.getDescription());
+            String sanitizedColor = saleItemUtil.sanitizeColor(dto.getColor());
+            int resolvedQuantity = saleItemUtil.resolveQuantity(dto.getQuantity());
+            var brand = saleItemUtil.resolveBrand(dto);
+            existingSaleItem.setModel(trimmedModel);
+            existingSaleItem.setDescription(trimmedDescription);
+            existingSaleItem.setColor(sanitizedColor);
+            existingSaleItem.setQuantity(resolvedQuantity);
+            existingSaleItem.setPrice(dto.getPrice());
+            existingSaleItem.setBrand(brand);
 
-        return modelMapper.map(saleItemToUpdate, SaleItemDetailDto.class);
-   }
+            SaleItem updatedSaleItem = saleItemRepository.save(existingSaleItem);
+            return modelMapper.map(updatedSaleItem, SaleItemDetailDto.class);
+    }
+
 
     public void deleteSaleItem(Integer id) {
         if (! saleItemRepository.existsById(id)) {
