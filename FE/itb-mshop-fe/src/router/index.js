@@ -1,16 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 import MainMenu from "@/components/MainMenu.vue";
-import ListGallery from "@/components/ListGallery.vue";
-import ListDetails from "@/components/ListDetails.vue";
-import AddItem from "@/components/AddItem.vue";
-import EditItem from "@/components/EditItem.vue";
-import ListSaleItem from "@/components/ListSaleItem.vue";
-import BrandList from "@/components/BrandList.vue";
-import AddBrand from "@/components/AddBrand.vue";
-import EditBrand from "@/components/EditBrand.vue";
+import ListGallery from "@/components/ManageSaleItems/Gallery/ListGallery.vue";
+import ListDetails from "@/components/ManageSaleItems/ListDetail.vue";
+import AddItem from "@/components/ManageSaleItems/AddItem.vue";
+import EditItem from "@/components/ManageSaleItems/EditItem.vue";
+import ListSaleItems from "@/components/ManageSaleItems/ListSaleItems.vue";
+import ListBrands from "@/components/ManageBrands/ListBrands.vue";
+import AddBrand from "@/components/ManageBrands/AddBrand.vue";
+import EditBrand from "@/components/ManageBrands/EditBrand.vue";
 import PageNotFound from "@/components/PageNotFound.vue";
 
-const history = createWebHistory()
 const routes = [
     {
         path: '/',
@@ -39,13 +38,13 @@ const routes = [
     },
     {
         path: '/sale-items/list',
-        name: 'ListSaleItem',
-        component: ListSaleItem
+        name: 'ListSaleItems',
+        component: ListSaleItems
     },
     {
         path: '/brands',
-        name: 'BrandList',
-        component: BrandList
+        name: 'ListBrands',
+        component: ListBrands
     },
     {
         path: '/brands/add',

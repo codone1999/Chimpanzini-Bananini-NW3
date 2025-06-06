@@ -1,10 +1,9 @@
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from "vue";
 import { getItems, deleteItemById } from "@/lib/fetchUtils";
+import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
 
-const route = useRoute()
-const router = useRouter()
+const url = `${import.meta.env.VITE_APP_URL}/sale-items`
 
 const showModal = ref(false)
 const selectedProductId = ref(null)
@@ -23,10 +22,10 @@ async function handleDelete() {
   if (!selectedProductId.value) return
 
   try {
-    const item = await deleteItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items',  selectedProductId.value)
-    if (!item || item?.status === 404 || item === 404) {
+    const item = await deleteItemById(url,  selectedProductId.value)
+    if (typeof item === 'number') {
       showModal.value = false
-      handleDeleteSuccess('The requested sale item does not exist.')
+      handleDeleteAlerts(showSuccessMessage, successMessage, 'The requested sale item does not exist.', products, url)
       return
     }
   } catch (error) {
@@ -34,37 +33,26 @@ async function handleDelete() {
   }
 
   showModal.value = false
-  handleDeleteSuccess('The sale item has been deleted.')
-}
-function handleDeleteSuccess(message){
-  showSuccessMessage.value = true
-  successMessage.value = message
-
-  setTimeout(() => {
-    showSuccessMessage.value = false
-  }, 3000)
-}
-
-function handleQuerySuccess(type, message) {
-  if (route.query[type] === 'true') {
-    showSuccessMessage.value = true
-    successMessage.value = message
-
-    setTimeout(() => {
-      showSuccessMessage.value = false
-      const updatedQuery = { ...route.query }
-      delete updatedQuery[type] // remove query param
-      router.replace({ name: route.name, query: updatedQuery })
-    }, 3000)
-  }
+  handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.', products, url)
 }
 
 onMounted(async () => {
-  handleQuerySuccess('added', 'The sale item has been successfully added.')
-  handleQuerySuccess('edited', 'The sale item has been edited.')
+  handleQueryAlerts(
+    {
+      added: 'The sale item has been successfully added.',
+      edited: 'The sale item has been edited.',    
+    },
+    showSuccessMessage,
+    successMessage
+  )
 
   try {
-    products.value = await getItems(`http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items`) ?? []
+    const items = getItems(url)
+    if (typeof items === 'number'){
+      alert("Failed To Fetch Sale Items")
+    }
+
+    products.value = item ?? []
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
@@ -96,7 +84,7 @@ onMounted(async () => {
       </router-link>
 
       <router-link
-        :to="{ name: 'BrandList' }"
+        :to="{ name: 'ListBrands' }"
         class="itbms-manage-brand flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
       >
         <span class="material-icons">

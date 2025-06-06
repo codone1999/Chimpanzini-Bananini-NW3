@@ -2,7 +2,10 @@
 import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
 import { getItemById, getItems, editItem } from "@/lib/fetchUtils";
-import phoneImg from "../../public/phone.png";
+import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
+import phoneImg from "../../../public/phone.png";
+
+const url = `${import.meta.env.VITE_APP_URL}/sale-items`
 
 const route = useRoute();
 const router = useRouter();
@@ -31,69 +34,7 @@ const product = ref({
 });
 const originalProduct = ref(null);
 
-function isValidDecimal(value) {
-  const parts = String(value).split('.')
-  return parts.length === 1 || (parts.length === 2 && parts[1].length <= 2)
-}
-
-const isFormValid = computed(() => {
-  return (
-    product.value.brandName?.trim() !== '' &&
-
-    product.value.model.trim().length >= 1 &&
-    product.value.model.trim().length <= 60 &&
-
-    product.value.description.trim().length >= 1 &&
-    product.value.description.trim().length <= 16384 &&
-
-    (
-      typeof product.value.price === 'number' &&
-      product.value.price >= 0
-    ) &&
-
-    (
-      product.value.ramGb === null ||
-      product.value.ramGb === '' ||
-      (
-        typeof product.value.ramGb === 'number' &&
-        product.value.ramGb > 0
-      )
-    ) &&
-
-    (
-      product.value.screenSizeInch === null ||
-      product.value.screenSizeInch === '' ||
-      (
-        typeof product.value.screenSizeInch === 'number' &&
-        product.value.screenSizeInch > 0 &&
-        isValidDecimal(product.value.screenSizeInch)
-      )
-    ) &&
-
-    (
-      product.value.storageGb === null ||
-      product.value.storageGb === '' ||
-      (
-        typeof product.value.storageGb === 'number' &&
-        product.value.storageGb > 0
-      )
-    ) &&
-
-    (
-      product.value.color === null ||
-      product.value.color.trim() === '' ||
-      (
-        product.value.color.trim().length >= 1 &&
-        product.value.color.trim().length <= 40
-      )
-    ) &&
-
-    (
-      typeof product.value.quantity === 'number' &&
-      product.value.quantity >= 0
-    )
-  );
-});
+const isFormValid = computed(() => isFormSaleItemValid(product.value));
 
 const isChanged = computed(() => {
   if (!originalProduct.value) return false;
@@ -106,65 +47,6 @@ const isSaveDisabled = computed(() => {
   return !isFormValid.value || !isChanged.value;
 });
 
-function validateInput(field) {
-  const value = product.value[field];
-  let message = '';
-
-  switch (field) {
-    case 'brandName':
-      message = value.trim() !== ''
-        ? ''
-        : 'Brand must be selected.';
-      break;
-    case 'model':
-      message = value.trim().length >= 1 && value.trim().length <= 60
-        ? ''
-        : 'Model must be 1-60 characters long.'; 
-      break;
-    case 'description':
-      message = value.trim().length >= 1 && value.trim().length <= 16384
-        ? ''
-        : 'Description must be 1-16,384 characters long.';
-      break;
-    case 'price':
-      message = typeof value === 'number' && value >= 0
-        ? ''
-        : 'Price must be non-negative integer.';
-      break;
-    case 'ramGb':
-      message = value === null || value === '' || ( typeof value === 'number' && value > 0 )
-        ? ''
-        : 'RAM size must be positive integer or not specified.';
-      break;
-    case 'screenSizeInch':
-      message = value === null || value === '' || ( typeof value === 'number' && value > 0 && isValidDecimal(product.value.screenSizeInch) )
-        ? ''
-        : 'Screen size must be positive number with at most 2 decimal points or not specified.';
-      break;
-    case 'storageGb':
-      message = value === null || value === '' || ( typeof value === 'number' && value > 0 )
-        ? ''
-        : 'Storage size must be positive integer or not specified.';
-      break;
-    case 'color':
-      message =
-        value === null || value.trim() === '' || ( value.trim().length >= 1 && value.trim().length <= 40 )
-          ? ''
-          : 'Color must be 1-40 characters long or not specified.';
-      break;
-    case 'quantity':
-      message = typeof value === 'number' && value >= 0
-        ? ''
-        : 'Quantity must be non-negative integer.';
-      break;
-  }
-
-  if (message) {
-    validationMessages.value[field] = message
-  } else {
-    validationMessages.value[field] = null
-  }
-}
 
 const inputRefs = ref([])
 
@@ -174,21 +56,16 @@ function focusNext(index) {
 
 async function handleSubmit() {
   try {
-    product.value.color =
-      product.value.color === "" ? null : product.value.color;
-    const editedItem = await editItem(
-      "http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items",
-      id,
-      product.value
-    );
-    if (editedItem) {
+    product.value.color = product.value.color === "" ? null : product.value.color;
+
+    const editedItem = await editItem(url, id, product.value);
+    if (typeof editedItem !== 'number') {
       if (from === "Gallery")
-        router.push({
-          name: "ListDetails",
-          params: { id: product.id },
-          query: { edited: "true" },
-        });
-      else router.push({ name: "ListSaleItem", query: { edited: "true" } });
+        router.push({ name: "ListDetails", params: { id: product.id }, query: { edited: "true" },});
+      else 
+        router.push({ name: "ListSaleItems", query: { edited: "true" } });
+    } else {
+      alert("Fail to Edit Sale Item")
     }
     console.log(product.value);
   } catch (error) {
@@ -198,9 +75,9 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById("http://intproj24.sit.kmutt.ac.th/nw3/api/v1/sale-items",id);
-    if (!item || item?.status === 404) {
-      router.push("/sale-items");
+    const item = await getItemById(url, id);
+    if (typeof item === 'number') {
+      router.push({ name: 'ListGallery'});
       alert("The requested sale item does not exist.");
       return;
     }
@@ -228,14 +105,14 @@ onMounted(async () => {
   }
 
   try {
-    const brand = await getItems("http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands");
-    if (!brand || brand?.status === 404) {
-      // alert('The requested sale brand does not exist.')
+    const brand = await getItems(url);
+    if (typeof brand === 'number') {
+      alert('The requested sale brand does not exist.')
       return;
     }
     brandSelected.value = brand;
   } catch (error) {
-    console.error("Failed to fetch product:", error);
+    console.error("Failed to fetch brands:", error);
   }
 });
 </script>
@@ -299,7 +176,7 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Brand</label>
               <select
                 v-model="product.brandName"
-                @blur="validateInput('brandName')"
+                @blur="validateInputSaleItem(product, 'brandName', validationMessages)"
                 :ref="el => inputRefs[0] = el"
                 @keydown.enter.prevent="focusNext(0)"
                 class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
@@ -322,7 +199,7 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Model</label>
               <input
                 v-model.trim="product.model"
-                @blur="validateInput('model')"
+                @blur="validateInputSaleItem(product, 'model', validationMessages)"
                 :ref="el => inputRefs[1] = el"
                 @keydown.enter.prevent="focusNext(1)"
                 type="text"
@@ -338,7 +215,7 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Price (Baht)</label>
               <input
                 v-model.number="product.price"
-                @blur="validateInput('price')"
+                @blur="validateInputSaleItem(product, 'price', validationMessages)"
                 :ref="el => inputRefs[2] = el"
                 @keydown.enter.prevent="focusNext(2)"
                 type="number"
@@ -354,7 +231,7 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Description</label>
               <textarea
                 v-model.trim="product.description"
-                @blur="validateInput('description')"
+                @blur="validateInputSaleItem(product, 'description', validationMessages)"
                 :ref="el => inputRefs[3] = el"
                 @keydown.enter.prevent="focusNext(3)"
                 rows="3"
@@ -371,7 +248,7 @@ onMounted(async () => {
                 <label class="block mb-1 font-semibold text-gray-700">RAM (GB)</label>
                 <input
                   v-model.number="product.ramGb"
-                  @blur="validateInput('ramGb')"
+                  @blur="validateInputSaleItem(product, 'ramGb', validationMessages)"
                   :ref="el => inputRefs[4] = el"
                  @keydown.enter.prevent="focusNext(4)"
                   type="number"
@@ -385,7 +262,7 @@ onMounted(async () => {
                 <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
                 <input
                   v-model.number="product.screenSizeInch"
-                  @blur="validateInput('screenSizeInch')"
+                  @blur="validateInputSaleItem(product, 'screenSizeInch'. validationMessages)"
                   :ref="el => inputRefs[5] = el"
                   @keydown.enter.prevent="focusNext(5)"
                   type="number"
@@ -400,7 +277,7 @@ onMounted(async () => {
                 <label class="block mb-1 font-semibold text-gray-700">Storage (GB)</label>
                 <input
                   v-model.number="product.storageGb"
-                  @blur="validateInput('storageGb')"
+                  @blur="validateInputSaleItem(product, 'storageGb', validationMessages)"
                   :ref="el => inputRefs[6] = el"
                   @keydown.enter.prevent="focusNext(6)"
                   type="number"
@@ -414,7 +291,7 @@ onMounted(async () => {
                 <label class="block mb-1 font-semibold text-gray-700">Color</label>
                 <input
                   v-model.trim="product.color"
-                  @blur="validateInput('color')"
+                  @blur="validateInputSaleItem(product, 'color', validationMessages)"
                   :ref="el => inputRefs[7] = el"
                   @keydown.enter.prevent="focusNext(7)"
                   type="text"
@@ -430,9 +307,9 @@ onMounted(async () => {
               <label class="block mb-1 font-semibold text-gray-700">Quantity</label>
               <input
                 v-model.number="product.quantity"
-                @blur="validateInput('quantity')"
+                @blur="validateInputSaleItem(product, 'quantity', validationMessages)"
                 :ref="el => inputRefs[8] = el"
-                @keydown.enter.prevent="validateInput('quantity')"
+                @keydown.enter.prevent="validateInputSaleItem(product, 'quantity', validationMessages)"
                 type="number"
                 class="itbms-quantity w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
                 required
@@ -448,7 +325,7 @@ onMounted(async () => {
                 :to="
                   from === 'Gallery'
                     ? { name: 'ListDetails', params: { id: product.id } }
-                    : { name: 'ListSaleItem' }
+                    : { name: 'ListSaleItems' }
                 "
                 class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
               >

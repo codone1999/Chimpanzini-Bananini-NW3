@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { editItem, getItemById } from '@/lib/fetchUtils'
+import { validateInputBrands, isFormBrandValid } from '@/lib/validateInput'
+
+const url = `${import.meta.env.VITE_APP_URL}/brands`
 
 const route = useRoute()
 const router = useRouter()
@@ -18,36 +21,7 @@ const validationMessages = ref({});
 
 const originalBrand = ref(null)
 
-function isValidUrl(url) {
-  try {
-    new URL(url)
-    return url.startsWith('http://') || url.startsWith('https://')
-  } catch {
-    return false
-  }
-}
-
-const isFormValid = computed(() => {
-  return (
-    (
-      form.value.name.length >= 1 && 
-      form.value.name.length <= 30 
-    ) &&
-
-    (
-      form.value.websiteUrl === '' || 
-      isValidUrl(form.value.websiteUrl)
-    ) &&
-
-    (
-      form.value.countryOfOrigin === '' || 
-      (
-        form.value.countryOfOrigin.length >= 1 && 
-        form.value.countryOfOrigin.length <= 80 
-      )
-    )
-  )
-})
+const isFormValid = computed(() => isFormBrandValid(form.value))
 
 const isChanged = computed(() => {
   if (!originalBrand.value) return false
@@ -60,46 +34,16 @@ const isSaveDisabled = computed(() => {
 
 async function handleSubmit() {
   try {
-    const editedItem = await editItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', id, form.value)
-    if (editedItem) {
-      router.push({ name: 'BrandList', query: {edited: 'true'} })
+    const editedItem = await editItem(url, id, form.value)
+    if (typeof editedItem !== 'number') {
+      router.push({ name: 'ListBrands', query: {edited: 'true'} })
     } else {
-      router.push({ name: 'BrandList', query: {failed_edit: 'true'} })
+      router.push({ name: 'ListBrands', query: {failed_edit: 'true'} })
     }
   } catch (error) {
     console.error('Error:', error)
   }
 }
-
-function validateInput(field) {
-  let value = form.value[field]
-  let message = ''
-
-  switch (field) {
-    case 'name':
-      message = value.length >= 1 && value.length <= 30
-        ? ''
-        : 'Brand name must be 1-30 characters long.'
-      break
-    case 'websiteUrl':
-      message = value === '' || isValidUrl(form.value.websiteUrl)
-        ? ''
-        : 'Brand URL must be a valid URL or not specified.'
-      break
-    case 'countryOfOrigin':
-      message = value === '' || (value.length >= 1 && value.length <= 80) 
-        ? ''
-        : 'Brand country of origin must be 1-80 characters long or not specified.'
-      break
-  }
-  
-  if (message) {
-    validationMessages.value[field] = message
-  } else {
-    validationMessages.value[field] = null
-  }
-}
-
 
 const inputRefs = ref([])
 
@@ -110,9 +54,9 @@ function focusNext(index) {
 
 onMounted(async () => {
   try {
-    const item = await getItemById('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', id)
-    if (!item || item?.status === 404) {
-      router.push({ name: 'BrandList' })
+    const item = await getItemById(url, id)
+    if (typeof item === 'number') {
+      router.push({ name: 'ListBrands' })
       alert('The requested sale item does not exist.')
       return
     }
@@ -137,14 +81,14 @@ onMounted(async () => {
     <!-- Breadcrumb -->
     <div class="text-sm text-gray-500 mb-6 flex items-center gap-2">
       <router-link
-          :to="{ name: 'ListSaleItem'}"
+          :to="{ name: 'ListSaleItems'}"
           class="Itbms-item-list hover:underline hover:text-[#7e5bef] transition"
         >
           Sale Item List
         </router-link>
       <span class="text-gray-400">›</span>
       <router-link
-          :to="{ name: 'BrandList'}"
+          :to="{ name: 'ListBrands'}"
           class="itbms-manage-brand hover:underline hover:text-[#7e5bef] transition"
         >
           Brand List
@@ -162,7 +106,7 @@ onMounted(async () => {
         </label>
         <input
           v-model.trim="form.name"
-          @blur="validateInput('name')"
+          @blur="validateInputBrands(form, 'name', validationMessages)"
           :ref="el => inputRefs[0] = el"
           @keydown.enter.prevent="focusNext(0)"
           type="text"
@@ -179,7 +123,7 @@ onMounted(async () => {
         <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
           v-model.trim="form.websiteUrl"
-          @blur="validateInput('websiteUrl')"
+          @blur="validateInputBrands(form, 'websiteUrl', validationMessages)"
           :ref="el => inputRefs[1] = el"
           @keydown.enter.prevent="focusNext(1)"
           type="url"
@@ -216,9 +160,9 @@ onMounted(async () => {
         <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
           v-model.trim="form.countryOfOrigin"
-          @blur="validateInput('countryOfOrigin')"
+          @blur="validateInputBrands(form, 'countryOfOrigin', validationMessages)"
           :ref="el => inputRefs[2] = el"
-          @keydown.enter.prevent="validateInput('countryOfOrigin')"
+          @keydown.enter.prevent="validateInputBrands(form, 'countryOfOrigin', validationMessages)"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -242,7 +186,7 @@ onMounted(async () => {
           Save
         </button>
         <router-link
-          :to="{ name: 'BrandList' }"
+          :to="{ name: 'ListBrands' }"
           class="itbms-cancel-button px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transitionn"
         >
           Cancel

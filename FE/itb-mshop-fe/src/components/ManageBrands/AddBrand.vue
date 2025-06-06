@@ -2,7 +2,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { addItem } from '@/lib/fetchUtils'
+import { validateInputBrands, isFormBrandValid } from '@/lib/validateInput'
 
+const url = `${import.meta.env.VITE_APP_URL}/brands`
 const router = useRouter()
 
 const form = ref({
@@ -14,76 +16,18 @@ const form = ref({
 
 const validationMessages = ref({});
 
-function isValidUrl(url) {
-  try {
-    new URL(url)
-    return url.startsWith('http://') || url.startsWith('https://')
-  } catch {
-    return false
-  }
-}
-
-const isFormValid = computed(() => {
-  return (
-    (
-      form.value.name.length >= 1 && 
-      form.value.name.length <= 30 
-    ) &&
-
-    (
-      form.value.websiteUrl === '' || 
-      isValidUrl(form.value.websiteUrl)
-    ) &&
-
-    (
-      form.value.countryOfOrigin === '' || 
-      (
-        form.value.countryOfOrigin.length >= 1 && 
-        form.value.countryOfOrigin.length <= 80 
-      )
-    )
-  )
-})
+const isFormValid = computed(() => isFormBrandValid(form.value))
 
 async function handleSubmit() {
   try {
-    const addedItem = await addItem('http://intproj24.sit.kmutt.ac.th/nw3/api/v1/brands', form.value)
-    if (addedItem) {
-      router.push({ name: 'BrandList', query: { added: 'true' } })
-    } else if (addItem === 400 || addItem === 500){
-      router.push({ name: 'BrandList', query: { failed_add: 'true' } })
+    const addedItem = await addItem(url, form.value)
+    if (typeof addItem !== 'number') {
+      router.push({ name: 'ListBrands', query: { added: 'true' } })
+    } else {
+      router.push({ name: 'ListBrands', query: { failed_add: 'true' } })
     }
   } catch (error) {
     console.error('Error:', error)
-  }
-}
-
-function validateInput(field) {
-  let value = form.value[field]
-  let message = ''
-
-  switch (field) {
-    case 'name':
-      message = value.length >= 1 && value.length <= 30
-        ? ''
-        : 'Brand name must be 1-30 characters long.'
-      break
-    case 'websiteUrl':
-      message = value === '' || isValidUrl(form.value.websiteUrl)
-        ? ''
-        : 'Brand URL must be a valid URL or not specified.'
-      break
-    case 'countryOfOrigin':
-      message = value === '' || (value.length >= 1 && value.length <= 80) 
-        ? ''
-        : 'Brand country of origin must be 1-80 characters long or not specified.'
-      break
-  }
-  
-  if (message) {
-    validationMessages.value[field] = message
-  } else {
-    validationMessages.value[field] = null
   }
 }
 
@@ -100,14 +44,14 @@ function focusNext(index) {
     <!-- Breadcrumb -->
     <div class="text-sm text-gray-500 mb-6 flex items-center gap-2">
       <router-link
-          :to="{ name: 'ListSaleItem'}"
+          :to="{ name: 'ListSaleItems'}"
           class="Itbms-item-list hover:underline hover:text-[#7e5bef] transition"
         >
           Sale Item List
         </router-link>
       <span class="text-gray-400">›</span>
       <router-link
-          :to="{ name: 'BrandList'}"
+          :to="{ name: 'ListBrands'}"
           class="itbms-manage-brand hover:underline hover:text-[#7e5bef] transition"
         >
           Brand List
@@ -126,7 +70,7 @@ function focusNext(index) {
         </label>
         <input
           v-model.trim="form.name"
-          @blur="validateInput('name')"
+          @blur="validateInputBrands(form, 'name', validationMessages)"
           :ref="el => inputRefs[0] = el"
           @keydown.enter.prevent="focusNext(0)"
           type="text"
@@ -143,7 +87,7 @@ function focusNext(index) {
         <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website URL</label>
         <input
           v-model.trim="form.websiteUrl"
-          @blur="validateInput('websiteUrl')"
+          @blur="validateInputBrands(form, 'websiteUrl', validationMessages)"
           :ref="el => inputRefs[1] = el"
           @keydown.enter.prevent="focusNext(1)"
           type="url"
@@ -181,9 +125,9 @@ function focusNext(index) {
         <label for="country" class="block text-sm font-medium text-gray-700">Country Of Origin</label>
         <input
           v-model.trim="form.countryOfOrigin"
-          @blur="validateInput('countryOfOrigin')"
+          @blur="validateInputBrands(form, 'countryOfOrigin', validationMessages)"
           :ref="el => inputRefs[2] = el"
-          @keydown.enter.prevent="validateInput('countryOfOrigin')"
+          @keydown.enter.prevent="validateInputBrands(form, 'countryOfOrigin', validationMessages)"
           type="text"
           class="itbms-countryOfOrigin mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7e5bef] transition"
         />
@@ -206,7 +150,7 @@ function focusNext(index) {
           Save
         </button>
         <router-link
-          :to="{ name: 'BrandList' }"
+          :to="{ name: 'ListBrands' }"
           class="itbms-cancel-button px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transitionn"
         >
           Cancel

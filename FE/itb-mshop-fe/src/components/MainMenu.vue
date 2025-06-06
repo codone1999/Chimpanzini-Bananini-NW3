@@ -31,7 +31,7 @@
         </router-link>
 
         <router-link
-          :to="{ name: 'ListSaleItem' }"
+          :to="{ name: 'ListSaleItems' }"
           class="itbms-seller bg-amber-600 hover:bg-amber-700 text-white px-7 py-3 rounded-2xl text-lg font-semibold shadow-xl transition-all duration-200 ease-in-out animate-fade-up delay-150"
         >
           Seller
