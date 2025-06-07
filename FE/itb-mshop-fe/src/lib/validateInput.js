@@ -36,7 +36,7 @@ function validateInputSaleItem(saleItem, field, validationMessages) {
         : 'RAM size must be positive integer or not specified.';
       break
     case 'screenSizeInch':
-      message = value === null || value === '' || (typeof value === 'number' && value > 0 && isValidDecimal(saleItem.value.screenSizeInch) )
+      message = value === null || value === '' || (typeof value === 'number' && value > 0 && isValidDecimal(value) )
           ? ''
           : 'Screen size must be positive number with at most 2 decimal points or not specified.';
       break

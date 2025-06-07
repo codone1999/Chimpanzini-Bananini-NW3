@@ -5,8 +5,6 @@ import { getItems, addItem } from '@/lib/fetchUtils'
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
-const url = `${import.meta.env.VITE_APP_URL}/sale-items`
-
 const route = useRoute()
 const router = useRouter()
 const from = route.query.from
@@ -42,7 +40,7 @@ function focusNext(index) {
 
 async function handleSubmit() {
   try {
-    const addedItem = await addItem(url, newSaleItem.value)
+    const addedItem = await addItem(`${import.meta.env.VITE_APP_URL}/sale-items`, newSaleItem.value)
     if (typeof addedItem !== 'number') {
       router.push({
         name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItems',
@@ -58,7 +56,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const brands = await getItems(url)
+    const brands = await getItems(`${import.meta.env.VITE_APP_URL}/brands`)
     if (typeof brands === 'number')
       alert("Fail to Fetch Sale Items")
     brandSelected.value = brands

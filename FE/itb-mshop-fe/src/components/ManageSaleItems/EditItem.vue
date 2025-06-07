@@ -262,7 +262,7 @@ onMounted(async () => {
                 <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
                 <input
                   v-model.number="product.screenSizeInch"
-                  @blur="validateInputSaleItem(product, 'screenSizeInch'. validationMessages)"
+                  @blur="validateInputSaleItem(product, 'screenSizeInch', validationMessages)"
                   :ref="el => inputRefs[5] = el"
                   @keydown.enter.prevent="focusNext(5)"
                   type="number"

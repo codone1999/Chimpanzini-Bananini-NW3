@@ -43,6 +43,13 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['update:pageSize'])
+
+function handlePageSizeChange(event) {
+  const value = parseInt(event.target.value)
+  emit('update:pageSize', value)
+}
+
 </script>
 
 <template>
@@ -54,6 +61,7 @@ const props = defineProps({
       <div class="itbms-brand-filter flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded bg-white min-h-[49px] max-w-[500px] flex-grow relative">
         <span v-if="props.filterBrands.length === 0" class="text-gray-400">Filter by brand(s)</span>
 
+        <!-- Selected Brands -->
         <span 
           v-else 
           v-for="brand in props.filterBrands" :key="brand"
@@ -61,7 +69,7 @@ const props = defineProps({
         >
           {{ brand }}
           <button 
-            class="hover:text-red-500 -mb-1"
+            class="itbms-filter-item-clear hover:text-red-500 -mb-1"
             @click.stop="props.onToggleBrand(brand)"
           >
             <span class="material-icons">close</span>
@@ -69,14 +77,16 @@ const props = defineProps({
         </span>
 
         <!-- Dropdown -->
-        <div v-if="props.showBrandList"
-             class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto">
+        <div 
+          v-if="props.showBrandList"
+          class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+        >
           <button
             v-for="brand in props.brands"
             :key="brand.id"
             :disabled="props.filterBrands.includes(brand.name)"
             @click="props.onToggleBrand(brand.name)"
-            class="block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
+            class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
             :class="props.filterBrands.includes(brand.name) ? 'text-gray-300' : 'text-black'"
           >
             {{ brand.name }}
@@ -106,8 +116,8 @@ const props = defineProps({
       <div class="flex items-center gap-2 text-base">
         <label for="pageSize" class="font-medium text-gray-700 whitespace-nowrap">Show:</label>
         <select
-          id="pageSize"
-          v-model="props.pageSize"
+          :value="props.pageSize"
+          @change="handlePageSizeChange"
           class="itbms-page-size border border-gray-300 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           <option :value="5">5</option>

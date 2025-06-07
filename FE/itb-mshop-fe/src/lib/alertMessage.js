@@ -1,4 +1,5 @@
 import { useRoute, useRouter } from 'vue-router'
+import { getItems } from './fetchUtils'
 
 function handleQueryAlerts(messages, showMessage, getMessage) {
   const route = useRoute()
@@ -34,9 +35,10 @@ async function handleDeleteAlerts(showMessage, getMessage, setMessage, items, ur
   // Fetch the updated list
   try {
     const updatedItems = await getItems(url)
-    if (updatedItems && updatedItems !== 404) {
-      items.value = updatedItems
+    if (typeof updatedItems === 'number'){
+      return
     }
+    items.value = updatedItems
   } catch (err) {
     console.error('Failed to fetch:', err)
   }

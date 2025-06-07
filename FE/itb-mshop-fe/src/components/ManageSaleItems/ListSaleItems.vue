@@ -47,12 +47,14 @@ onMounted(async () => {
   )
 
   try {
-    const items = getItems(url)
+    const items = await getItems(url)
     if (typeof items === 'number'){
       alert("Failed To Fetch Sale Items")
+      products.value = []
     }
+    else
+      products.value = items
 
-    products.value = item ?? []
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }

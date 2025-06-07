@@ -40,7 +40,7 @@ async function handleDelete() {
 
   try {
     const item = await deleteItemById(url, selectedBrandId.value)
-    if (typeof item === 'number') {
+    if (item === 400 || item === 500 || item === 404) {
       showModal.value = false
       isCanDelete.value = false
       handleDeleteAlerts(showSuccessMessage, successMessage, 'An error has occurred, the brand does not exist.', brands, url)
