@@ -9,6 +9,14 @@ const props = defineProps({
     type: Object,
     required: true
   },
+  filterPrice: {
+    type: Object,
+    required: true
+  },
+  filterStorageSize: {
+    type: Object,
+    required: true
+  },
   brandToAdd: {
     type: Object,
     required: true
@@ -53,65 +61,54 @@ function handlePageSizeChange(event) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 md:flex-row md:justify-between md:items-start w-full mb-8">
+  <div class="flex flex-col md:flex-row justify-between gap-5 items-start w-full mb-8">
 
-    <!-- Filters -->
-    <div class="flex flex-wrap md:flex-nowrap gap-2 w-full items-start">
-      <!-- Selected Filters Box -->
-      <div class="itbms-brand-filter flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded bg-white min-h-[49px] max-w-[500px] flex-grow relative">
-        <span v-if="props.filterBrands.length === 0" class="text-gray-400">Filter by brand(s)</span>
+    <!-- Filter Section (Expandable Left Side) -->
+    <div class="flex items-center gap-2 flex-grow ">
 
-        <!-- Selected Brands -->
-        <span 
-          v-else 
-          v-for="brand in props.filterBrands" :key="brand"
-          class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
-        >
-          {{ brand }}
-          <button 
-            class="itbms-filter-item-clear hover:text-red-500 -mb-1"
-            @click.stop="props.onToggleBrand(brand)"
-          >
-            <span class="material-icons">close</span>
-          </button>
-        </span>
-
-        <!-- Dropdown -->
-        <div 
-          v-if="props.showBrandList"
-          class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
-        >
-          <button
-            v-for="brand in props.brands"
-            :key="brand.id"
-            :disabled="props.filterBrands.includes(brand.name)"
-            @click="props.onToggleBrand(brand.name)"
-            class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-            :class="props.filterBrands.includes(brand.name) ? 'text-gray-300' : 'text-black'"
-          >
-            {{ brand.name }}
-          </button>
+      <!-- Each Pill will expand equally -->
+      <div class="flex-1 border rounded-full px-6 py-1.5 bg-white shadow-sm text-left">
+        <div class="text-sm font-semibold text-gray-800">Brand</div>
+        <div class="text-xs text-gray-400 truncate">
+          <span v-if="props.filterBrands.length === 0">Filter by brand(s)</span>
+          <span v-else>
+            {{ props.filterBrands.join(', ') }}
+          </span>
         </div>
       </div>
 
-      <!-- Show Dropdown -->
-      <button 
-        @click="props.toggleBrandList"
-        class="itbms-brand-filter-button flex items-center gap-1 p-3 text-white bg-purple-600 hover:bg-purple-800 rounded-md transition"
-      >
-        <span class="material-icons">filter_alt</span>
-      </button>
+      <div class="flex-1 border rounded-full px-6 py-1.5 bg-white shadow-sm text-left">
+        <div class="text-sm font-semibold text-gray-800">Price</div>
+        <div class="text-xs text-gray-400">Price Range
+          <!-- NOTE - add filterPrice in ListGallery -->
+          <!-- <span v-if="props.filterPrice.length === 0">Price Range</span>
+          <span v-else>
+            {{ props.filterPrice.join(', ') }}
+          </span> -->
+        </div>
+      </div>
 
-      <!-- Clear Filters -->
-      <button 
-        @click="props.onClearBrands"
-        class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
+      <div class="flex-1 border rounded-full px-6 py-1.5 bg-white shadow-sm text-left">
+        <div class="text-sm font-semibold text-gray-800">Storage Size</div>
+        <div class="text-xs text-gray-400">Storage Range
+          <!-- NOTE - add filterStorageSize in ListGallery -->
+          <!-- <span v-if="props.filterStorageSize.length === 0">Storage Range</span>
+          <span v-else>
+            {{ props.filterStorageSize.join(', ') }}
+          </span> -->
+        </div>
+      </div>
+
+      <!-- Filter Icon -->
+      <button
+        @click="props.toggleBrandList"
+        class="p-3 flex items-center justify-center bg-gray-200 border border-gray-600 rounded-full hover:bg-gray-300 transition"
       >
-        <span class="material-icons">cleaning_services</span>
+        <span class="material-icons text-gray-700">filter_alt</span>
       </button>
     </div>
 
-    <!-- Sort + Page Size -->
+    <!-- Sort + Page Size (Right Side) -->
     <div class="flex md:flex-nowrap gap-2 items-center w-full md:w-auto">
       <div class="flex items-center gap-2 text-base">
         <label for="pageSize" class="font-medium text-gray-700 whitespace-nowrap">Show:</label>

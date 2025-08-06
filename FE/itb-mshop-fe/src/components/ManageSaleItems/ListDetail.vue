@@ -15,6 +15,7 @@ const id = route.params.id
 
 const showModal = ref(false)
 const product = ref()
+// const product = ref({"id":1,"model":"Galaxy S23 Ultra","brandName":"Samsung","price":39600,"storageGb":512,"ramGb":null,"color":null})
 
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
@@ -90,19 +91,28 @@ onMounted(async () => {
       </div>
   
       <!-- Product Layout -->
-      <div class="grid grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-lg px-8 py-10 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-lg px-8 py-3 gap-8">
         
-        <!-- Main Image (Centered Vertically) -->
-        <div class="flex items-center justify-center h-full">
+        <!-- Main Image (Left & Vertically Centered) -->
+        <div class="flex flex-col items-center justify-center h-full">
+          <!-- Main Image -->
           <img
             :src="phoneImg"
             class="w-full max-w-sm object-contain rounded-lg bg-gray-100"
             alt="Product"
           />
+
+          <!-- Sub-Image -->
+          <div class="flex flex-row items-center justify-center">
+            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
+            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
+            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
+            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
+          </div>
         </div>
 
         <!-- Product Details -->
-        <div class="space-y-4 text-gray-700 text-base">
+        <div class="space-y-4 pt-10 text-gray-700 text-base">
           <p><strong>Brand:</strong> <span class="itbms-brand">{{ product.brandName }}</span></p>
           <p><strong>Model:</strong> <span class="itbms-model">{{ product.model }}</span></p>
           <p><strong>Price:</strong> <span class="itbms-price">{{ product.price.toLocaleString() }}</span> Baht</p>
