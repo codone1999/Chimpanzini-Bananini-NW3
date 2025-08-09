@@ -1,10 +1,7 @@
 package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemDetailDto;
-import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
-import org.example.itbmshopbe.dtos.SaleItemPagedResponseDto;
-import org.example.itbmshopbe.dtos.SaleItemRequestDto;
+import org.example.itbmshopbe.dtos.*;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.BrandRepository;
@@ -151,5 +148,31 @@ public class SaleItemService {
         return responseDto;
     }
 
+    public List<SaleItemGalleryDto> filterSaleItems(SaleItemFilterRequestDTO filterDto) {
+        List<SaleItem> items = saleItemRepository.filterSaleItem(
+                (filterDto.getBrandIds() == null || filterDto.getBrandIds().isEmpty()) ? null : filterDto.getBrandIds(),
+                filterDto.getMinPrice(),
+                filterDto.getMaxPrice(),
+                (filterDto.getStorageSizes() == null || filterDto.getStorageSizes().isEmpty()) ? null : filterDto.getStorageSizes()
+        );
 
+        return items.stream()
+                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
+                .toList();
+    }
+
+    public List<SaleItemGalleryDto> getDistinctStorageSizes() {
+        List<SaleItem> saleItems = saleItemRepository.findDistinctStorageGb();
+
+        return saleItems.stream()
+                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
+                .toList();
+    }
+
+    public List<SaleItemGalleryDto> getDistinctBrandNames() {
+        List<SaleItem> items = saleItemRepository.findDistinctBrandNames();
+        return items.stream()
+                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
+                .toList();
+    }
 }
