@@ -17,12 +17,23 @@ const SESSION_KEYS = {
 // Refs
 const allProducts = ref([]);
 const products = ref([]);
-const brands = ref([]);
 
+const brands = ref([]);
 const filterBrands = ref([]);
 const showBrandList = ref(false);
-const sortMode = ref("none");
 const brandToAdd = ref("");
+
+const storageSize = ref([])
+const filterStorageSize = ref([])
+const showStorageSizeList = ref(false)
+const storageSizeToAdd = ref("")
+
+const price = ref([])
+const filterPrice = ref([])
+const showPriceList = ref(false)
+const priceToAdd = ref("")
+
+const sortMode = ref("none");
 
 const pageSize = ref(10);
 const currentPage = ref(1);
@@ -218,13 +229,15 @@ onMounted(async () => {
       :brands="brands"
       :filter-brands="filterBrands"
       :brand-to-add="brandToAdd"
-      :sort-mode="sortMode"
-      :page-size="pageSize"
       :show-brand-list="showBrandList"
       :toggle-brand-list="() => showBrandList = !showBrandList"
       :onToggleBrand="toggleBrand"
       :onClearBrands="clearBrandFilters"
+      :filter-price="filterPrice"
+      :filter-storage-size="filterStorageSize"
       :onChangeSort="changeSort"
+      :sort-mode="sortMode"
+      :page-size="pageSize"
     />
 
     <!-- Add Item Button -->
