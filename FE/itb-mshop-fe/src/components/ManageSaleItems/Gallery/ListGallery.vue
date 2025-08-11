@@ -18,18 +18,177 @@ const SESSION_KEYS = {
 const allProducts = ref([]);
 const products = ref([]);
 
-const brands = ref([]);
+const brands = ref([
+  {
+    "id": 1,
+    "name": "Samsung",
+    "websiteUrl": "https://www.samsung.com",
+    "isActive": true,
+    "countryOfOrigin": "South Korea",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 2,
+    "name": "Apple",
+    "websiteUrl": "https://www.apple.com",
+    "isActive": true,
+    "countryOfOrigin": "United States",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 3,
+    "name": "Xiaomi",
+    "websiteUrl": "https://www.mi.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 4,
+    "name": "Huawei",
+    "websiteUrl": "https://www.huawei.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 5,
+    "name": "ASUS",
+    "websiteUrl": "https://www.asus.com",
+    "isActive": true,
+    "countryOfOrigin": "Taiwan",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 6,
+    "name": "OPPO",
+    "websiteUrl": "https://www.oppo.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 7,
+    "name": "OnePlus",
+    "websiteUrl": "https://www.oneplus.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 8,
+    "name": "Sony",
+    "websiteUrl": "https://www.sony.com",
+    "isActive": true,
+    "countryOfOrigin": "Japan",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 9,
+    "name": "LG",
+    "websiteUrl": "https://www.lg.com",
+    "isActive": true,
+    "countryOfOrigin": "South Korea",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 10,
+    "name": "Nokia",
+    "websiteUrl": "https://www.nokia.com",
+    "isActive": false,
+    "countryOfOrigin": "Finland",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 11,
+    "name": "Motorola",
+    "websiteUrl": "https://www.motorola.com",
+    "isActive": false,
+    "countryOfOrigin": "United States",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 12,
+    "name": "Vivo",
+    "websiteUrl": "https://www.vivo.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 13,
+    "name": "Google",
+    "websiteUrl": "https://store.google.com",
+    "isActive": true,
+    "countryOfOrigin": "United States",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 14,
+    "name": "Realme",
+    "websiteUrl": "https://www.realme.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 15,
+    "name": "BlackBerry",
+    "websiteUrl": "https://www.blackberry.com",
+    "isActive": true,
+    "countryOfOrigin": "Canada",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 16,
+    "name": "HTC",
+    "websiteUrl": "https://www.htc.com",
+    "isActive": true,
+    "countryOfOrigin": "Taiwan",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 17,
+    "name": "ZTE",
+    "websiteUrl": "https://www.zte.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 18,
+    "name": "Lenovo",
+    "websiteUrl": "https://www.lenovo.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 19,
+    "name": "Honor",
+    "websiteUrl": "https://www.hihonor.com",
+    "isActive": true,
+    "countryOfOrigin": "China",
+    "noOfSaleItems": null
+  },
+  {
+    "id": 20,
+    "name": "Nothing",
+    "websiteUrl": "https://nothing.tech",
+    "isActive": true,
+    "countryOfOrigin": "United Kingdom",
+    "noOfSaleItems": null
+  }
+]);
 const filterBrands = ref([]);
 const showBrandList = ref(false);
 const brandToAdd = ref("");
 
-const storageSize = ref([])
-const filterStorageSize = ref([])
+const filterStorageSizes = ref([])
 const showStorageSizeList = ref(false)
 const storageSizeToAdd = ref("")
 
-const price = ref([])
-const filterPrice = ref([])
+const filterPrices = ref([])
 const showPriceList = ref(false)
 const priceToAdd = ref("")
 
@@ -228,14 +387,22 @@ onMounted(async () => {
       v-model:page-size="pageSize"
       :brands="brands"
       :filter-brands="filterBrands"
-      :brand-to-add="brandToAdd"
       :show-brand-list="showBrandList"
       :toggle-brand-list="() => showBrandList = !showBrandList"
-      :onToggleBrand="toggleBrand"
-      :onClearBrands="clearBrandFilters"
-      :filter-price="filterPrice"
-      :filter-storage-size="filterStorageSize"
-      :onChangeSort="changeSort"
+      :on-toggle-brand="toggleBrand"
+      :on-clear-brands="clearBrandFilters"
+
+      :filter-prices="filterPrices"
+      :show-price-list="showPriceList"
+      :toggle-price-list="() => showPriceList = !showPriceList"
+      :on-toggle-price="togglePrice"
+
+      :filter-storage-sizes="filterStorageSizes"
+      :show-storage-size-list="showStorageSizeList"
+      :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
+      :on-toggle-storage-size="toggleStorageSize"
+      
+      :on-change-sort="changeSort"
       :sort-mode="sortMode"
       :page-size="pageSize"
     />

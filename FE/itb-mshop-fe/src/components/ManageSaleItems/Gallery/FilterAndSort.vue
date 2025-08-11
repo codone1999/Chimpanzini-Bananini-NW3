@@ -10,10 +10,6 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  brandToAdd: {
-    type: Object,
-    required: true
-  },
   showBrandList: {
     type: Object,
     required: true
@@ -30,22 +26,48 @@ const props = defineProps({
     type: Function,
     required: true
   },
-  onChangeSort: {
+  saleItems: {
+    type: Array,
+    required: true
+  },
+  filterPrices:{
+    type: Object,
+    required: true
+  },
+  showPriceList: {
+    type: Object,
+    required: true
+  },
+  togglePriceList: {
     type: Function,
     required: true
   },
-  // Price //
-  filterPrice: {
+  onTogglePrice: {
+    type: Function,
+    required: true
+  },
+  filterStorageSizes:{
     type: Object,
     required: true
   },
-  // Storage Size //
-  filterStorageSize: {
+  showStorageSizeList: {
     type: Object,
+    required: true
+  },
+  toggleStorageSizeList: {
+    type: Function,
+    required: true
+  },
+  onToggleStorageSize: {
+    type: Function,
     required: true
   },
   sortMode: {
     type: Object,
+    required: true
+  },
+  onChangeSort: {
+    type: Function,
     required: true
   },
   pageSize: {
@@ -93,7 +115,7 @@ function handlePageSizeChange(event) {
             </button>
           </span>
 
-          <!-- Dropdown -->
+          <!-- Brand Dropdown -->
           <div 
             v-if="props.showBrandList"
             class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
@@ -110,35 +132,101 @@ function handlePageSizeChange(event) {
             </button>
           </div>
         </div>
+        <!-- Clear Filters -->
+          <!-- <button 
+            @click="props.onClearBrands"
+            class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
+          >
+            <span class="material-icons">cleaning_services</span>
+          </button> -->
       </div>
 
       <!-- Pill Price -->
-      <div class="flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200">
+      <div 
+        class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
+        @click="props.toggleStorageSizeList"  
+      >
         <div class="text-sm font-medium text-gray-800">Price</div>
-        <div class="text-xs text-gray-400 mt-1">Price Range
-          <!-- NOTE - add filterPrice in ListGallery -->
-          <!-- <span v-if="props.filterPrice.length === 0">Price Range</span>
-          <span v-else>
-            {{ props.filterPrice.join(', ') }}
-          </span> -->
+        <div class="text-xs text-gray-400 mt-1">
+          <span v-if="props.filterPrices.length === 0">Price Range</span>
+          
+          <!-- Selected Storages -->
+          <span 
+            v-else 
+            v-for="price in props.filterPrices" :key="price"
+            class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
+          >
+            {{ price }}
+            <button 
+              class="itbms-filter-item-clear hover:text-red-500 -mb-1"
+              @click.stop="props.onTogglePrice(price)"
+            >
+              <span class="material-icons">close</span>
+            </button>
+          </span>
+
+          <!-- Storage Dropdown -->
+          <div 
+            v-if="props.showPriceList"
+            class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+          >
+            <button
+              v-for="saleItem in props.saleItems"
+              :key="saleItem.id"
+              :disabled="props.filterBrands.includes(saleItem.price)"
+              @click="props.onToggleStorageSize(saleItem.price)"
+              class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
+              :class="props.filterPrices.includes(saleItem.price) ? 'text-gray-300' : 'text-black'"
+            >
+              {{ saleItem.price }}
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Storage Size -->
-      <div class="flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200">
+      <div class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200">
         <div class="flex items-center justify-between">
           <div>
             <div class="text-sm font-medium text-gray-800">Storage Size</div>
-            <div class="text-xs text-gray-400 mt-1">Storage Range
-              <!-- NOTE - add filterStorageSize in ListGallery -->
-              <!-- <span v-if="props.filterStorageSize.length === 0">Storage Range</span>
-              <span v-else>
-                {{ props.filterStorageSize.join(', ') }}
-              </span> -->
+            <div class="text-xs text-gray-400 mt-1">
+              <span v-if="props.filterStorageSizes.length === 0">Storage Range</span>
+              
+              <!-- Selected Storages -->
+              <span 
+                v-else 
+                v-for="storageSize in props.filterStorageSizes" :key="storageSize"
+                class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
+              >
+                {{ storageSize }}
+                <button 
+                  class="itbms-filter-item-clear hover:text-red-500 -mb-1"
+                  @click.stop="props.onToggleStorageSize(storageSize)"
+                >
+                  <span class="material-icons">close</span>
+                </button>
+              </span>
+
+              <!-- Storage Dropdown -->
+              <div 
+                v-if="props.showStorageSizeList"
+                class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+              >
+                <button
+                  v-for="saleItem in props.saleItems"
+                  :key="saleItem.id"
+                  :disabled="props.filterStorageSizes.includes(saleItem.storageGb)"
+                  @click="props.onToggleStorageSize(saleItem.storageGb)"
+                  class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
+                  :class="props.filterStorageSizes.includes(saleItem.storageGb) ? 'text-gray-300' : 'text-black'"
+                >
+                  {{ saleItem.storageGb }}
+                </button>
+              </div>
             </div>
           </div>
           <button
-            @click="props.toggleBrandList"
+            @click="props.toggleBrandList; props.toggleStorageSizeList;"
             class="-mr-4 pt-2 px-2 pb-1 bg-gray-200 border border-gray-600 rounded-full hover:bg-gray-300 transition"
           >
             <span class="material-icons text-gray-700">filter_alt</span>
