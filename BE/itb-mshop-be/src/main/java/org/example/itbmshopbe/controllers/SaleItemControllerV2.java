@@ -22,29 +22,17 @@ public class SaleItemControllerV2 {
     @GetMapping
     public ResponseEntity<SaleItemPagedResponseDto> getAllSaleItems(
             @RequestParam(required = false) List<String> filterBrands,
+            @RequestParam(required = false) List<Integer> filterStorages,
+            @RequestParam(required = false) Integer filterPriceLower,
+            @RequestParam(required = false) Integer filterPriceUpper,
             @RequestParam @Valid Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortDirection
-    ) {
+    ) throws NoSuchFieldException {
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
-                filterBrands, page, size, sortField, sortDirection
+               filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,sortDirection
         );
         return ResponseEntity.ok(responseDto);
-    }
-
-    @GetMapping("/storage-sizes")
-    public ResponseEntity<List<SaleItemGalleryDto>> getStorageSizes() {
-        return ResponseEntity.ok(saleItemService.getDistinctStorageSizes());
-    }
-
-    @GetMapping("/filter")
-    public ResponseEntity<List<SaleItemGalleryDto>> filterSaleItems(@RequestBody SaleItemFilterRequestDTO saleItemFilterRequestDTO) {
-        return ResponseEntity.ok(saleItemService.filterSaleItems(saleItemFilterRequestDTO));
-    }
-
-    @GetMapping("/brands")
-    public ResponseEntity<List<SaleItemGalleryDto>> getFilterByBrands() {
-        return ResponseEntity.ok(saleItemService.getDistinctBrandNames());
     }
 }

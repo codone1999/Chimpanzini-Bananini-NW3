@@ -110,10 +110,13 @@ public class SaleItemService {
 
     public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
             List<String> filterBrands,
+            List<Integer> filterStorages,
+            Integer filterPriceLower,
+            Integer filterPriceUpper,
             Integer page,
             Integer size,
             String sortField,
-            String sortDirection) {
+            String sortDirection) throws NoSuchFieldException {
 
         if (page == null || page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
@@ -122,16 +125,23 @@ public class SaleItemService {
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
         String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
-        Sort.Order order = new Sort.Order(direction, sortBy).ignoreCase();
+
+        Sort.Order order;
+        if (String.class.equals(SaleItem.class.getDeclaredField(sortBy).getType())) {
+            order = new Sort.Order(direction, sortBy).ignoreCase();
+        } else {
+            order = new Sort.Order(direction, sortBy);
+        }
+
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
 
-        Page<SaleItem> saleItemsPage;
-
-        if (filterBrands != null && !filterBrands.isEmpty()) {
-            saleItemsPage = saleItemRepository.findByBrand_NameIgnoreCaseIn(filterBrands, pageable);
-        } else {
-            saleItemsPage = saleItemRepository.findAll(pageable);
-        }
+        Page<SaleItem> saleItemsPage = saleItemRepository.filterSaleItem(
+                (filterBrands == null || filterBrands.isEmpty()) ? null : filterBrands.stream().map(String::toLowerCase).toList(),
+                filterPriceLower,
+                filterPriceUpper,
+                (filterStorages == null || filterStorages.isEmpty()) ? null : filterStorages,
+                pageable
+        );
 
         List<SaleItemDetailDto> content = listMapper.mapList(saleItemsPage.getContent(), SaleItemDetailDto.class, modelMapper);
 
@@ -146,33 +156,5 @@ public class SaleItemService {
         responseDto.setSort(saleItemsPage.getSort().isSorted() ? saleItemsPage.getSort().toString().replace(": ", ":") : null);
 
         return responseDto;
-    }
-
-    public List<SaleItemGalleryDto> filterSaleItems(SaleItemFilterRequestDTO filterDto) {
-        List<SaleItem> items = saleItemRepository.filterSaleItem(
-                (filterDto.getBrandIds() == null || filterDto.getBrandIds().isEmpty()) ? null : filterDto.getBrandIds(),
-                filterDto.getMinPrice(),
-                filterDto.getMaxPrice(),
-                (filterDto.getStorageSizes() == null || filterDto.getStorageSizes().isEmpty()) ? null : filterDto.getStorageSizes()
-        );
-
-        return items.stream()
-                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
-                .toList();
-    }
-
-    public List<SaleItemGalleryDto> getDistinctStorageSizes() {
-        List<SaleItem> saleItems = saleItemRepository.findDistinctStorageGb();
-
-        return saleItems.stream()
-                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
-                .toList();
-    }
-
-    public List<SaleItemGalleryDto> getDistinctBrandNames() {
-        List<SaleItem> items = saleItemRepository.findDistinctBrandNames();
-        return items.stream()
-                .map(item -> modelMapper.map(item, SaleItemGalleryDto.class))
-                .toList();
     }
 }
