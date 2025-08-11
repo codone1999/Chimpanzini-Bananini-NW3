@@ -1,7 +1,7 @@
 <script setup>
 
 const props = defineProps({
-  // Brand //
+  // Brands //
   brands: {
     type: Array,
     required: true
@@ -30,6 +30,7 @@ const props = defineProps({
     type: Array,
     required: true
   },
+  // Prices //
   filterPrices:{
     type: Object,
     required: true
@@ -46,6 +47,7 @@ const props = defineProps({
     type: Function,
     required: true
   },
+  // Storage Sizes //
   filterStorageSizes:{
     type: Object,
     required: true
@@ -62,6 +64,7 @@ const props = defineProps({
     type: Function,
     required: true
   },
+  // Sorting & Page Size //
   sortMode: {
     type: Object,
     required: true
@@ -144,7 +147,7 @@ function handlePageSizeChange(event) {
       <!-- Pill Price -->
       <div 
         class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
-        @click="props.toggleStorageSizeList"  
+        @click="props.togglePriceList"  
       >
         <div class="text-sm font-medium text-gray-800">Price</div>
         <div class="text-xs text-gray-400 mt-1">
@@ -173,8 +176,8 @@ function handlePageSizeChange(event) {
             <button
               v-for="saleItem in props.saleItems"
               :key="saleItem.id"
-              :disabled="props.filterBrands.includes(saleItem.price)"
-              @click="props.onToggleStorageSize(saleItem.price)"
+              :disabled="props.filterPrices.includes(saleItem.price)"
+              @click="props.onTogglePrice(saleItem.price)"
               class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
               :class="props.filterPrices.includes(saleItem.price) ? 'text-gray-300' : 'text-black'"
             >
@@ -185,7 +188,10 @@ function handlePageSizeChange(event) {
       </div>
 
       <!-- Storage Size -->
-      <div class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200">
+      <div 
+        class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
+        @click="props.toggleStorageSizeList"
+      >
         <div class="flex items-center justify-between">
           <div>
             <div class="text-sm font-medium text-gray-800">Storage Size</div>

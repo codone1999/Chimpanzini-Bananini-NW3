@@ -9,6 +9,8 @@ import phoneImg from "../../../../public/phone.png";
 // Session Keys
 const SESSION_KEYS = {
   FILTER_BRANDS: "session_filterBrands",
+  FILTER_PRICES: "session_filterPrices",
+  FILTER_STORAGE_SIZES: "session_filterStorage",
   SORT_MODE: "session_sortMode",
   PAGE_SIZE: "session_pageSize",
   CURRENT_PAGE: "session_currentPage",
@@ -18,179 +20,18 @@ const SESSION_KEYS = {
 const allProducts = ref([]);
 const products = ref([]);
 
-const brands = ref([
-  {
-    "id": 1,
-    "name": "Samsung",
-    "websiteUrl": "https://www.samsung.com",
-    "isActive": true,
-    "countryOfOrigin": "South Korea",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 2,
-    "name": "Apple",
-    "websiteUrl": "https://www.apple.com",
-    "isActive": true,
-    "countryOfOrigin": "United States",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 3,
-    "name": "Xiaomi",
-    "websiteUrl": "https://www.mi.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 4,
-    "name": "Huawei",
-    "websiteUrl": "https://www.huawei.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 5,
-    "name": "ASUS",
-    "websiteUrl": "https://www.asus.com",
-    "isActive": true,
-    "countryOfOrigin": "Taiwan",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 6,
-    "name": "OPPO",
-    "websiteUrl": "https://www.oppo.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 7,
-    "name": "OnePlus",
-    "websiteUrl": "https://www.oneplus.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 8,
-    "name": "Sony",
-    "websiteUrl": "https://www.sony.com",
-    "isActive": true,
-    "countryOfOrigin": "Japan",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 9,
-    "name": "LG",
-    "websiteUrl": "https://www.lg.com",
-    "isActive": true,
-    "countryOfOrigin": "South Korea",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 10,
-    "name": "Nokia",
-    "websiteUrl": "https://www.nokia.com",
-    "isActive": false,
-    "countryOfOrigin": "Finland",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 11,
-    "name": "Motorola",
-    "websiteUrl": "https://www.motorola.com",
-    "isActive": false,
-    "countryOfOrigin": "United States",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 12,
-    "name": "Vivo",
-    "websiteUrl": "https://www.vivo.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 13,
-    "name": "Google",
-    "websiteUrl": "https://store.google.com",
-    "isActive": true,
-    "countryOfOrigin": "United States",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 14,
-    "name": "Realme",
-    "websiteUrl": "https://www.realme.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 15,
-    "name": "BlackBerry",
-    "websiteUrl": "https://www.blackberry.com",
-    "isActive": true,
-    "countryOfOrigin": "Canada",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 16,
-    "name": "HTC",
-    "websiteUrl": "https://www.htc.com",
-    "isActive": true,
-    "countryOfOrigin": "Taiwan",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 17,
-    "name": "ZTE",
-    "websiteUrl": "https://www.zte.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 18,
-    "name": "Lenovo",
-    "websiteUrl": "https://www.lenovo.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 19,
-    "name": "Honor",
-    "websiteUrl": "https://www.hihonor.com",
-    "isActive": true,
-    "countryOfOrigin": "China",
-    "noOfSaleItems": null
-  },
-  {
-    "id": 20,
-    "name": "Nothing",
-    "websiteUrl": "https://nothing.tech",
-    "isActive": true,
-    "countryOfOrigin": "United Kingdom",
-    "noOfSaleItems": null
-  }
-]);
+const brands = ref([]);
 const filterBrands = ref([]);
 const showBrandList = ref(false);
 const brandToAdd = ref("");
 
-const filterStorageSizes = ref([])
-const showStorageSizeList = ref(false)
-const storageSizeToAdd = ref("")
-
 const filterPrices = ref([])
 const showPriceList = ref(false)
 const priceToAdd = ref("")
+
+const filterStorageSizes = ref([])
+const showStorageSizeList = ref(false)
+const storageSizeToAdd = ref("")
 
 const sortMode = ref("none");
 
@@ -229,8 +70,14 @@ const visiblePages = computed(() => {
 
 // Session
 function loadSession() {
-  const savedFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_BRANDS);
-  if (savedFilters) filterBrands.value = JSON.parse(savedFilters);
+  const savedBrandFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_BRANDS);
+  if (savedBrandFilters) filterBrands.value = JSON.parse(savedBrandFilters);
+
+  const savedPriceFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_PRICES);
+  if (savedPriceFilters) filterPrices.value = JSON.parse(savedPriceFilters);
+  
+  const savedStorageFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_STORAGE_SIZES);
+  if (savedStorageFilters) filterStorageSizes.value = JSON.parse(savedStorageFilters);
 
   const savedSort = sessionStorage.getItem(SESSION_KEYS.SORT_MODE);
   if (savedSort) sortMode.value = savedSort;
@@ -243,16 +90,13 @@ function loadSession() {
 }
 
 function saveSession() {
-  sessionStorage.setItem(
-    SESSION_KEYS.FILTER_BRANDS,
-    JSON.stringify(filterBrands.value)
-  );
+  sessionStorage.setItem(SESSION_KEYS.FILTER_BRANDS, JSON.stringify(filterBrands.value))
+  sessionStorage.setItem(SESSION_KEYS.FILTER_PRICES, JSON.stringify(filterPrices.value))
+  sessionStorage.setItem(SESSION_KEYS.FILTER_STORAGE_SIZES, JSON.stringify(filterStorageSizes.value))
+
   sessionStorage.setItem(SESSION_KEYS.SORT_MODE, sortMode.value);
   sessionStorage.setItem(SESSION_KEYS.PAGE_SIZE, pageSize.value.toString());
-  sessionStorage.setItem(
-    SESSION_KEYS.CURRENT_PAGE,
-    currentPage.value.toString()
-  );
+  sessionStorage.setItem(SESSION_KEYS.CURRENT_PAGE, currentPage.value.toString());
 }
 
 // Data Fetching
@@ -267,6 +111,18 @@ async function fetchFilteredSaleItems() {
   if (filterBrands.value.length > 0) {
     for (const brand of filterBrands.value) {
       query.push("filterBrands=" + brand);
+    }
+  }
+
+  if (filterPrices.value.length > 0) {
+    for (const price of filterPrices.value){
+      query.push("filterPrices=" + price)
+    }
+  }
+
+  if (filterStorageSizes.value.length > 0) {
+    for (const storage of filterStorageSizes.value) {
+      query.push("filterStorages=" + storage)
     }
   }
 
@@ -310,6 +166,24 @@ function toggleBrand(brandName) {
   brandToAdd.value = "";
 }
 
+function togglePrice(saleItemPrice) {
+  if (filterPrices.value.includes(saleItemPrice)) {
+    filterPrices.value = filterPrices.value.filter((b) => b !== saleItemPrice);
+  } else {
+    filterPrices.value.push(saleItemPrice);
+  }
+  priceToAdd.value = "";
+}
+
+function toggleStorageSize(saleItemStorageSize) {
+  if (filterStorageSizes.value.includes(saleItemStorageSize)) {
+    filterStorageSizes.value = filterStorageSizes.value.filter((b) => b !== saleItemStorageSize);
+  } else {
+    filterStorageSizes.value.push(saleItemStorageSize);
+  }
+  storageSizeToAdd.value = "";
+}
+
 function clearBrandFilters() {
   filterBrands.value = [];
 }
@@ -325,7 +199,7 @@ function goToPage(page) {
 
 // Watchers
 watch(
-  [filterBrands, sortMode, pageSize, currentPage],
+  [filterBrands, filterPrices, filterStorageSizes, sortMode, pageSize, currentPage],
   () => {
     saveSession();
     fetchFilteredSaleItems();
@@ -338,6 +212,19 @@ watch(brandToAdd, (value) => {
     toggleBrand(value);
   }
 });
+
+watch(priceToAdd, (value) => {
+  if (value && !filterPrices.value.includes(value)) {
+    togglePrice(value);
+  }
+});
+
+watch(storageSizeToAdd, (value) => {
+  if (value && !filterStorageSizes.value.includes(value)) {
+    toggleStorageSize(value);
+  }
+});
+
 
 onMounted(async () => {
   loadSession();
@@ -391,6 +278,8 @@ onMounted(async () => {
       :toggle-brand-list="() => showBrandList = !showBrandList"
       :on-toggle-brand="toggleBrand"
       :on-clear-brands="clearBrandFilters"
+
+      :sale-items="products"
 
       :filter-prices="filterPrices"
       :show-price-list="showPriceList"
