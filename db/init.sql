@@ -47,6 +47,22 @@ CREATE TABLE IF NOT EXISTS sale_item (
     CONSTRAINT ck_sale_item_color CHECK (color IS NULL OR TRIM(color) <> '')
 ) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS sale_item_picture (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sale_item_id INT NOT NULL,
+    old_picture_name VARCHAR(255) NOT NULL, -- original uploaded filename
+    new_picture_name VARCHAR(255) NOT NULL, -- unique stored filename
+    file_size_bytes INT NOT NULL,           -- file size in bytes
+    createdOn DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_sale_item_picture_item FOREIGN KEY (sale_item_id) REFERENCES sale_item(id)
+        ON DELETE CASCADE,
+    CONSTRAINT ck_file_size_bytes CHECK (file_size_bytes <= 2 * 1024 * 1024), -- ≤ 2MB
+    CONSTRAINT ck_old_picture_name CHECK (TRIM(old_picture_name) <> ''),
+    CONSTRAINT ck_new_picture_name CHECK (TRIM(new_picture_name) <> '')
+) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- Insert data into the 'brand' table with specific createdOn timestamps
 -- This will influence the order when sorted by brand creation time.
 INSERT INTO brand (name, websiteUrl, isActive, countryOfOrigin, createdOn) VALUES
