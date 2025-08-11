@@ -118,13 +118,15 @@ public class SaleItemService {
             String sortField,
             String sortDirection) throws NoSuchFieldException {
 
-        if (page == null || page < 0) {
+        if (page == null || page < 0) { //check page is not -
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
         }
-        int pageSize = (size == null || size <= 0) ? 10 : size;
+        int pageSize = (size == null || size <= 0) ? 10 : size; //Check if size is missing or invalid,
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        //Default sort is ascending unless sortDirection=desc
         String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
+        //Default sort field is createdOn unless another is given.
 
         Sort.Order order;
         if (String.class.equals(SaleItem.class.getDeclaredField(sortBy).getType())) {
@@ -141,7 +143,7 @@ public class SaleItemService {
                 filterPriceUpper,
                 (filterStorages == null || filterStorages.isEmpty()) ? null : filterStorages,
                 pageable
-        );
+        );//use repo to filter
 
         List<SaleItemDetailDto> content = listMapper.mapList(saleItemsPage.getContent(), SaleItemDetailDto.class, modelMapper);
 
