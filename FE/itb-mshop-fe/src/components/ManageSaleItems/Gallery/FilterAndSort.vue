@@ -86,6 +86,18 @@ function handlePageSizeChange(event) {
   emit('update:pageSize', value)
 }
 
+const storageOptions = [
+  32,
+  64,
+  128,
+  256,
+  512,
+  1
+]
+
+function formatStorage(size) {
+  return size >= 1 && size < 10 ? `${size}TB` : `${size}GB`
+}
 </script>
 
 <template>
@@ -127,7 +139,7 @@ function handlePageSizeChange(event) {
               v-for="brand in props.brands"
               :key="brand.id"
               :disabled="props.filterBrands.includes(brand.name)"
-              @click="props.onToggleBrand(brand.name)"
+              @click.stop="props.onToggleBrand(brand.name)"
               class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
               :class="props.filterBrands.includes(brand.name) ? 'text-gray-300' : 'text-black'"
             >
@@ -177,7 +189,7 @@ function handlePageSizeChange(event) {
               v-for="saleItem in props.saleItems"
               :key="saleItem.id"
               :disabled="props.filterPrices.includes(saleItem.price)"
-              @click="props.onTogglePrice(saleItem.price)"
+              @click.stop="props.onTogglePrice(saleItem.price)"
               class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
               :class="props.filterPrices.includes(saleItem.price) ? 'text-gray-300' : 'text-black'"
             >
@@ -187,8 +199,8 @@ function handlePageSizeChange(event) {
         </div>
       </div>
 
-      <!-- Storage Size -->
-      <div 
+      <!-- Pill Storage Size -->
+      <div  
         class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
         @click="props.toggleStorageSizeList"
       >
@@ -204,7 +216,7 @@ function handlePageSizeChange(event) {
                 v-for="storageSize in props.filterStorageSizes" :key="storageSize"
                 class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
               >
-                {{ storageSize }}
+                {{ formatStorage(storageSize) }}
                 <button 
                   class="itbms-filter-item-clear hover:text-red-500 -mb-1"
                   @click.stop="props.onToggleStorageSize(storageSize)"
@@ -219,20 +231,22 @@ function handlePageSizeChange(event) {
                 class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
               >
                 <button
-                  v-for="saleItem in props.saleItems"
-                  :key="saleItem.id"
-                  :disabled="props.filterStorageSizes.includes(saleItem.storageGb)"
-                  @click="props.onToggleStorageSize(saleItem.storageGb)"
+                  v-for="size in storageOptions"
+                  :key="size"
+                  :disabled="props.filterStorageSizes.includes(size)"
+                  @click.stop="props.onToggleStorageSize(size)"
                   class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-                  :class="props.filterStorageSizes.includes(saleItem.storageGb) ? 'text-gray-300' : 'text-black'"
+                  :class="props.filterStorageSizes.includes(size) ? 'text-gray-300' : 'text-black'"
                 >
-                  {{ saleItem.storageGb }}
+                  {{ formatStorage(size) }}
                 </button>
               </div>
             </div>
           </div>
+
+          <!-- Filter Icon -->
           <button
-            @click="props.toggleBrandList; props.toggleStorageSizeList;"
+            @click="props.toggleBrandList"
             class="-mr-4 pt-2 px-2 pb-1 bg-gray-200 border border-gray-600 rounded-full hover:bg-gray-300 transition"
           >
             <span class="material-icons text-gray-700">filter_alt</span>

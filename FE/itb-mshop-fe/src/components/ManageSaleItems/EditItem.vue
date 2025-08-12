@@ -5,7 +5,8 @@ import { getItemById, getItems, editItem } from "@/lib/fetchUtils";
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
-const url = `${import.meta.env.VITE_APP_URL}/sale-items`
+const url_brands = `${import.meta.env.VITE_APP_URL}/brands`
+const url_items = `${import.meta.env.VITE_APP_URL}/sale-items`
 
 const route = useRoute();
 const router = useRouter();
@@ -58,7 +59,7 @@ async function handleSubmit() {
   try {
     product.value.color = product.value.color === "" ? null : product.value.color;
 
-    const editedItem = await editItem(url, id, product.value);
+    const editedItem = await editItem(url_items, id, product.value);
     if (typeof editedItem !== 'number') {
       if (from === "Gallery")
         router.push({ name: "ListDetails", params: { id: product.id }, query: { edited: "true" },});
@@ -75,7 +76,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById(url, id);
+    const item = await getItemById(url_items, id);
     if (typeof item === 'number') {
       router.push({ name: 'ListGallery'});
       alert("The requested sale item does not exist.");
@@ -84,12 +85,12 @@ onMounted(async () => {
 
     const data = {
       id: item.id,
-      model: item.model,
       brand: {
         id: null,
         name: item.brandName,
       },
       brandName: item.brandName,
+      model: item.model,
       description: item.description,
       price: item.price,
       ramGb: item.ramGb, // OPTIONAL
@@ -105,7 +106,7 @@ onMounted(async () => {
   }
 
   try {
-    const brand = await getItems(url);
+    const brand = await getItems(url_brands);
     if (typeof brand === 'number') {
       alert('The requested sale brand does not exist.')
       return;

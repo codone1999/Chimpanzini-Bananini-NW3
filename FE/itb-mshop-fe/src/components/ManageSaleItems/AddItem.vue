@@ -10,6 +10,12 @@ const router = useRouter()
 const from = route.query.from
 
 const brandSelected = ref([])
+const uploadedImage = ref([
+  "samsung;slkfjaskljfdsalk;fjs;lkdfjsafasgnk.png",
+  "samsung-pic1.png",
+  "samsung-pic1.png",
+  "samsung-pic1.png"
+])
 
 const newSaleItem = ref({
   id: null,
@@ -106,11 +112,68 @@ onMounted(async () => {
             </div>
 
             <!-- Upload Image Button -->
-            <button class=" mt-5 py-2 w-2/7 border rounded-2xl bg-amber-500 hover:bg-amber-600">
+            <button class=" mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600">
               Upload Images
             </button>
-          </div>
+            
+            <!-- Uploaded Image -->
+            <div class="flex flex-col gap-3 mt-3 max-w-3/5 md:max-w-1/2">
+              <span
+                v-if="uploadedImage.length > 0"
+                v-for="(imageNamed, index) in uploadedImage"
+                :key="imageNamed"
+                class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
+              >
+                <!-- Filename with truncate -->
+                <span class="truncate min-w-0 max-w-[200px]">
+                  {{ imageNamed }}
+                </span>
 
+                <!-- Button Right Side -->
+                <div class="flex gap-2">
+                  <!-- Remove Image -->
+                  <button 
+                    class="flex-shrink-0 hover:text-red-500 -mb-1"
+                    @click.stop="props.onToggleImage(imageNamed)"
+                  >
+                    <span class="material-icons text-sm">close</span>
+                  </button>
+
+                  <!-- Swap Up/Down Button -->
+                  <div 
+                    class="flex flex-col leading-none"
+                  >
+                    <!-- Swap Up -->
+                    <button
+                      v-if="index !== 0"
+                      class="flex-shrink-0 hover:text-red-500"
+                      :class="index !== uploadedImage.length - 1 ? '-mb-2 -mt-1' : '' "
+                      @click="() => {}"
+                    >
+                      <span class="material-icons text-base">
+                        arrow_drop_up
+                      </span>
+                    </button>
+
+                    <!-- Swap Down -->
+                    <button
+                      v-if="index !== uploadedImage.length - 1"
+                      class="flex-shrink-0 hover:text-red-500"
+                      :class="index !== 0 ? '-mt-2 -mb-1.5' : '' "
+                      @click="() => {}"
+                    >
+                      <span class="material-icons text-base">
+                        arrow_drop_down
+                      </span>
+                    </button>
+                  </div> <!-- END--Swap Up/Down Button -->
+
+                </div> <!-- END--Button Right Side -->
+              </span>
+              
+            </div> <!-- END--Upload Image-->
+
+          </div>
 
           <!-- Form Fields -->
           <div class="space-y-6 mt-10">
