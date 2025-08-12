@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -42,8 +44,13 @@ public class SaleItemPicture {
     private Integer fileSizeBytes;
 
     @NotNull
-    @ColumnDefault("CURRENT_TIMESTAMP")
+    @CreationTimestamp
     @Column(name = "createdOn", nullable = false)
     private Instant createdOn;
+
+    @NotNull
+    @ColumnDefault("1")
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder;
 
 }

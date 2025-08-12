@@ -93,6 +93,10 @@ SELECT id, name, createdOn FROM brand ORDER BY createdOn ASC;
 
 -- Demonstrate brand order by name Ascending (Apple -> ASUS -> Huawei -> OPPO -> Samsung -> Xiaomi)
 SELECT id, name FROM brand ORDER BY name ASC;
+ALTER TABLE sale_item_picture ADD COLUMN display_order INT NOT NULL DEFAULT 1;
+ALTER TABLE sale_item_picture
+MODIFY createdOn TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
 
 -- Insert data into the 'sale_item' table
 -- IDs are now auto-incremented, so we don't provide them.
