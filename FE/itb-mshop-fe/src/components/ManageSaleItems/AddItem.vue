@@ -10,12 +10,8 @@ const router = useRouter()
 const from = route.query.from
 
 const brandSelected = ref([])
-const uploadedImage = ref([
-  "samsung;slkfjaskljfdsalk;fjs;lkdfjsafasgnk.png",
-  "samsung-pic1.png",
-  "samsung-pic1.png",
-  "samsung-pic1.png"
-])
+const files = ref([])
+const filePreviews = ref([]) // store object URLs for previews
 
 const newSaleItem = ref({
   id: null,
@@ -44,19 +40,39 @@ function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
 }
 
+function handleFileChange(event) {
+  files.value = Array.from(event.target.files)
+
+  // generate preview URLs
+  filePreviews.value = files.value.map(file => URL.createObjectURL(file))
+}
+
 async function handleSubmit() {
   try {
-    const addedItem = await addItem(`${import.meta.env.VITE_APP_URL}/sale-items`, newSaleItem.value)
-    if (typeof addedItem !== 'number') {
-      router.push({
-        name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItems',
-        query: { added: 'true' },
-      })
-    } else {
-      alert("Fail to submit!")
+    // Step 1: Create Sale Item
+    const createdItem = await addItem(
+      `${import.meta.env.VITE_APP_URL}/sale-items`,
+      newSaleItem.value
+    )
+
+    if (!createdItem.id) {
+      alert("Failed to create item!")
+      return
     }
-  } catch (error) {
-    console.error('Error:', error)
+
+    // Step 2: Upload images (if any)
+    if (files.value && files.value.length > 0) {
+      await addImage(`${import.meta.env.VITE_APP_URL}/sale-items/${createdItem.id}/pictures`, files.value)
+    }
+
+    // Step 3: Redirect
+    router.push({
+      name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItems',
+      query: { added: 'true' },
+    })
+
+  } catch (err) {
+    console.error(err)
   }
 }
 
@@ -104,37 +120,50 @@ onMounted(async () => {
                 class="w-full object-cover bg-gray-200 rounded-lg"
               />
               <div class="flex space-x-3 items-center justify-center">
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
+                <img
+                  v-for="(preview, index) in filePreviews"
+                  :key="index"
+                  :src="preview"
+                  class="w-1/5 rounded bg-gray-100 object-cover"
+                />
               </div>
             </div>
 
             <!-- Upload Image Button -->
-            <button class=" mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600">
+            <input
+              class="hidden"
+              id="fileInput"
+              type="file"
+              multiple
+              accept="image/*"
+              @change="handleFileChange"
+            />
+            <label
+              for="fileInput"
+              class="mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600 cursor-pointer text-center"
+            >
               Upload Images
-            </button>
+            </label>
             
             <!-- Uploaded Image -->
             <div class="flex flex-col gap-3 mt-3 max-w-3/5 md:max-w-1/2">
               <span
-                v-if="uploadedImage.length > 0"
-                v-for="(imageNamed, index) in uploadedImage"
-                :key="imageNamed"
+                v-if="files.length > 0"
+                v-for="(file, index) in files"
+                :key="index"
                 class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
               >
                 <!-- Filename with truncate -->
                 <span class="truncate min-w-0 max-w-[200px]">
-                  {{ imageNamed }}
+                  {{ file.name }}
                 </span>
 
                 <!-- Button Right Side -->
-                <div class="flex gap-2">
+                <div class="flex gap-1">
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="props.onToggleImage(imageNamed)"
+                    @click.stop="onToggleImage(file.name)"
                   >
                     <span class="material-icons text-sm">close</span>
                   </button>
@@ -147,7 +176,7 @@ onMounted(async () => {
                     <button
                       v-if="index !== 0"
                       class="flex-shrink-0 hover:text-red-500"
-                      :class="index !== uploadedImage.length - 1 ? '-mb-2 -mt-1' : '' "
+                      :class="index !== files.length - 1 ? '-mb-2 -mt-1' : '' "
                       @click="() => {}"
                     >
                       <span class="material-icons text-base">
@@ -157,7 +186,7 @@ onMounted(async () => {
 
                     <!-- Swap Down -->
                     <button
-                      v-if="index !== uploadedImage.length - 1"
+                      v-if="index !== files.length - 1"
                       class="flex-shrink-0 hover:text-red-500"
                       :class="index !== 0 ? '-mt-2 -mb-1.5' : '' "
                       @click="() => {}"
