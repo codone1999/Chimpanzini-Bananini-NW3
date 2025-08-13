@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getItems, addItem } from '@/lib/fetchUtils'
+import { getItems, addItem, addItemAndImage } from '@/lib/fetchUtils'
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
@@ -14,10 +14,10 @@ const files = ref([])
 const filePreviews = ref([]) // store object URLs for previews
 
 const newSaleItem = ref({
-  id: null,
+  // id: null,
   brand: {
     id: null,
-    name: '',
+    // name: '',
   },
   brandName: '',
   model: '',
@@ -49,30 +49,19 @@ function handleFileChange(event) {
 
 async function handleSubmit() {
   try {
-    // Step 1: Create Sale Item
-    const createdItem = await addItem(
-      `${import.meta.env.VITE_APP_URL}/sale-items`,
-      newSaleItem.value
-    )
-
-    if (!createdItem.id) {
-      alert("Failed to create item!")
-      return
+    const addedItem = await addItemAndImage(`${import.meta.env.VITE_APP_URL}/sale-items`, newSaleItem.value, files.value)
+    
+    if (addedItem && addedItem.id) { // Check for successful response
+      router.push({ 
+        name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItems', 
+        query: { added: 'true' } 
+      })
+    } else {
+      alert("Failed to submit item!")
     }
-
-    // Step 2: Upload images (if any)
-    if (files.value && files.value.length > 0) {
-      await addImage(`${import.meta.env.VITE_APP_URL}/sale-items/${createdItem.id}/pictures`, files.value)
-    }
-
-    // Step 3: Redirect
-    router.push({
-      name: from === 'Gallery' ? 'ListGallery' : 'ListSaleItems',
-      query: { added: 'true' },
-    })
-
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error('Error:', error)
+    alert("Failed to submit item!")
   }
 }
 

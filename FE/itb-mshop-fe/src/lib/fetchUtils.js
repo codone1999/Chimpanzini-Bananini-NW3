@@ -47,23 +47,35 @@ async function addItem(url, newItem) {
   }
 }
 
-async function addImage(url, files) {
+async function addItemAndImage(url, newItem, files) {
   try {
     const formData = new FormData()
-    files.forEach(file => formData.append("files", file))
-
+    
+    // Add the JSON data as a blob with correct content type
+    formData.append("data", new Blob([JSON.stringify(newItem)], {
+      type: "application/json"
+    }))
+    
+    // Add files if they exist
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        formData.append("files", file)
+      })
+    }
+    
     const res = await fetch(url, {
       method: 'POST',
-      body: formData
+      body: formData // Don't set Content-Type header - let browser set it with boundary
     })
-
+    
     if (!res.ok) {
-      throw new Error('Failed to upload image(s)')
+      throw new Error(`HTTP error! status: ${res.status}`)
     }
-
+    
     return await res.json()
   } catch (error) {
-    throw new Error('can not upload your image(s)')
+    console.error('Error adding item:', error)
+    throw new Error('Cannot add your item: ' + error.message)
   }
 }
 
@@ -84,4 +96,4 @@ async function editItem(url, id, editItem) {
     throw new Error('can not edit your item')
   }
 }
-export { getItems, getItemById, deleteItemById, addItem, editItem, addImage }
+export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage }
