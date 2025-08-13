@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,6 +59,38 @@ public class SaleItemPictureService {
         return savedPictures.stream()
                 .map(picture -> modelMapper.map(picture, SaleItemPictureResponseDTO.class))
                 .toList();
+    }
+
+    public void deletePictureByIds(List<Integer> ids) {
+        List<SaleItemPicture> pictures = saleItemPictureRepository.findAllById(ids);
+        for (SaleItemPicture picture : pictures) {
+            Path filePath = fileService.getFileStorageLocation().resolve(picture.getNewPictureName());
+            try{
+                Files.deleteIfExists(filePath);
+            }catch (IOException e) {
+                throw new RuntimeException("Failed to delete file " + picture.getNewPictureName(), e);
+            }
+        }
+        saleItemPictureRepository.deleteAll(pictures);
+    }
+
+    public void updatePictureOrder(Integer saleItemId, List<Integer> orderedIds) {
+        List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
+        for (int i = 0; i < orderedIds.size(); i++) {
+            int newOrder = i + 1;
+            Integer pictureId = orderedIds.get(i);
+
+            pictures.stream()
+                    .filter(p -> p.getId().equals(pictureId))
+                    .findFirst()
+                    .ifPresent(p -> p.setDisplayOrder(newOrder));
+        }
+
+        saleItemPictureRepository.saveAll(pictures);
+    }
+
+    public int countPicturesBySaleItemId(Integer saleItemId) {
+        return saleItemPictureRepository.countBySaleItemId(saleItemId);
     }
 
 }

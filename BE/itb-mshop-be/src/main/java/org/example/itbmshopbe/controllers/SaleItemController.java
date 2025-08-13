@@ -1,5 +1,7 @@
 package org.example.itbmshopbe.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.SaleItemDetailDto;
@@ -41,10 +43,21 @@ public class SaleItemController {
     }
 
     @PostMapping("")
-    public ResponseEntity<SaleItemDetailDto> addSaleItem(@RequestBody SaleItemRequestDto requestDto) {
+    public ResponseEntity<?> addSaleItem(
+            @RequestPart("data") SaleItemRequestDto requestDto,
+            @RequestPart(value = "files",required = false) List<MultipartFile> files)
+    {
        try {
             SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(requestDto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdSaleItem);
+            if (files != null && !files.isEmpty()) {
+                if (files.size() > 4) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
+                }
+                saleItemPictureService.storePicture(createdSaleItem.getId(), files);
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    saleItemService.getSaleItemDetails(createdSaleItem.getId())
+            );
        } catch (Exception e) {
            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
        }
@@ -54,10 +67,32 @@ public class SaleItemController {
     @PutMapping("/{id}")
     public ResponseEntity<SaleItemDetailDto> updateSaleItem(
             @PathVariable Integer id,
-            @RequestBody SaleItemRequestDto requestDto) {
+            @RequestPart("data") SaleItemRequestDto requestDto,
+            @RequestPart(value = "files",required = false) List<MultipartFile> newFiles,
+            @RequestPart(value = "deletePictureIds",required = false) List<Integer> deletePictureIds,
+            @RequestPart(value = "orderedPictureIds", required = false) List<Integer> orderedPictureIds
+            //,@RequestPart(value = "deletePictureIds", required = false) String deletePictureIdsJson
+            ) {
         try {
+            //List<Integer> deletePictureIds = new ObjectMapper().readValue(deletePictureIdsJson, new TypeReference<List<Integer>>() {});
             SaleItemDetailDto updatedSaleItem = saleItemService.updateSaleItem(id, requestDto);
-            return ResponseEntity.ok(updatedSaleItem);
+
+            //delete old picture
+            if (deletePictureIds != null && !deletePictureIds.isEmpty()) {
+                saleItemPictureService.deletePictureByIds(deletePictureIds);
+            }
+            int existingCount = saleItemPictureService.countPicturesBySaleItemId(id);
+
+            if(newFiles != null && !newFiles.isEmpty()) {
+                if (existingCount + newFiles.size() > 4) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
+                }
+                saleItemPictureService.storePicture(updatedSaleItem.getId(), newFiles);
+            }
+            if (orderedPictureIds != null && !orderedPictureIds.isEmpty()) {
+                saleItemPictureService.updatePictureOrder(id,orderedPictureIds);
+            }
+            return ResponseEntity.ok(saleItemService.getSaleItemDetails(id));
         } catch (ItemNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
        } catch (Exception e) {

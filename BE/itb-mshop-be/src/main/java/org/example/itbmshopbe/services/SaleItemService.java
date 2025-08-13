@@ -3,8 +3,10 @@ package org.example.itbmshopbe.services;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.*;
 import org.example.itbmshopbe.entities.SaleItem;
+import org.example.itbmshopbe.entities.SaleItemPicture;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.BrandRepository;
+import org.example.itbmshopbe.repositories.SaleItemPictureRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.example.itbmshopbe.utils.ListMapper;
 import org.example.itbmshopbe.utils.SaleItemUtil;
@@ -20,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 
@@ -29,10 +34,12 @@ import static org.example.itbmshopbe.utils.Util.trimFirstAndLastSentence;
 @RequiredArgsConstructor
 public class SaleItemService {
     private final SaleItemRepository saleItemRepository;
+    private final SaleItemPictureRepository saleItemPictureRepository;
     private final BrandRepository brandRepository;
     private final SaleItemUtil saleItemUtil;
     private final ListMapper listMapper;
     private final ModelMapper modelMapper;
+    private FileService fileService;
 
     private SaleItem findSaleItemById(Integer id){
         return saleItemRepository.findById(id)
@@ -99,12 +106,19 @@ public class SaleItemService {
 
 
     public void deleteSaleItem(Integer id) {
-        if (! saleItemRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "SaleItem with id " + id + " not found"
-            );
+        List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
+
+        // Delete picture file on disk
+        for (SaleItemPicture pic : pictures) {
+            Path filePath = fileService.getFileStorageLocation().resolve(pic.getNewPictureName());
+            try {
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to delete picture file " + pic.getNewPictureName(), e);
+            }
         }
+
+        saleItemPictureRepository.deleteAll(pictures);
         saleItemRepository.deleteById(id);
     }
 
