@@ -173,4 +173,19 @@ public class SaleItemService {
 
         return responseDto;
     }
+    public SaleItemDetailWithImagesDto getSaleItemDetailWithImages(Integer id) {
+        SaleItem saleItem = findSaleItemById(id);
+        SaleItemDetailWithImagesDto dto = modelMapper.map(saleItem, SaleItemDetailWithImagesDto.class);
+        dto.setBrandName(saleItem.getBrand().getName());
+
+        List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
+        List<SaleItemImageDto> imageDtos = pictures.stream().map(pic -> {
+            SaleItemImageDto imgDto = new SaleItemImageDto();
+            imgDto.setFileName(pic.getNewPictureName());
+            imgDto.setImageViewOrder(pic.getDisplayOrder());
+            return imgDto;
+        }).toList();
+        dto.setSaleItemImages(imageDtos);
+        return dto;
+    }
 }

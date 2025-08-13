@@ -1,6 +1,7 @@
 package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.example.itbmshopbe.dtos.SaleItemDetailWithImagesDto;
 import org.example.itbmshopbe.dtos.SaleItemFilterRequestDTO;
 import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
 import org.example.itbmshopbe.dtos.SaleItemPagedResponseDto;
@@ -34,5 +35,10 @@ public class SaleItemControllerV2 {
                filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,sortDirection
         );
         return ResponseEntity.ok(responseDto);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SaleItemDetailWithImagesDto> getSaleItemById(@PathVariable Integer id){
+        return ResponseEntity.ok(saleItemService.getSaleItemDetailWithImages(id));
     }
 }
