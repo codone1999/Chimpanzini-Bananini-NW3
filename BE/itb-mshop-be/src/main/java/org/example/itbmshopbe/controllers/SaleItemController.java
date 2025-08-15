@@ -58,38 +58,19 @@ public class SaleItemController {
     @PutMapping("/{id}")
     public ResponseEntity<SaleItemDetailDto> updateSaleItem(
             @PathVariable Integer id,
-            @RequestPart("data") SaleItemRequestDto requestDto,
-            @RequestPart(value = "files",required = false) List<MultipartFile> newFiles,
-            @RequestPart(value = "deletePictureIds",required = false) List<Integer> deletePictureIds,
-            @RequestPart(value = "orderedPictureIds", required = false) List<Integer> orderedPictureIds
-            //,@RequestPart(value = "deletePictureIds", required = false) String deletePictureIdsJson
-            ) {
+            @RequestBody SaleItemRequestDto requestDto
+    ) {
         try {
-            //List<Integer> deletePictureIds = new ObjectMapper().readValue(deletePictureIdsJson, new TypeReference<List<Integer>>() {});
+            // Only update sale item fields
             SaleItemDetailDto updatedSaleItem = saleItemService.updateSaleItem(id, requestDto);
-
-            //delete old picture
-            if (deletePictureIds != null && !deletePictureIds.isEmpty()) {
-                saleItemPictureService.deletePictureByIds(deletePictureIds);
-            }
-            int existingCount = saleItemPictureService.countPicturesBySaleItemId(id);
-
-            if(newFiles != null && !newFiles.isEmpty()) {
-                if (existingCount + newFiles.size() > 4) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
-                }
-                saleItemPictureService.storePicture(updatedSaleItem.getId(), newFiles);
-            }
-            if (orderedPictureIds != null && !orderedPictureIds.isEmpty()) {
-                saleItemPictureService.updatePictureOrder(id,orderedPictureIds);
-            }
-            return ResponseEntity.ok(saleItemService.getSaleItemDetails(id));
+            return ResponseEntity.ok(updatedSaleItem);
         } catch (ItemNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sale item not found", e);
-       } catch (Exception e) {
+        } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item update failed", e);
-       }
+        }
     }
+
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

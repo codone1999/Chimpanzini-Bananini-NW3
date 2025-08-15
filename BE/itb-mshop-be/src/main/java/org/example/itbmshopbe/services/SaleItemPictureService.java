@@ -1,6 +1,7 @@
 package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
+import org.example.itbmshopbe.dtos.SaleItemPictureRequest;
 import org.example.itbmshopbe.dtos.SaleItemPictureResponseDTO;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.entities.SaleItemPicture;
@@ -8,6 +9,7 @@ import org.example.itbmshopbe.repositories.SaleItemPictureRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -74,23 +76,55 @@ public class SaleItemPictureService {
         saleItemPictureRepository.deleteAll(pictures);
     }
 
-    public void updatePictureOrder(Integer saleItemId, List<Integer> orderedIds) {
-        List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
-        for (int i = 0; i < orderedIds.size(); i++) {
-            int newOrder = i + 1;
-            Integer pictureId = orderedIds.get(i);
+   // public void updatePictureOrder(Integer saleItemId, List<Integer> orderedIds) {
+   //     List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
+   //     for (int i = 0; i < orderedIds.size(); i++) {
+   //         int newOrder = i + 1;
+   //         Integer pictureId = orderedIds.get(i);
+//
+   //         pictures.stream()
+   //                 .filter(p -> p.getId().equals(pictureId))
+   //                 .findFirst()
+   //                 .ifPresent(p -> p.setDisplayOrder(newOrder));
+   //     }
+//
+   //     saleItemPictureRepository.saveAll(pictures);
+   // }
+//
+   // public int countPicturesBySaleItemId(Integer saleItemId) {
+   //     return saleItemPictureRepository.countBySaleItemId(saleItemId);
+   // }
 
-            pictures.stream()
-                    .filter(p -> p.getId().equals(pictureId))
+    @Transactional
+    public void updatePictureByDisplayOrder(Integer saleItemId, List<SaleItemPictureRequest> pictures) {
+        List<SaleItemPicture> existingPictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
+
+        for(SaleItemPictureRequest pictureReq : pictures) {
+            SaleItemPicture exitingPic = existingPictures.stream()
+                    .filter(pic -> pic.getDisplayOrder().equals(pictureReq.getOrder()))
                     .findFirst()
-                    .ifPresent(p -> p.setDisplayOrder(newOrder));
+                    .orElseThrow(() -> new RuntimeException(
+                            "No picture found for displayOrder " + pictureReq.getOrder()));
+            Path oldPicturePath = fileService.getFileStorageLocation().resolve(exitingPic.getNewPictureName());
+            try {
+                Files.deleteIfExists(oldPicturePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to delete file " + exitingPic.getNewPictureName(), e);
+            }
+
+            String newFileName;
+            try {
+                newFileName = fileService.storeFile(pictureReq.getPictureFile(),saleItemId,pictureReq.getOrder());
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to store file " + pictureReq.getPictureFile(), e);
+            }
+            // Update existing picture record
+            exitingPic.setOldPictureName(pictureReq.getPictureFile().getOriginalFilename());
+            exitingPic.setNewPictureName(newFileName);
+            exitingPic.setFileSizeBytes((int) pictureReq.getPictureFile().getSize());
+
+            saleItemPictureRepository.save(exitingPic);
         }
-
-        saleItemPictureRepository.saveAll(pictures);
-    }
-
-    public int countPicturesBySaleItemId(Integer saleItemId) {
-        return saleItemPictureRepository.countBySaleItemId(saleItemId);
     }
 
 }

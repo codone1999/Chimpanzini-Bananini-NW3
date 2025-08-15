@@ -74,4 +74,18 @@ public class SaleItemControllerV2 {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem does not exist");
         }
     }
+
+    @PutMapping("{id}")
+    public ResponseEntity<SaleItemDetailWithImagesDto> updateSaleItem(
+            @PathVariable Integer id,
+            @ModelAttribute SaleItemWithImageInfo saleItemDto
+    ){
+        if(saleItemDto.getSaleItem() != null){
+            saleItemService.updateSaleItem(id, saleItemDto.getSaleItem());
+        }
+        if(saleItemDto.getImagesInfos() != null && !saleItemDto.getImagesInfos().isEmpty()){
+            saleItemPictureService.updatePictureByDisplayOrder(id, saleItemDto.getImagesInfos());
+        }
+        return ResponseEntity.ok(saleItemService.getSaleItemDetailWithImages(id));
+    }
 }
