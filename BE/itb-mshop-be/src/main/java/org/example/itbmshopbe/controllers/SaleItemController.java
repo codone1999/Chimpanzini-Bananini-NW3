@@ -43,25 +43,16 @@ public class SaleItemController {
     }
 
     @PostMapping("")
-    public ResponseEntity<?> addSaleItem(
-            @RequestPart("data") SaleItemRequestDto requestDto,
-            @RequestPart(value = "files",required = false) List<MultipartFile> files)
-    {
-       try {
+    public ResponseEntity<?> addSaleItem(@RequestBody SaleItemRequestDto requestDto) {
+        try {
             SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(requestDto);
-            if (files != null && !files.isEmpty()) {
-                if (files.size() > 4) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
-                }
-                saleItemPictureService.storePicture(createdSaleItem.getId(), files);
-            }
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    saleItemService.getSaleItemDetails(createdSaleItem.getId())
-            );
-       } catch (Exception e) {
-           throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
-       }
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(saleItemService.getSaleItemDetails(createdSaleItem.getId()));
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Sale item creation failed", e);
+        }
     }
+
 
 
     @PutMapping("/{id}")

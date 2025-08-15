@@ -1,14 +1,15 @@
 package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemDetailWithImagesDto;
-import org.example.itbmshopbe.dtos.SaleItemFilterRequestDTO;
-import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
-import org.example.itbmshopbe.dtos.SaleItemPagedResponseDto;
+import org.example.itbmshopbe.dtos.*;
+import org.example.itbmshopbe.services.SaleItemPictureService;
 import org.example.itbmshopbe.services.SaleItemService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ import java.util.List;
 public class SaleItemControllerV2 {
 
     private final SaleItemService saleItemService;
+    private final SaleItemPictureService saleItemPictureService;
 
     @GetMapping
     public ResponseEntity<SaleItemPagedResponseDto> getAllSaleItems(
@@ -40,5 +42,25 @@ public class SaleItemControllerV2 {
     @GetMapping("/{id}")
     public ResponseEntity<SaleItemDetailWithImagesDto> getSaleItemById(@PathVariable Integer id){
         return ResponseEntity.ok(saleItemService.getSaleItemDetailWithImages(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<SaleItemDetailWithImagesDto> createProduct(
+            @ModelAttribute SaleItemRequestDto saleItemDto,
+            @RequestParam(required = false) List<MultipartFile> images
+    ){
+        try {
+            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(saleItemDto);
+            if (images != null && !images.isEmpty()) {
+                if (images.size() > 4) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
+                }
+                saleItemPictureService.storePicture(createdSaleItem.getId(), images);
+            }
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(saleItemService.getSaleItemDetailWithImages(createdSaleItem.getId()));
+        }catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem Create Failed");
+        }
     }
 }
