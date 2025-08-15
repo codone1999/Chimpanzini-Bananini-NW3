@@ -63,4 +63,15 @@ public class SaleItemControllerV2 {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem Create Failed");
         }
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSaleItemById(@PathVariable Integer id){
+        try
+            {
+            saleItemService.deleteSaleItem(id);
+            }catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem does not exist");
+        }
+    }
 }

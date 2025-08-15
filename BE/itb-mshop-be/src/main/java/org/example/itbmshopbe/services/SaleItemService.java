@@ -39,7 +39,7 @@ public class SaleItemService {
     private final SaleItemUtil saleItemUtil;
     private final ListMapper listMapper;
     private final ModelMapper modelMapper;
-    private FileService fileService;
+    private final FileService fileService;
 
     private SaleItem findSaleItemById(Integer id){
         return saleItemRepository.findById(id)
@@ -105,23 +105,22 @@ public class SaleItemService {
     }
 
 
-    public void deleteSaleItem(Integer id) {
-        List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
+   public void deleteSaleItem(Integer id) {
+       List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
 
-        // Delete picture file on disk
-        for (SaleItemPicture pic : pictures) {
-            Path filePath = fileService.getFileStorageLocation().resolve(pic.getNewPictureName());
-            try {
-                Files.deleteIfExists(filePath);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to delete picture file " + pic.getNewPictureName(), e);
-            }
-        }
+       // Delete picture file on disk
+       for (SaleItemPicture pic : pictures) {
+           Path filePath = fileService.getFileStorageLocation().resolve(pic.getNewPictureName());
+           try {
+               Files.deleteIfExists(filePath);
+           } catch (IOException e) {
+               throw new RuntimeException("Failed to delete picture file " + pic.getNewPictureName(), e);
+           }
+       }
 
-        saleItemPictureRepository.deleteAll(pictures);
-        saleItemRepository.deleteById(id);
-    }
-
+       saleItemPictureRepository.deleteAll(pictures);
+       saleItemRepository.deleteById(id);
+   }
     public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
             List<String> filterBrands,
             List<Integer> filterStorages,
