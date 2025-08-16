@@ -51,25 +51,52 @@ async function addItemAndImage(url, newItem, files) {
   try {
     const formData = new FormData()
     
-    // Add the JSON data as a blob with correct content type
-    formData.append("data", new Blob([JSON.stringify(newItem)], {
-      type: "application/json"
-    }))
+    // Handle each property for @ModelAttribute binding
+    Object.keys(newItem).forEach(key => {
+      const value = newItem[key]
+      if (value !== null && value !== undefined) {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          // Handle nested objects using dot notation (e.g., brand.id, brand.name)
+          Object.keys(value).forEach(nestedKey => {
+            if (value[nestedKey] !== null && value[nestedKey] !== undefined) {
+              formData.append(`${key}.${nestedKey}`, value[nestedKey])
+            }
+          })
+        } else if (Array.isArray(value)) {
+          // Handle arrays using indexed notation (e.g., tags[0], tags[1])
+          value.forEach((item, index) => {
+            if (typeof item === 'object') {
+              Object.keys(item).forEach(itemKey => {
+                if (item[itemKey] !== null && item[itemKey] !== undefined) {
+                  formData.append(`${key}[${index}].${itemKey}`, item[itemKey])
+                }
+              })
+            } else {
+              formData.append(`${key}[${index}]`, item)
+            }
+          })
+        } else {
+          // Handle primitive values (string, number, boolean)
+          formData.append(key, value)
+        }
+      }
+    })
     
-    // Add files if they exist
+    // Add files with parameter name 'images' to match your @RequestParam
     if (files && files.length > 0) {
       files.forEach(file => {
-        formData.append("files", file)
+        formData.append("images", file)
       })
     }
     
     const res = await fetch(url, {
       method: 'POST',
-      body: formData // Don't set Content-Type header - let browser set it with boundary
+      body: formData
     })
     
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`)
+      const errorText = await res.text()
+      throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`)
     }
     
     return await res.json()

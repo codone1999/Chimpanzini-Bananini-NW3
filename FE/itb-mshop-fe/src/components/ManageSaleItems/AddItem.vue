@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getItems, addItem, addItemAndImage } from '@/lib/fetchUtils'
+import { getItems, addItemAndImage } from '@/lib/fetchUtils'
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
@@ -11,7 +11,7 @@ const from = route.query.from
 
 const brandSelected = ref([])
 const files = ref([])
-const filePreviews = ref([]) // store object URLs for previews
+const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
 
 const newSaleItem = ref({
   // id: null,
@@ -36,20 +36,40 @@ const isFormValid = computed(() => isFormSaleItemValid(newSaleItem.value))
 
 const inputRefs = ref([])
 
+// ------------- Image --------------------- //
+function handleFileChange(event) {
+  if (!event.target.files) return
+  files.value = Array.from(event.target.files)
+}
+
+function onToggleImage(fileName) {
+  files.value = files.value.filter(file => file.name !== fileName)
+}
+
+function moveImageUp(index) {
+  if (index > 0) {
+    const temp = files.value[index - 1]
+    files.value[index - 1] = files.value[index]
+    files.value[index] = temp
+  }
+}
+
+function moveImageDown(index) {
+  if (index < files.value.length - 1) {
+    const temp = files.value[index + 1]
+    files.value[index + 1] = files.value[index]
+    files.value[index] = temp
+  }
+}
+
+// ------------- Form --------------------- //
 function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
 }
 
-function handleFileChange(event) {
-  files.value = Array.from(event.target.files)
-
-  // generate preview URLs
-  filePreviews.value = files.value.map(file => URL.createObjectURL(file))
-}
-
 async function handleSubmit() {
   try {
-    const addedItem = await addItemAndImage(`${import.meta.env.VITE_APP_URL}/sale-items`, newSaleItem.value, files.value)
+    const addedItem = await addItemAndImage(`${import.meta.env.VITE_APP_URL2}/sale-items`, newSaleItem.value, files.value)
     
     if (addedItem && addedItem.id) { // Check for successful response
       router.push({ 
@@ -75,6 +95,7 @@ onMounted(async () => {
     console.error('Error loading brands:', error)
   }
 })
+
 </script>
 
 <template>
@@ -164,25 +185,19 @@ onMounted(async () => {
                     <!-- Swap Up -->
                     <button
                       v-if="index !== 0"
-                      class="flex-shrink-0 hover:text-red-500"
-                      :class="index !== files.length - 1 ? '-mb-2 -mt-1' : '' "
-                      @click="() => {}"
+                      class="flex-shrink-0 hover:text-purple-600"
+                      @click="moveImageUp(index)"
                     >
-                      <span class="material-icons text-base">
-                        arrow_drop_up
-                      </span>
+                      <span class="material-icons text-base">arrow_drop_up</span>
                     </button>
 
                     <!-- Swap Down -->
                     <button
                       v-if="index !== files.length - 1"
-                      class="flex-shrink-0 hover:text-red-500"
-                      :class="index !== 0 ? '-mt-2 -mb-1.5' : '' "
-                      @click="() => {}"
+                      class="flex-shrink-0 hover:text-purple-600"
+                      @click="moveImageDown(index)"
                     >
-                      <span class="material-icons text-base">
-                        arrow_drop_down
-                      </span>
+                      <span class="material-icons text-base">arrow_drop_down</span>
                     </button>
                   </div> <!-- END--Swap Up/Down Button -->
 
@@ -190,7 +205,6 @@ onMounted(async () => {
               </span>
               
             </div> <!-- END--Upload Image-->
-
           </div>
 
           <!-- Form Fields -->
