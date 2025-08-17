@@ -68,7 +68,7 @@ const visiblePages = computed(() => {
   return pages;
 });
 
-// Session
+// ------------------- Session ----------------------- //
 function loadSession() {
   const savedBrandFilters = sessionStorage.getItem(SESSION_KEYS.FILTER_BRANDS);
   if (savedBrandFilters) filterBrands.value = JSON.parse(savedBrandFilters);
@@ -99,7 +99,7 @@ function saveSession() {
   sessionStorage.setItem(SESSION_KEYS.CURRENT_PAGE, currentPage.value.toString());
 }
 
-// Data Fetching
+// ------------------- Data Fetching ------------------//
 async function fetchFilteredSaleItems() {
   if (currentPage.value < 1) currentPage.value = 1;
 
@@ -114,9 +114,31 @@ async function fetchFilteredSaleItems() {
     }
   }
 
+  // Convert price ranges to filterPriceLower and filterPriceUpper
   if (filterPrices.value.length > 0) {
-    for (const price of filterPrices.value){
-      query.push("filterPrices=" + price)
+    const allMinPrices = [];
+    const allMaxPrices = [];
+    
+    for (const priceRange of filterPrices.value) {
+      const parts = priceRange.split("-");
+      if (parts.length === 2) {
+        try {
+          // Remove commas and parse numbers
+          const min = parseFloat(parts[0].replace(/,/g, ""));
+          const max = parseFloat(parts[1].replace(/,/g, ""));
+          allMinPrices.push(min);
+          allMaxPrices.push(max);
+        } catch (error) {
+          console.warn("Invalid price range:", priceRange);
+        }
+      }
+    }
+    
+    if (allMinPrices.length > 0 && allMaxPrices.length > 0) {
+      const filterPriceLower = Math.min(...allMinPrices);
+      const filterPriceUpper = Math.max(...allMaxPrices);
+      query.push("filterPriceLower=" + filterPriceLower);
+      query.push("filterPriceUpper=" + filterPriceUpper);
     }
   }
 
@@ -156,7 +178,7 @@ async function fetchFilteredSaleItems() {
   }
 }
 
-// Actions
+// -------------- Actions ------------------- //
 function toggleBrand(brandName) {
   if (filterBrands.value.includes(brandName)) {
     filterBrands.value = filterBrands.value.filter((b) => b !== brandName);
@@ -184,8 +206,10 @@ function toggleStorageSize(saleItemStorageSize) {
   storageSizeToAdd.value = "";
 }
 
-function clearBrandFilters() {
+function clearAllFilters() {
   filterBrands.value = [];
+  filterPrices.value = [];
+  filterStorageSizes.value = [];
 }
 
 function changeSort(mode) {
@@ -197,7 +221,7 @@ function goToPage(page) {
   fetchFilteredSaleItems();
 }
 
-// Watchers
+//  ------------- Watchers ------------------ //
 watch(
   [filterBrands, filterPrices, filterStorageSizes, sortMode, pageSize, currentPage],
   () => {
@@ -277,7 +301,7 @@ onMounted(async () => {
       :show-brand-list="showBrandList"
       :toggle-brand-list="() => showBrandList = !showBrandList"
       :on-toggle-brand="toggleBrand"
-      :on-clear-brands="clearBrandFilters"
+      :on-clear-brands="clearAllFilters"
 
       :sale-items="products"
 

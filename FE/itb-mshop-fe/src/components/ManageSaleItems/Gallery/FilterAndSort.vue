@@ -1,4 +1,5 @@
 <script setup>
+import {ref} from "vue";
 
 const props = defineProps({
   // Brands //
@@ -81,11 +82,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:pageSize'])
 
-function handlePageSizeChange(event) {
-  const value = parseInt(event.target.value)
-  emit('update:pageSize', value)
-}
-
+// ----------- Options -------------------- //
 const storageOptions = [
   32,
   64,
@@ -95,8 +92,40 @@ const storageOptions = [
   1
 ]
 
+const priceOptions = [
+  "0-5000",
+  "5,001-10,000",
+  "10,001-20,000",
+  "20,001-30,000",
+  "30,001-40,000",
+  "40,001-50,000"
+]
+
+const customMinPrice = ref('')
+const customMaxPrice = ref('')
+
+function handlePageSizeChange(event) {
+  const value = parseInt(event.target.value)
+  emit('update:pageSize', value)
+}
+
 function formatStorage(size) {
   return size >= 1 && size < 10 ? `${size}TB` : `${size}GB`
+}
+
+function addCustomPriceRange() {
+  if (customMinPrice.value && customMaxPrice.value && Number(customMinPrice.value) < Number(customMaxPrice.value)) {
+    const customRange = `${Number(customMinPrice.value).toLocaleString()}-${Number(customMaxPrice.value).toLocaleString()}`
+    
+    // Check if this range already exists
+    if (!props.filterPrices.includes(customRange)) {
+      props.onTogglePrice(customRange)
+    }
+    
+    // Clear the inputs
+    customMinPrice.value = ''
+    customMaxPrice.value = ''
+  }
 }
 </script>
 
@@ -147,13 +176,6 @@ function formatStorage(size) {
             </button>
           </div>
         </div>
-        <!-- Clear Filters -->
-          <!-- <button 
-            @click="props.onClearBrands"
-            class="itbms-brand-filter-clear flex items-center gap-1 p-3 text-white bg-red-600 hover:bg-red-800 rounded-md transition"
-          >
-            <span class="material-icons">cleaning_services</span>
-          </button> -->
       </div>
 
       <!-- Pill Price -->
@@ -165,7 +187,7 @@ function formatStorage(size) {
         <div class="text-xs text-gray-400 mt-1">
           <span v-if="props.filterPrices.length === 0">Price Range</span>
           
-          <!-- Selected Storages -->
+          <!-- Selected Prices -->
           <span 
             v-else 
             v-for="price in props.filterPrices" :key="price"
@@ -180,21 +202,52 @@ function formatStorage(size) {
             </button>
           </span>
 
-          <!-- Storage Dropdown -->
+          <!-- Price Dropdown -->
           <div 
             v-if="props.showPriceList"
             class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
           >
-            <button
-              v-for="saleItem in props.saleItems"
-              :key="saleItem.id"
-              :disabled="props.filterPrices.includes(saleItem.price)"
-              @click.stop="props.onTogglePrice(saleItem.price)"
-              class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-              :class="props.filterPrices.includes(saleItem.price) ? 'text-gray-300' : 'text-black'"
-            >
-              {{ saleItem.price }}
-            </button>
+            <!-- Fixed option -->
+            <div class="border-b border-gray-200 pb-2">
+              <button
+                v-for="price in priceOptions"
+                :key="price"
+                :disabled="props.filterPrices.includes(price)"
+                @click.stop="props.onTogglePrice(price)"
+                class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
+                :class="props.filterPrices.includes(price) ? 'text-gray-300' : 'text-black'"
+              >
+                {{ price }}
+              </button>
+            </div>
+            
+            <!-- Custom Price Range Input -->
+            <div class="p-4">
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  v-model="customMinPrice"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  @click.stop
+                />
+                <span class="text-gray-500 text-sm">-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  v-model="customMaxPrice"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  @click.stop
+                />
+              </div>
+              <button
+                @click.stop="addCustomPriceRange"
+                :disabled="!customMinPrice || !customMaxPrice || customMinPrice >= customMaxPrice"
+                class="w-full mt-3 px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                Add Range
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -245,16 +298,22 @@ function formatStorage(size) {
           </div>
 
           <!-- Filter Icon -->
-          <button
+          <!-- <button
             @click="props.toggleBrandList"
             class="-mr-4 pt-2 px-2 pb-1 bg-gray-200 border border-gray-600 rounded-full hover:bg-gray-300 transition"
           >
             <span class="material-icons text-gray-700">filter_alt</span>
+          </button> -->
+
+          <!-- Clear Filters -->
+          <button 
+            @click="props.onClearBrands"
+            class="itbms-brand-filter-clear flex items-center gap-1 -mr-4 p-3 text-white bg-red-600 hover:bg-red-800 rounded-full transition"
+          >
+            <span class="material-icons">cleaning_services</span>
           </button>
         </div>
       </div>
-
-      <!-- Filter Icon -->
       
     </div>
 
