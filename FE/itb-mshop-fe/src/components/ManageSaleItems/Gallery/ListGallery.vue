@@ -154,7 +154,7 @@ async function fetchFilteredSaleItems() {
     query.push("sortField=createdOn");
     query.push("sortDirection=asc");
   } else {
-    query.push("sortField=brand.name");
+    query.push("sortField=brand");
     query.push("sortDirection=" + sortMode.value);
   }
 

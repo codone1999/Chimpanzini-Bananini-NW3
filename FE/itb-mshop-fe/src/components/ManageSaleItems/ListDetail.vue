@@ -5,17 +5,26 @@ import { getItemById, deleteItemById } from '@/lib/fetchUtils'
 import { handleQueryAlerts } from '@/lib/alertMessage'
 import phoneImg from '../../../public/phone.png';
 import DeleteSaleItem from './DeleteSaleItem.vue';
-import ListGallery from './Gallery/ListGallery.vue';
 
 const url = `${import.meta.env.VITE_APP_URL}/sale-items`
+const url2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
 const showModal = ref(false)
-const product = ref()
-// const product = ref({"id":1,"model":"Galaxy S23 Ultra","brandName":"Samsung","price":39600,"storageGb":512,"ramGb":null,"color":null})
+const product = ref({
+    "id": 1,
+    "model": "Galaxy S23 Ultra",
+    "brandName": "Samsung",
+    "price": 39600,
+    "storageGb": 512,
+    "ramGb": null,
+    "color": null
+  },)
+
+const images = ref([phoneImg, phoneImg, phoneImg, phoneImg]) // pull image filename from v2 and then show image in v1
 
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
@@ -26,7 +35,7 @@ function confirmDelete() {
 
 async function handleDelete() {
   try {
-    const item = await deleteItemById(url, id)
+    const item = await deleteItemById(url2, id)
     if (typeof item === 'number') {
       showModal.value = false
       router.push({ name: 'ListGallery', query: {failed_delete: true} })
@@ -40,6 +49,29 @@ async function handleDelete() {
   router.push({ name: 'ListGallery', query: {deleted: true} })
 }
 
+async function loadImages() {
+  // Check if product and images array exist
+  if (!product.value?.saleItemImages) {
+    console.warn('No images found for this product');
+    return;
+  }
+
+  // Load each image with error handling
+  for (let i = 0; i < Math.min(4, product.value.saleItemImages.length); i++) {
+    try {
+      // Only try to load if the image ID exists
+      if (product.value.saleItemImages[i]) {
+        images.value[i] = `${url}/picture/${product.value.saleItemImages[i].fileName}`;
+      } else {
+        images.value[i] = null; // No image at this index
+      }
+    } catch (error) {
+      console.warn(`Failed to load image ${i}:`, error);
+    }
+  }
+
+}
+
 onMounted(async () => {
   handleQueryAlerts(
    { edited: 'The sale item has been updated.'},
@@ -48,13 +80,16 @@ onMounted(async () => {
   )
   
   try {
-    const item = await getItemById(url, id)
+    const item = await getItemById(url2, id)
     if (typeof item === 'number') {
       router.push({name: 'ListGallery'})
       alert('The requested sale item does not exist.')
       return
     }
     product.value = item;
+
+    await loadImages();
+
   } catch (error) {
     console.error('Failed to fetch product:', error);
   }
@@ -92,22 +127,20 @@ onMounted(async () => {
   
       <!-- Product Layout -->
       <div class="grid grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-lg px-8 py-3 gap-8">
-        
-        <!-- Main Image (Left & Vertically Centered) -->
-        <div class="flex flex-col items-center justify-center h-full">
-          <!-- Main Image -->
+        <!-- Image Section -->
+        <div class="flex flex-col items-center space-y-5">
           <img
             :src="phoneImg"
-            class="w-full max-w-sm object-contain rounded-lg bg-gray-100"
-            alt="Product"
+            class="w-full object-cover bg-gray-200 rounded-lg"
           />
-
-          <!-- Sub-Image -->
-          <div class="flex flex-row items-center justify-center">
-            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
-            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
-            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
-            <img :src="phoneImg" class="w-1/5" alt="More Product View"/>
+          <div class="flex space-x-3 items-center justify-center">
+            <img
+              v-for="(image, index) in images" 
+              :key="index"
+              :src="image"
+              :alt="`Product View ${index + 1}`"
+              class="w-3/13 rounded bg-gray-100 object-cover"
+            />
           </div>
         </div>
 
