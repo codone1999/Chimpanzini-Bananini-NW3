@@ -1,12 +1,13 @@
 <script setup>
 import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
-import { getItemById, getItems, editItem } from "@/lib/fetchUtils";
+import { getItemById, getItems, editItemAndImage } from "@/lib/fetchUtils";
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
 const url_brands = `${import.meta.env.VITE_APP_URL}/brands`
 const url_items = `${import.meta.env.VITE_APP_URL}/sale-items`
+const url_items2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
 
 const route = useRoute();
 const router = useRouter();
@@ -14,9 +15,11 @@ const id = route.params.id;
 const from = route.query.from;
 
 const brandSelected = ref(null);
+const images = ref([]);
 
 const validationMessages = ref({});
 
+// -------------- Form --------------------- //
 const product = ref({
   id: null,
   model: "",
@@ -28,6 +31,7 @@ const product = ref({
   description: "",
   price: 0,
   ramGb: 0, // OPTIONAL
+  saleItemImages: [],
   screenSizeInch: 0, // OPTIONAL
   quantity: 0,
   storageGb: 0, // OPTIONAL
@@ -39,15 +43,25 @@ const isFormValid = computed(() => isFormSaleItemValid(product.value));
 
 const isChanged = computed(() => {
   if (!originalProduct.value) return false;
-  return (
-    JSON.stringify(product.value) !== JSON.stringify(originalProduct.value)
-  );
+  
+  // Check product
+  const productDataChanged = JSON.stringify(product.value) !== JSON.stringify(originalProduct.value);
+  
+  // Check images
+  const originalImageFileNames = originalProduct.value.saleItemImages?.map(img => img.fileName) || [];
+  const currentImageFileNames = images.value?.map(file => file.fileName || file.name) || [];
+  
+  // Compare image arrays - check if lengths differ or if any filenames are different
+  const imagesChanged = 
+    originalImageFileNames.length !== currentImageFileNames.length ||
+    !originalImageFileNames.every((fileName, index) => fileName === currentImageFileNames[index]);
+  
+  return productDataChanged || imagesChanged;
 });
 
 const isSaveDisabled = computed(() => {
   return !isFormValid.value || !isChanged.value;
 });
-
 
 const inputRefs = ref([])
 
@@ -55,11 +69,67 @@ function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
 }
 
+// ---------------- Image --------------------- //
+function handleFileChange(event) {
+  if (!event.target.images) return
+  images.value = Array.from(event.target.images)
+}
+
+function onToggleImage(fileName) {
+  images.value = images.value.filter(image => image.name !== fileName)
+}
+
+function moveImageUp(index) {
+  if (index > 0) {
+    const temp = images.value[index - 1]
+    images.value[index - 1] = images.value[index]
+    images.value[index] = temp
+  }
+}
+
+function moveImageDown(index) {
+  if (index < images.value.length - 1) {
+    const temp = images.value[index + 1]
+    images.value[index + 1] = images.value[index]
+    images.value[index] = temp
+  }
+}
+
+function getImageName(item) {
+  if (typeof item === 'string') {
+    // It's a URL - extract filename after the last '/'
+    return item.split('/').pop()
+  } else {
+    // It's a File object - return the name
+    return item.name
+  }
+}
+
+async function loadImages() {
+  // Check if product and images array exist
+  if (!product.value?.saleItemImages) {
+    console.warn('No images found for this product');
+    return;
+  }
+
+  // Load each image with error handling
+  for (let i = 0; i <  product.value.saleItemImages.length; i++) {
+    try {
+      // Only try to load if the image ID exists
+      if (product.value.saleItemImages[i]) {
+        images.value[i] = `${url_items}/picture/${product.value.saleItemImages[i].fileName}`;
+      }
+    } catch (error) {
+      console.warn(`Failed to load image ${i}:`, error);
+    }
+  }
+}
+
 async function handleSubmit() {
   try {
     product.value.color = product.value.color === "" ? null : product.value.color;
 
-    const editedItem = await editItem(url_items, id, product.value);
+    const editedItem = await editItemAndImage(url_items2, id, product.value);
     if (typeof editedItem !== 'number') {
       if (from === "Gallery")
         router.push({ name: "ListDetails", params: { id: product.id }, query: { edited: "true" },});
@@ -76,7 +146,7 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById(url_items, id);
+    const item = await getItemById(url_items2, id);
     if (typeof item === 'number') {
       router.push({ name: 'ListGallery'});
       alert("The requested sale item does not exist.");
@@ -94,6 +164,7 @@ onMounted(async () => {
       description: item.description,
       price: item.price,
       ramGb: item.ramGb, // OPTIONAL
+      saleItemImages: item.saleItemImages,
       screenSizeInch: item.screenSizeInch, // OPTIONAL
       quantity: item.quantity,
       storageGb: item.storageGb, // OPTIONAL
@@ -101,6 +172,8 @@ onMounted(async () => {
     };
     product.value = data;
     originalProduct.value = JSON.parse(JSON.stringify(data));
+
+    await loadImages();
   } catch (error) {
     console.error("Failed to fetch product:", error);
   }
@@ -165,17 +238,82 @@ onMounted(async () => {
                 class="w-full object-cover bg-gray-200 rounded-lg"
               />
               <div class="flex space-x-3 items-center justify-center">
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
-                <img :src="phoneImg" class="w-1/5 rounded bg-gray-100 object-cover" />
+                <img
+                  v-for="(image, index) in images" 
+                  :key="index"
+                  :src="image"
+                  :alt="`Product View ${index + 1}`"
+                  class="w-1/5 rounded bg-gray-100 object-cover"
+                />
               </div>
             </div>
 
             <!-- Upload Image Button -->
-            <button class=" mt-5 py-2 w-2/7 border rounded-2xl bg-amber-500 hover:bg-amber-600">
+            <input
+              class="hidden"
+              id="fileInput"
+              type="file"
+              multiple
+              accept="image/*"
+              @change="handleFileChange"
+            />
+            <label
+              for="fileInput"
+              class="mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600 cursor-pointer text-center"
+            >
               Upload Images
-            </button>
+            </label>
+
+            <!-- Uploaded Image -->
+            <div class="flex flex-col gap-3 mt-3 max-w-3/5 md:max-w-1/2">
+              <span
+                v-if="images.length > 0"
+                v-for="(image, index) in images"
+                :key="index"
+                class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
+              >
+                <!-- Filename with truncate -->
+                <span class="truncate min-w-0 max-w-[200px]">
+                  {{ getImageName(image) }}
+                </span>
+
+                <!-- Button Right Side -->
+                <div class="flex gap-1">
+                  <!-- Remove Image -->
+                  <button 
+                    class="flex-shrink-0 hover:text-red-500 -mb-1"
+                    @click.stop="onToggleImage(file.name)"
+                  >
+                    <span class="material-icons text-sm">close</span>
+                  </button>
+
+                  <!-- Swap Up/Down Button -->
+                  <div 
+                    class="flex flex-col leading-none"
+                  >
+                    <!-- Swap Up -->
+                    <button
+                      v-if="index !== 0"
+                      class="flex-shrink-0 hover:text-purple-600"
+                      @click="moveImageUp(index)"
+                    >
+                      <span class="material-icons text-base">arrow_drop_up</span>
+                    </button>
+
+                    <!-- Swap Down -->
+                    <button
+                      v-if="index !== images.length - 1"
+                      class="flex-shrink-0 hover:text-purple-600"
+                      @click="moveImageDown(index)"
+                    >
+                      <span class="material-icons text-base">arrow_drop_down</span>
+                    </button>
+                  </div> <!-- END--Swap Up/Down Button -->
+
+                </div> <!-- END--Button Right Side -->
+              </span>
+              
+            </div> <!-- END--Upload Image-->
           </div>
 
           <!-- Form Fields -->

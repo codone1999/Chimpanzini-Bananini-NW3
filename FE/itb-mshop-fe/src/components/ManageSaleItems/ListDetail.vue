@@ -14,17 +14,9 @@ const router = useRouter()
 const id = route.params.id
 
 const showModal = ref(false)
-const product = ref({
-    "id": 1,
-    "model": "Galaxy S23 Ultra",
-    "brandName": "Samsung",
-    "price": 39600,
-    "storageGb": 512,
-    "ramGb": null,
-    "color": null
-  },)
+const product = ref()
 
-const images = ref([phoneImg, phoneImg, phoneImg, phoneImg]) // pull image filename from v2 and then show image in v1
+const images = ref([]) // pull image filename from v2 and then show image in v1
 
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
@@ -57,19 +49,16 @@ async function loadImages() {
   }
 
   // Load each image with error handling
-  for (let i = 0; i < Math.min(4, product.value.saleItemImages.length); i++) {
+  for (let i = 0; i < product.value.saleItemImages.length; i++) {
     try {
       // Only try to load if the image ID exists
       if (product.value.saleItemImages[i]) {
         images.value[i] = `${url}/picture/${product.value.saleItemImages[i].fileName}`;
-      } else {
-        images.value[i] = null; // No image at this index
       }
     } catch (error) {
       console.warn(`Failed to load image ${i}:`, error);
     }
   }
-
 }
 
 onMounted(async () => {
