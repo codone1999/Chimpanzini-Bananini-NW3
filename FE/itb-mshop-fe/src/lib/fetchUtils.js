@@ -123,23 +123,24 @@ async function editItem(url, id, editItem) {
     throw new Error('can not edit your item')
   }
 }
-async function editItemAndImage(url, id, editItem, files = []) {
+
+async function editItemAndImage(url, id, editItem) {
   try {
     const formData = new FormData()
-    
+
     // Handle each property for @ModelAttribute binding
     Object.keys(editItem).forEach(key => {
       const value = editItem[key]
       if (value !== null && value !== undefined) {
         if (typeof value === 'object' && !Array.isArray(value)) {
-          // Handle nested objects using dot notation (e.g., brand.id, brand.name)
+          // Handle nested objects using dot notation (e.g., saleItem.id, saleItem.model)
           Object.keys(value).forEach(nestedKey => {
             if (value[nestedKey] !== null && value[nestedKey] !== undefined) {
               formData.append(`${key}.${nestedKey}`, value[nestedKey])
             }
           })
         } else if (Array.isArray(value)) {
-          // Handle arrays using indexed notation (e.g., tags[0], tags[1])
+          // Handle arrays using indexed notation (e.g., imagesInfos[0].pictureFile, imagesInfos[0].order)
           value.forEach((item, index) => {
             if (typeof item === 'object') {
               Object.keys(item).forEach(itemKey => {
@@ -157,31 +158,22 @@ async function editItemAndImage(url, id, editItem, files = []) {
         }
       }
     })
-    
-    // Add files with parameter name 'images' to match your @RequestParam
-    if (files && files.length > 0) {
-      files.forEach(file => {
-        // Only add actual File objects, skip URL strings
-        if (file instanceof File) {
-          formData.append("images", file)
-        }
-      })
-    }
-    
+
     const res = await fetch(`${url}/${id}`, {
       method: 'PUT',
       body: formData
     })
-    
+
     if (!res.ok) {
       const errorText = await res.text()
       throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`)
     }
-    
+
     return await res.json()
   } catch (error) {
     console.error('Error editing item:', error)
     throw new Error('Cannot edit your item: ' + error.message)
   }
 }
+
 export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage }

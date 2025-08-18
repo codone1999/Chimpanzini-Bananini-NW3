@@ -41,20 +41,25 @@ const originalProduct = ref(null);
 
 const isFormValid = computed(() => isFormSaleItemValid(product.value));
 
+// Updated to handle imageViewOrder
 const isChanged = computed(() => {
   if (!originalProduct.value) return false;
   
   // Check product
   const productDataChanged = JSON.stringify(product.value) !== JSON.stringify(originalProduct.value);
   
-  // Check images
-  const originalImageFileNames = originalProduct.value.saleItemImages?.map(img => img.fileName) || [];
-  const currentImageFileNames = images.value?.map(file => file.fileName || file.name) || [];
+  // Check images with order
+  const originalImages = originalProduct.value.saleItemImages
+    ?.sort((a, b) => a.imageViewOrder - b.imageViewOrder)
+    .map(img => ({ fileName: img.fileName, imageViewOrder: img.imageViewOrder })) || [];
   
-  // Compare image arrays - check if lengths differ or if any filenames are different
-  const imagesChanged = 
-    originalImageFileNames.length !== currentImageFileNames.length ||
-    !originalImageFileNames.every((fileName, index) => fileName === currentImageFileNames[index]);
+  const currentImages = images.value
+    ?.map((img, index) => ({
+      fileName: img.fileName || img.name,
+      imageViewOrder: index + 1
+    })) || [];
+  
+  const imagesChanged = JSON.stringify(originalImages) !== JSON.stringify(currentImages);
   
   return productDataChanged || imagesChanged;
 });
@@ -71,12 +76,24 @@ function focusNext(index) {
 
 // ---------------- Image --------------------- //
 function handleFileChange(event) {
-  if (!event.target.images) return
-  images.value = Array.from(event.target.images)
+  if (!event.target.files) return
+  const newFiles = Array.from(event.target.files)
+  
+  // Add new files to existing images with proper ordering
+  const startOrder = images.value.length + 1
+  const filesWithOrder = newFiles.map((file, index) => ({
+    ...file,
+    imageViewOrder: startOrder + index,
+    isNewFile: true
+  }))
+  
+  images.value = [...images.value, ...filesWithOrder]
 }
 
 function onToggleImage(fileName) {
-  images.value = images.value.filter(image => image.name !== fileName)
+  images.value = images.value.filter(image => (image.fileName || image.name) !== fileName)
+  // Reorder remaining images
+  reorderImages()
 }
 
 function moveImageUp(index) {
@@ -84,6 +101,7 @@ function moveImageUp(index) {
     const temp = images.value[index - 1]
     images.value[index - 1] = images.value[index]
     images.value[index] = temp
+    reorderImages()
   }
 }
 
@@ -92,13 +110,23 @@ function moveImageDown(index) {
     const temp = images.value[index + 1]
     images.value[index + 1] = images.value[index]
     images.value[index] = temp
+    reorderImages()
   }
+}
+
+function reorderImages() {
+  images.value.forEach((image, index) => {
+    image.imageViewOrder = index + 1
+  })
 }
 
 function getImageName(item) {
   if (typeof item === 'string') {
     // It's a URL - extract filename after the last '/'
     return item.split('/').pop()
+  } else if (item.fileName) {
+    // It's an existing image object with fileName
+    return item.fileName
   } else {
     // It's a File object - return the name
     return item.name
@@ -112,12 +140,27 @@ async function loadImages() {
     return;
   }
 
+  // Sort images by imageViewOrder before loading
+  const sortedImages = [...product.value.saleItemImages].sort((a, b) => a.imageViewOrder - b.imageViewOrder);
+  
+  // Clear existing images
+  images.value = [];
+
   // Load each image with error handling
-  for (let i = 0; i <  product.value.saleItemImages.length; i++) {
+  for (let i = 0; i < sortedImages.length; i++) {
     try {
-      // Only try to load if the image ID exists
-      if (product.value.saleItemImages[i]) {
-        images.value[i] = `${url_items}/picture/${product.value.saleItemImages[i].fileName}`;
+      const imageData = sortedImages[i];
+      if (imageData && imageData.fileName) {
+        const imageUrl = `${url_items}/picture/${imageData.fileName}`;
+        
+        // Create image object with metadata
+        const imageObject = {
+          src: imageUrl,
+          fileName: imageData.fileName,
+          imageViewOrder: imageData.imageViewOrder,
+        };
+        
+        images.value.push(imageObject);
       }
     } catch (error) {
       console.warn(`Failed to load image ${i}:`, error);
@@ -125,22 +168,78 @@ async function loadImages() {
   }
 }
 
+async function urlToFile(imageName) {
+  const response = await fetch(`${url_items}/picture/${imageName}`)
+  const blob = await response.blob()
+  return new File([blob], imageName, { type: blob.type })
+}
+
 async function handleSubmit() {
   try {
-    product.value.color = product.value.color === "" ? null : product.value.color;
+    product.value.color = product.value.color === "" ? null : product.value.color
 
-    const editedItem = await editItemAndImage(url_items2, id, product.value);
+    // Build image info + collect files
+    const imagesInfos = []
+
+    for (let i = 0; i < images.value.length; i++) {
+      const image = images.value[i]
+      console.log(images.value)
+      let fileObj
+      if (image instanceof File) {
+        // Already a new file from <input>
+        fileObj = image
+      } else if (image.fileName) {
+        // Convert server image into File
+        fileObj = await urlToFile(image.fileName)
+      }
+
+      if (fileObj) {
+        imagesInfos.push({
+          pictureFile: fileObj,
+          order: i + 1
+        })
+      }
+    }
+
+    const saleItemForSubmit = {
+      id: product.value.id,
+      model: product.value.model,
+      brandName: product.value.brandName,
+      description: product.value.description,
+      price: product.value.price,
+      ramGb: product.value.ramGb,
+      screenSizeInch: product.value.screenSizeInch,
+      quantity: product.value.quantity,
+      storageGb: product.value.storageGb,
+      color: product.value.color
+    }
+
+    console.log(imagesInfos)
+     // Merge into one flat object
+    const saleItem = {
+      saleItemForSubmit,
+      imagesInfos: imagesInfos
+    };
+
+    const editedItem = await editItemAndImage(url_items2, id, saleItem);
+
     if (typeof editedItem !== 'number') {
-      if (from === "Gallery")
-        router.push({ name: "ListDetails", params: { id: product.id }, query: { edited: "true" },});
-      else 
-        router.push({ name: "ListSaleItems", query: { edited: "true" } });
+      if (from === "Gallery") {
+        router.push({
+          name: "ListDetails",
+          params: { id: product.value.id },
+          query: { edited: "true" }
+        })
+      } else {
+        router.push({ name: "ListSaleItems", query: { edited: "true" } })
+      }
     } else {
       alert("Fail to Edit Sale Item")
     }
-    console.log(product.value);
+
+
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error:", error)
   }
 }
 
@@ -240,8 +339,8 @@ onMounted(async () => {
               <div class="flex space-x-3 items-center justify-center">
                 <img
                   v-for="(image, index) in images" 
-                  :key="index"
-                  :src="image"
+                  :key="`${image.fileName || image.name}-${index}`"
+                  :src="image.src || image"
                   :alt="`Product View ${index + 1}`"
                   class="w-1/5 rounded bg-gray-100 object-cover"
                 />
@@ -269,20 +368,21 @@ onMounted(async () => {
               <span
                 v-if="images.length > 0"
                 v-for="(image, index) in images"
-                :key="index"
+                :key="`upload-${image.fileName || image.name}-${index}`"
                 class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
               >
-                <!-- Filename with truncate -->
+                <!-- Filename with truncate and order indicator -->
                 <span class="truncate min-w-0 max-w-[200px]">
-                  {{ getImageName(image) }}
+                  {{ index + 1 }}. {{ getImageName(image) }}
                 </span>
 
                 <!-- Button Right Side -->
                 <div class="flex gap-1">
                   <!-- Remove Image -->
                   <button 
+                    type="button"
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="onToggleImage(file.name)"
+                    @click.stop="onToggleImage(image.fileName || image.name)"
                   >
                     <span class="material-icons text-sm">close</span>
                   </button>
@@ -294,6 +394,7 @@ onMounted(async () => {
                     <!-- Swap Up -->
                     <button
                       v-if="index !== 0"
+                      type="button"
                       class="flex-shrink-0 hover:text-purple-600"
                       @click="moveImageUp(index)"
                     >
@@ -303,6 +404,7 @@ onMounted(async () => {
                     <!-- Swap Down -->
                     <button
                       v-if="index !== images.length - 1"
+                      type="button"
                       class="flex-shrink-0 hover:text-purple-600"
                       @click="moveImageDown(index)"
                     >
