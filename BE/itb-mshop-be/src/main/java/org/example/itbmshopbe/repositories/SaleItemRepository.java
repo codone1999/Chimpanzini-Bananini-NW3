@@ -25,13 +25,17 @@ public interface SaleItemRepository extends JpaRepository<SaleItem, Integer> {
     WHERE (:brandNames IS NULL OR LOWER(s.brand.name) IN :brandNames)
       AND (:minPrice IS NULL OR s.price >= :minPrice)
       AND (:maxPrice IS NULL OR s.price <= :maxPrice)
-      AND (:storageSizes IS NULL OR s.storageGb IN :storageSizes OR s.storageGb IS NULL)
+      AND (
+            (:storageSizes IS NOT NULL AND s.storageGb IN :storageSizes)
+            OR (:filterNullStorage = true AND s.storageGb IS NULL)
+      )
 """)
     Page<SaleItem> filterSaleItem(
             @Param("brandNames") List<String> brandNames,
             @Param("minPrice") Integer minPrice,
             @Param("maxPrice") Integer maxPrice,
             @Param("storageSizes") List<Integer> storageSizes,
+            @Param("filterNullStorage") Boolean filterNullStorage,
             Pageable pageable
     );
 

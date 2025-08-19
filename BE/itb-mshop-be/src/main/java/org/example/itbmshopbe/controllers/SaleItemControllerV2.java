@@ -31,10 +31,11 @@ public class SaleItemControllerV2 {
             @RequestParam @Valid Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String sortField,
-            @RequestParam(required = false) String sortDirection
+            @RequestParam(required = false) String sortDirection,
+            @RequestParam(required = false, defaultValue = "false") Boolean filterNullStorage
     ) throws NoSuchFieldException {
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
-               filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,sortDirection
+               filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,sortDirection,filterNullStorage
         );
         return ResponseEntity.ok(responseDto);
     }

@@ -129,7 +129,7 @@ public class SaleItemService {
             Integer page,
             Integer size,
             String sortField,
-            String sortDirection) throws NoSuchFieldException {
+            String sortDirection, Boolean filterNullStorage) throws NoSuchFieldException {
 
         if (page == null || page < 0) { //check page is not -
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
@@ -155,6 +155,7 @@ public class SaleItemService {
                 filterPriceLower,
                 filterPriceUpper,
                 (filterStorages == null || filterStorages.isEmpty()) ? null : filterStorages,
+                filterNullStorage,
                 pageable
         );//use repo to filter
 
