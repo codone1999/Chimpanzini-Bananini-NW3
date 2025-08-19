@@ -128,36 +128,56 @@ async function editItemAndImage(url, id, editItem) {
   try {
     const formData = new FormData()
 
-    // Handle each property for @ModelAttribute binding
-    Object.keys(editItem).forEach(key => {
-      const value = editItem[key]
-      if (value !== null && value !== undefined) {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-          // Handle nested objects using dot notation (e.g., saleItem.id, saleItem.model)
-          Object.keys(value).forEach(nestedKey => {
-            if (value[nestedKey] !== null && value[nestedKey] !== undefined) {
-              formData.append(`${key}.${nestedKey}`, value[nestedKey])
-            }
-          })
-        } else if (Array.isArray(value)) {
-          // Handle arrays using indexed notation (e.g., imagesInfos[0].pictureFile, imagesInfos[0].order)
-          value.forEach((item, index) => {
-            if (typeof item === 'object') {
-              Object.keys(item).forEach(itemKey => {
-                if (item[itemKey] !== null && item[itemKey] !== undefined) {
-                  formData.append(`${key}[${index}].${itemKey}`, item[itemKey])
-                }
-              })
-            } else {
-              formData.append(`${key}[${index}]`, item)
-            }
-          })
-        } else {
-          // Handle primitive values (string, number, boolean)
-          formData.append(key, value)
+    // Handle saleItem nested object
+    if (editItem.saleItem) {
+      Object.keys(editItem.saleItem).forEach(key => {
+        const value = editItem.saleItem[key]
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            // Handle nested objects like brand
+            Object.keys(value).forEach(nestedKey => {
+              if (value[nestedKey] !== null && value[nestedKey] !== undefined) {
+                formData.append(`saleItem.${key}.${nestedKey}`, value[nestedKey])
+              }
+            })
+          } else {
+            // Handle primitive values
+            formData.append(`saleItem.${key}`, value)
+          }
         }
-      }
-    })
+      })
+    }
+
+    // Handle imagesInfos array
+    if (editItem.imagesInfos && Array.isArray(editItem.imagesInfos)) {
+      editItem.imagesInfos.forEach((imageInfo, index) => {
+        // Handle order
+        if (imageInfo.order !== null && imageInfo.order !== undefined) {
+          formData.append(`imagesInfos[${index}].order`, imageInfo.order)
+        }
+        
+        // Handle pictureName
+        if (imageInfo.pictureName) {
+          formData.append(`imagesInfos[${index}].pictureName`, imageInfo.pictureName)
+        }
+        
+        // Handle status
+        if (imageInfo.status) {
+          formData.append(`imagesInfos[${index}].status`, imageInfo.status)
+        }
+        
+        // Handle pictureFile (MultipartFile)
+        if (imageInfo.pictureFile && imageInfo.pictureFile instanceof File) {
+          formData.append(`imagesInfos[${index}].pictureFile`, imageInfo.pictureFile, imageInfo.pictureFile.name)
+        }
+      })
+    }
+
+    // Debug: Log what's being sent (optional, remove in production)
+    // console.log('FormData entries:')
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value)
+    // }
 
     const res = await fetch(`${url}/${id}`, {
       method: 'PUT',

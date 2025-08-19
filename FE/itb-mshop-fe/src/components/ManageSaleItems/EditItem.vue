@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
-import { getItemById, getItems, editItemAndImage } from "@/lib/fetchUtils";
+import { getItemById, getItems, editItemAndImage, editItem } from "@/lib/fetchUtils";
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import phoneImg from "../../../public/phone.png";
 
@@ -16,6 +16,7 @@ const from = route.query.from;
 
 const brandSelected = ref(null);
 const images = ref([]);
+const showMaxImageWarning = ref(false);
 
 const validationMessages = ref({});
 
@@ -40,6 +41,20 @@ const product = ref({
 const originalProduct = ref(null);
 
 const isFormValid = computed(() => isFormSaleItemValid(product.value));
+
+// Computed property for image previews
+const filePreviews = computed(() => {
+  return images.value.map(image => {
+    if (image.src) {
+      // Existing image from server
+      return image.src;
+    } else if (image.file) {
+      // New uploaded file
+      return URL.createObjectURL(image.file);
+    }
+    return null;
+  }).filter(Boolean);
+});
 
 // Updated to handle imageViewOrder
 const isChanged = computed(() => {
@@ -76,24 +91,49 @@ function focusNext(index) {
 
 // ---------------- Image --------------------- //
 function handleFileChange(event) {
-  if (!event.target.files) return
-  const newFiles = Array.from(event.target.files)
+  if (!event.target.files) return;
   
-  // Add new files to existing images with proper ordering
-  const startOrder = images.value.length + 1
-  const filesWithOrder = newFiles.map((file, index) => ({
-    ...file,
-    imageViewOrder: startOrder + index,
-    isNewFile: true
-  }))
+  const newFiles = Array.from(event.target.files);
+  const totalImages = images.value.length + newFiles.length;
   
-  images.value = [...images.value, ...filesWithOrder]
+  // Check if user is trying to upload more than 4 total
+  if (totalImages > 4) {
+    showMaxImageWarning.value = true;
+    const allowedCount = 4 - images.value.length;
+    if (allowedCount > 0) {
+      // Only add the allowed number of files
+      const filesToAdd = newFiles.slice(0, allowedCount).map((file, index) => ({
+        file: file, // Store the actual File object
+        name: file.name,
+        imageViewOrder: images.value.length + index + 1,
+        isNewFile: true
+      }));
+      images.value = [...images.value, ...filesToAdd];
+    }
+  } else {
+    // Add all new files if within limit
+    const filesToAdd = newFiles.map((file, index) => ({
+      file: file, // Store the actual File object
+      name: file.name,
+      imageViewOrder: images.value.length + index + 1,
+      isNewFile: true
+    }));
+    images.value = [...images.value, ...filesToAdd];
+    showMaxImageWarning.value = false;
+  }
+  
+  // Reset the input value so the same files can be selected again if needed
+  event.target.value = '';
 }
 
 function onToggleImage(fileName) {
-  images.value = images.value.filter(image => (image.fileName || image.name) !== fileName)
+  images.value = images.value.filter(image => (image.fileName || image.name) !== fileName);
+  // Hide warning if we're back under the limit
+  if (images.value.length <= 4) {
+    showMaxImageWarning.value = false;
+  }
   // Reorder remaining images
-  reorderImages()
+  reorderImages();
 }
 
 function moveImageUp(index) {
@@ -127,9 +167,12 @@ function getImageName(item) {
   } else if (item.fileName) {
     // It's an existing image object with fileName
     return item.fileName
-  } else {
-    // It's a File object - return the name
+  } else if (item.name) {
+    // It's a new file object with name property
     return item.name
+  } else {
+    // Fallback
+    return 'Unknown'
   }
 }
 
@@ -183,20 +226,22 @@ async function handleSubmit() {
 
     for (let i = 0; i < images.value.length; i++) {
       const image = images.value[i]
-      console.log(images.value)
       let fileObj
-      if (image instanceof File) {
-        // Already a new file from <input>
-        fileObj = image
-      } else if (image.fileName) {
+
+      if (image.fileName) {
         // Convert server image into File
         fileObj = await urlToFile(image.fileName)
+      } else if (image.file) {
+        // It's a new uploaded file
+        fileObj = image.file
       }
 
       if (fileObj) {
         imagesInfos.push({
           pictureFile: fileObj,
-          order: i + 1
+          order: i + 1,
+          status: null,
+          pictureName: image.fileName || image.name
         })
       }
     }
@@ -214,10 +259,9 @@ async function handleSubmit() {
       color: product.value.color
     }
 
-    console.log(imagesInfos)
-     // Merge into one flat object
+    // Create the correct structure for editItemAndImage
     const saleItem = {
-      saleItemForSubmit,
+      saleItem: saleItemForSubmit,
       imagesInfos: imagesInfos
     };
 
@@ -236,7 +280,6 @@ async function handleSubmit() {
     } else {
       alert("Fail to Edit Sale Item")
     }
-
 
   } catch (error) {
     console.error("Error:", error)
@@ -338,51 +381,66 @@ onMounted(async () => {
               />
               <div class="flex space-x-3 items-center justify-center">
                 <img
-                  v-for="(image, index) in images" 
-                  :key="`${image.fileName || image.name}-${index}`"
-                  :src="image.src || image"
-                  :alt="`Product View ${index + 1}`"
+                  v-for="(preview, index) in filePreviews"
+                  :key="index"
+                  :src="preview"
                   class="w-1/5 rounded bg-gray-100 object-cover"
                 />
               </div>
             </div>
 
+            <!-- Warning Message -->
+            <div 
+              v-if="showMaxImageWarning" 
+              class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+            >
+              Maximum 4 pictures are allowed.
+            </div>
+
             <!-- Upload Image Button -->
+            <label
+              for="fileInput"
+              :class="[
+                'mt-5 py-2 w-2/7 font-medium border rounded-2xl cursor-pointer text-center transition',
+                images.length >= 4
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300'
+                  : 'bg-purple-500 text-white hover:bg-purple-600 border-purple-500'
+              ]"
+            >
+              Upload Images
+            </label>
+            
+            <!-- Disable file input when 4 images are reached -->
             <input
               class="hidden"
               id="fileInput"
               type="file"
               multiple
               accept="image/*"
+              :disabled="images.length >= 4"
               @change="handleFileChange"
             />
-            <label
-              for="fileInput"
-              class="mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600 cursor-pointer text-center"
-            >
-              Upload Images
-            </label>
-
+            
             <!-- Uploaded Image -->
             <div class="flex flex-col gap-3 mt-3 max-w-3/5 md:max-w-1/2">
               <span
                 v-if="images.length > 0"
                 v-for="(image, index) in images"
-                :key="`upload-${image.fileName || image.name}-${index}`"
+                :key="index"
                 class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
               >
-                <!-- Filename with truncate and order indicator -->
+                <!-- Filename with truncate -->
                 <span class="truncate min-w-0 max-w-[200px]">
-                  {{ index + 1 }}. {{ getImageName(image) }}
+                  {{ getImageName(image) }}
                 </span>
 
                 <!-- Button Right Side -->
                 <div class="flex gap-1">
                   <!-- Remove Image -->
                   <button 
-                    type="button"
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="onToggleImage(image.fileName || image.name)"
+                    @click.stop="onToggleImage(getImageName(image))"
+                    type="button"
                   >
                     <span class="material-icons text-sm">close</span>
                   </button>
@@ -393,20 +451,20 @@ onMounted(async () => {
                   >
                     <!-- Swap Up -->
                     <button
-                      v-if="index !== 0"
-                      type="button"
-                      class="flex-shrink-0 hover:text-purple-600"
+                      class="flex-shrink-0"
+                      :class="index === 0 ? 'cursor-not-allowed text-gray-500' : 'hover:text-purple-600'"
                       @click="moveImageUp(index)"
+                      type="button"
                     >
                       <span class="material-icons text-base">arrow_drop_up</span>
                     </button>
 
                     <!-- Swap Down -->
                     <button
-                      v-if="index !== images.length - 1"
-                      type="button"
-                      class="flex-shrink-0 hover:text-purple-600"
+                      class="flex-shrink-0"
+                      :class="index === images.length - 1 ? 'cursor-not-allowed text-gray-500' : 'hover:text-purple-600'"
                       @click="moveImageDown(index)"
+                      type="button"
                     >
                       <span class="material-icons text-base">arrow_drop_down</span>
                     </button>

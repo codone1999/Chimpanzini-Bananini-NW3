@@ -11,6 +11,7 @@ const from = route.query.from
 
 const brandSelected = ref([])
 const files = ref([])
+const showMaxImageWarning = ref(false)
 const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
 
 const newSaleItem = ref({
@@ -39,11 +40,34 @@ const inputRefs = ref([])
 // ------------- Image --------------------- //
 function handleFileChange(event) {
   if (!event.target.files) return
-  files.value = Array.from(event.target.files)
+  
+  const newFiles = Array.from(event.target.files)
+  const totalFiles = files.value.length + newFiles.length
+  
+  // Check if user is trying to upload more than 4 total
+  if (totalFiles > 4) {
+    showMaxImageWarning.value = true
+    const allowedCount = 4 - files.value.length
+    if (allowedCount > 0) {
+      // Only add the allowed number of files
+      files.value = [...files.value, ...newFiles.slice(0, allowedCount)]
+    }
+  } else {
+    // Add all new files if within limit
+    files.value = [...files.value, ...newFiles]
+    showMaxImageWarning.value = false
+  }
+  
+  // Reset the input value so the same files can be selected again if needed
+  event.target.value = ''
 }
 
 function onToggleImage(fileName) {
   files.value = files.value.filter(file => file.name !== fileName)
+  // Hide warning if we're back under the limit
+  if (files.value.length <= 4) {
+    showMaxImageWarning.value = false
+  }
 }
 
 function moveImageUp(index) {
@@ -114,7 +138,7 @@ onMounted(async () => {
       </div>
 
       <!-- Title -->
-      <h1 class="text-3xl font-bold text-gray-900 mb-4">Add New newSaleItem</h1>
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">Add New Sale Item</h1>
 
       <!-- Main -->
       <div class="bg-white rounded-2xl shadow-xl py-5 px-7">
@@ -139,21 +163,37 @@ onMounted(async () => {
               </div>
             </div>
 
+            <!-- Warning Message -->
+            <div 
+              v-if="showMaxImageWarning" 
+              class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+            >
+              Maximum 4 pictures are allowed.
+            </div>
+
             <!-- Upload Image Button -->
+            <label
+              for="fileInput"
+              :class="[
+                'mt-5 py-2 w-2/7 font-medium border rounded-2xl cursor-pointer text-center transition',
+                files.length >= 4
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300'
+                  : 'bg-purple-500 text-white hover:bg-purple-600 border-purple-500'
+              ]"
+            >
+              Upload Images
+            </label>
+            
+            <!-- Disable file input when 4 images are reached -->
             <input
               class="hidden"
               id="fileInput"
               type="file"
               multiple
               accept="image/*"
+              :disabled="files.length >= 4"
               @change="handleFileChange"
             />
-            <label
-              for="fileInput"
-              class="mt-5 py-2 w-2/7 text-white font-medium border rounded-2xl bg-purple-500 hover:bg-purple-600 cursor-pointer text-center"
-            >
-              Upload Images
-            </label>
             
             <!-- Uploaded Image -->
             <div class="flex flex-col gap-3 mt-3 max-w-3/5 md:max-w-1/2">
@@ -174,6 +214,7 @@ onMounted(async () => {
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
                     @click.stop="onToggleImage(file.name)"
+                    type="button"
                   >
                     <span class="material-icons text-sm">close</span>
                   </button>
@@ -184,18 +225,20 @@ onMounted(async () => {
                   >
                     <!-- Swap Up -->
                     <button
-                      v-if="index !== 0"
-                      class="flex-shrink-0 hover:text-purple-600"
+                      class="flex-shrink-0 "
+                      :class="index === 0 ? 'cursor-not-allow text-gray-500 ': 'hover:text-purple-500' "
                       @click="moveImageUp(index)"
+                      type="button"
                     >
                       <span class="material-icons text-base">arrow_drop_up</span>
                     </button>
 
                     <!-- Swap Down -->
                     <button
-                      v-if="index !== files.length - 1"
-                      class="flex-shrink-0 hover:text-purple-600"
+                      class="flex-shrink-0"
+                      :class="index === files.length - 1 ? 'cursor-not-allow text-gray-500' : 'hover:text-purple-500' "
                       @click="moveImageDown(index)"
+                      type="button"
                     >
                       <span class="material-icons text-base">arrow_drop_down</span>
                     </button>

@@ -307,7 +307,7 @@ function addCustomPriceRange() {
 
           <!-- Clear Filters -->
           <button 
-            @click="props.onClearBrands"
+            @click.stop="props.onClearBrands"
             class="itbms-brand-filter-clear flex items-center gap-1 -mr-4 p-3 text-white bg-red-600 hover:bg-red-800 rounded-full transition"
           >
             <span class="material-icons">cleaning_services</span>
