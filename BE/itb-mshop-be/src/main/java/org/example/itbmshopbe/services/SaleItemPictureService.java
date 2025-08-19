@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,69 +63,151 @@ public class SaleItemPictureService {
                 .map(picture -> modelMapper.map(picture, SaleItemPictureResponseDTO.class))
                 .toList();
     }
-
-    public void deletePictureByIds(List<Integer> ids) {
-        List<SaleItemPicture> pictures = saleItemPictureRepository.findAllById(ids);
-        for (SaleItemPicture picture : pictures) {
-            Path filePath = fileService.getFileStorageLocation().resolve(picture.getNewPictureName());
-            try{
-                Files.deleteIfExists(filePath);
-            }catch (IOException e) {
-                throw new RuntimeException("Failed to delete file " + picture.getNewPictureName(), e);
-            }
-        }
-        saleItemPictureRepository.deleteAll(pictures);
-    }
-
-   // public void updatePictureOrder(Integer saleItemId, List<Integer> orderedIds) {
-   //     List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
-   //     for (int i = 0; i < orderedIds.size(); i++) {
-   //         int newOrder = i + 1;
-   //         Integer pictureId = orderedIds.get(i);
-//
-   //         pictures.stream()
-   //                 .filter(p -> p.getId().equals(pictureId))
-   //                 .findFirst()
-   //                 .ifPresent(p -> p.setDisplayOrder(newOrder));
-   //     }
-//
-   //     saleItemPictureRepository.saveAll(pictures);
-   // }
-//
-   // public int countPicturesBySaleItemId(Integer saleItemId) {
-   //     return saleItemPictureRepository.countBySaleItemId(saleItemId);
-   // }
-
     @Transactional
     public void updatePictureByDisplayOrder(Integer saleItemId, List<SaleItemPictureRequest> pictures) {
         List<SaleItemPicture> existingPictures = saleItemPictureRepository.findBySaleItemId(saleItemId);
-
-        for(SaleItemPictureRequest pictureReq : pictures) {
-            SaleItemPicture exitingPic = existingPictures.stream()
-                    .filter(pic -> pic.getDisplayOrder().equals(pictureReq.getOrder()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException(
-                            "No picture found for displayOrder " + pictureReq.getOrder()));
-            Path oldPicturePath = fileService.getFileStorageLocation().resolve(exitingPic.getNewPictureName());
-            try {
-                Files.deleteIfExists(oldPicturePath);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to delete file " + exitingPic.getNewPictureName(), e);
+        for (SaleItemPictureRequest pictureReq : pictures) {
+            String status = pictureReq.getStatus();
+            switch (status.toLowerCase()) {
+                case"add":
+                    handleAddPicture(saleItemId, existingPictures, pictureReq);
+                    break;
+                case"remove":
+                    handleRemovePicture(existingPictures, pictureReq);
+                    break;
+                case"replace":
+                    handleReplacePicture(saleItemId, existingPictures, pictureReq);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown status: " + status);
             }
+            existingPictures = saleItemPictureRepository.findBySaleItemId(saleItemId)
+                    .stream()
+                    .sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder()))
+                    .toList();
 
-            String newFileName;
-            try {
-                newFileName = fileService.storeFile(pictureReq.getPictureFile(),saleItemId,pictureReq.getOrder());
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to store file " + pictureReq.getPictureFile(), e);
+            int order = 1;
+            for (SaleItemPicture pic : existingPictures) {
+                pic.setDisplayOrder(order++);
+                saleItemPictureRepository.save(pic);
             }
-            // Update existing picture record
-            exitingPic.setOldPictureName(pictureReq.getPictureFile().getOriginalFilename());
-            exitingPic.setNewPictureName(newFileName);
-            exitingPic.setFileSizeBytes((int) pictureReq.getPictureFile().getSize());
-
-            saleItemPictureRepository.save(exitingPic);
         }
     }
+    private void handleAddPicture(Integer saleItemId, List<SaleItemPicture> existingPictures,
+                                  SaleItemPictureRequest pictureReq) {
+        if (existingPictures.size() >= 4) {
+            throw new RuntimeException("Maximum number of pictures exceeded");
+        }
 
+        int newOrder;
+        if (pictureReq.getOrder() == null) {
+            newOrder = existingPictures.size() + 1;
+        } else {
+            newOrder = pictureReq.getOrder();
+            for (SaleItemPicture picture : existingPictures) {
+                if (picture.getDisplayOrder() >= newOrder) {
+                    int oldOrder = picture.getDisplayOrder();
+                    int newShiftedOrder = oldOrder + 1;
+
+                    // Gen new picture name base on order
+                    String extension = fileService.getFileExtension(picture.getNewPictureName());
+                    String newFileName = saleItemId + "_" + newShiftedOrder + (extension.isEmpty() ? "" : "." + extension);
+
+                    Path oldPath = fileService.getFileStorageLocation().resolve(picture.getNewPictureName());
+                    Path newPath = fileService.getFileStorageLocation().resolve(newFileName);
+                    try {
+                        Files.move(oldPath, newPath,StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to rename file " + oldPath + " → " + newPath, e);
+                    }
+                    picture.setDisplayOrder(newShiftedOrder);
+                    picture.setNewPictureName(newFileName);
+                    saleItemPictureRepository.save(picture);
+                }
+            }
+        }
+
+        String newPictureName;
+        try {
+            newPictureName = fileService.storeFile(pictureReq.getPictureFile(), saleItemId, newOrder);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to add file " + pictureReq.getPictureFile(), e);
+        }
+
+        SaleItem saleItem = saleItemRepository.findById(saleItemId)
+                .orElseThrow(() -> new RuntimeException("SaleItem not found"));
+
+        SaleItemPicture newSaleItemPicture = new SaleItemPicture();
+        newSaleItemPicture.setSaleItem(saleItem);
+        newSaleItemPicture.setOldPictureName(pictureReq.getPictureFile().getOriginalFilename());
+        newSaleItemPicture.setNewPictureName(newPictureName);
+        newSaleItemPicture.setFileSizeBytes((int) pictureReq.getPictureFile().getSize());
+        newSaleItemPicture.setDisplayOrder(newOrder);
+        newSaleItemPicture.setCreatedOn(Instant.now());
+        saleItemPictureRepository.save(newSaleItemPicture);
+    }
+
+
+    private void handleRemovePicture(List<SaleItemPicture> existingPictures, SaleItemPictureRequest pictureRequest) {
+        SaleItemPicture toRemove = existingPictures.stream()
+                .filter(pic -> pic.getDisplayOrder().equals(pictureRequest.getOrder()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No picture found for order"));
+
+        Path filePath = fileService.getFileStorageLocation().resolve(toRemove.getNewPictureName());
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete file " + toRemove.getNewPictureName(), e);
+        }
+
+        saleItemPictureRepository.delete(toRemove);
+
+        existingPictures.stream()
+                .filter(pic -> pic.getDisplayOrder() > toRemove.getDisplayOrder())
+                .sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder())) // lowest → highest
+                .forEach(picture -> {
+                    int oldOrder = picture.getDisplayOrder();
+                    int newOrder = oldOrder - 1;
+
+                    String extension = fileService.getFileExtension(picture.getNewPictureName());
+                    String newFileName = picture.getSaleItem().getId() + "_" + newOrder + (extension.isEmpty() ? "" : "." + extension);
+
+                    Path oldPath = fileService.getFileStorageLocation().resolve(picture.getNewPictureName());
+                    Path newPath = fileService.getFileStorageLocation().resolve(newFileName);
+
+                    try {
+                        Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to rename file " + oldPath + " → " + newPath, e);
+                    }
+
+                    picture.setDisplayOrder(newOrder);
+                    picture.setNewPictureName(newFileName);
+                    saleItemPictureRepository.save(picture);
+                });
+    }
+
+
+    private void handleReplacePicture(Integer saleItemId , List<SaleItemPicture> existingPicture, SaleItemPictureRequest pictureRequest) {
+        SaleItemPicture toRePlace =existingPicture.stream()
+                .filter(pic -> pic.getDisplayOrder().equals(pictureRequest.getOrder())).findFirst()
+                .orElseThrow(() -> new RuntimeException("No picture found for order"));
+        Path oldFilePath = fileService.getFileStorageLocation().resolve(toRePlace.getNewPictureName());
+        try {
+            Files.deleteIfExists(oldFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete file " + toRePlace.getNewPictureName(), e);
+        }
+        String newFileName;
+        try {
+            newFileName = fileService.storeFile(pictureRequest.getPictureFile(),saleItemId, pictureRequest.getOrder());
+        }catch (IOException e) {
+            throw new RuntimeException("Failed to replace file " + pictureRequest.getPictureFile(), e);
+        }
+        toRePlace.setOldPictureName(pictureRequest.getPictureFile().getOriginalFilename());
+        toRePlace.setNewPictureName(newFileName);
+        toRePlace.setFileSizeBytes((int) pictureRequest.getPictureFile().getSize());
+        saleItemPictureRepository.save(toRePlace);
+    }
 }
