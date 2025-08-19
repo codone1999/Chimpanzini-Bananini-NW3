@@ -143,18 +143,22 @@ async function fetchFilteredSaleItems() {
     }
   }
 
-  if (filterStorageSizes.value.length > 0 ) {
-    for (const storage of filterStorageSizes.value) {
-      if (storage === "Not Specify")
-        query.push("filterNullStorage=true")
-      else
-        query.push("filterNullStorage=false")
-
-      if ( !(storage === "Not Specify" && filterStorageSizes.value.length === 1) ){
-        query.push("filterStorages=" + storage)
+  if (filterStorageSizes.value.length > 0) {
+      const hasNotSpecify = filterStorageSizes.value.includes("Not Specify");
+      const specificStorages = filterStorageSizes.value.filter(storage => storage !== "Not Specify");
+      
+      // Add filterNullStorage parameter if "Not Specify" is selected
+      if (hasNotSpecify) {
+          query.push("filterNullStorage=true");
       }
-    }
-}
+      
+      // Add specific storage sizes if any are selected
+      if (specificStorages.length > 0) {
+          for (const storage of specificStorages) {
+              query.push("filterStorages=" + storage);
+          }
+      }
+  }
 
 
   if (pageSize.value) query.push("size=" + pageSize.value);

@@ -21,15 +21,16 @@ public interface SaleItemRepository extends JpaRepository<SaleItem, Integer> {
     Page<SaleItem> findByBrand_NameIgnoreCaseIn(List<String> brandNames, Pageable pageable);
 
     @Query("""
-    SELECT s FROM SaleItem s
-    WHERE (:brandNames IS NULL OR LOWER(s.brand.name) IN :brandNames)
-      AND (:minPrice IS NULL OR s.price >= :minPrice)
-      AND (:maxPrice IS NULL OR s.price <= :maxPrice)
-      AND (
-            (:storageSizes IS NOT NULL AND s.storageGb IN :storageSizes)
-            OR (:filterNullStorage = true AND s.storageGb IS NULL)
-      )
-""")
+        SELECT s FROM SaleItem s
+        WHERE (:brandNames IS NULL OR LOWER(s.brand.name) IN :brandNames)
+        AND (:minPrice IS NULL OR s.price >= :minPrice)
+        AND (:maxPrice IS NULL OR s.price <= :maxPrice)
+        AND (
+                (:storageSizes IS NULL AND (:filterNullStorage IS NULL OR :filterNullStorage = false))
+                OR (:storageSizes IS NOT NULL AND s.storageGb IN :storageSizes)
+                OR (:filterNullStorage = true AND s.storageGb IS NULL)
+        )
+    """)
     Page<SaleItem> filterSaleItem(
             @Param("brandNames") List<String> brandNames,
             @Param("minPrice") Integer minPrice,

@@ -85,7 +85,7 @@ const emit = defineEmits(['update:pageSize'])
 
 // ----------- Options -------------------- //
 const storageOptions = [
-  "Not Specify", // instead of undefined
+  "Not Specify",
   32,
   64,
   128,
