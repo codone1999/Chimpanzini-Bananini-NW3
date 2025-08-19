@@ -1,3 +1,4 @@
+//AddItem.vue
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,6 +13,7 @@ const from = route.query.from
 const brandSelected = ref([])
 const files = ref([])
 const showMaxImageWarning = ref(false)
+const oversizedFiles = ref([])
 const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
 
 const newSaleItem = ref({
@@ -42,19 +44,36 @@ function handleFileChange(event) {
   if (!event.target.files) return
   
   const newFiles = Array.from(event.target.files)
-  const totalFiles = files.value.length + newFiles.length
+  const maxFileSize = 2 * 1024 * 1024 // 2MB in bytes
   
-  // Check if user is trying to upload more than 4 total
+  // Separate valid and oversized files
+  const validFiles = []
+  const currentOversizedFiles = []
+  
+  newFiles.forEach(file => {
+    if (file.size > maxFileSize) {
+      currentOversizedFiles.push(file.name)
+    } else {
+      validFiles.push(file)
+    }
+  })
+  
+  // Update oversized files list
+  oversizedFiles.value = currentOversizedFiles
+  
+  const totalFiles = files.value.length + validFiles.length
+  
+  // Check if user is trying to upload more than 4 total (only counting valid files)
   if (totalFiles > 4) {
     showMaxImageWarning.value = true
     const allowedCount = 4 - files.value.length
     if (allowedCount > 0) {
-      // Only add the allowed number of files
-      files.value = [...files.value, ...newFiles.slice(0, allowedCount)]
+      // Only add the allowed number of valid files
+      files.value = [...files.value, ...validFiles.slice(0, allowedCount)]
     }
   } else {
-    // Add all new files if within limit
-    files.value = [...files.value, ...newFiles]
+    // Add all valid files if within limit
+    files.value = [...files.value, ...validFiles]
     showMaxImageWarning.value = false
   }
   
@@ -163,12 +182,23 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Warning Message -->
-            <div 
-              v-if="showMaxImageWarning" 
-              class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
-            >
-              Maximum 4 pictures are allowed.
+            <!-- Warning Messages -->
+            <div class="space-y-2">
+              <!-- File Size Warning -->
+              <div 
+                v-if="oversizedFiles.length > 0" 
+                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+              >
+                The picture file size cannot be larger than 2MB
+              </div>
+
+              <!-- Max Images Warning -->
+              <div 
+                v-if="showMaxImageWarning" 
+                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+              >
+                Maximum 4 pictures are allowed.
+              </div>
             </div>
 
             <!-- Upload Image Button -->
@@ -409,7 +439,7 @@ onMounted(async () => {
                     ? { name: 'ListGallery' }
                     : { name: 'ListSaleItems' }
                 "
-                class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition"
+                class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded bg-gray-300 hover:bg-gray-400 transition"
               >
                 Cancel
               </router-link>

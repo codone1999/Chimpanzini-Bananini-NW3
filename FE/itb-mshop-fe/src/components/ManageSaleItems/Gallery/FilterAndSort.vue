@@ -1,3 +1,4 @@
+//FilterAndSort.vue
 <script setup>
 import {ref} from "vue";
 
@@ -84,6 +85,7 @@ const emit = defineEmits(['update:pageSize'])
 
 // ----------- Options -------------------- //
 const storageOptions = [
+  "Not Specify", // instead of undefined
   32,
   64,
   128,
@@ -110,11 +112,12 @@ function handlePageSizeChange(event) {
 }
 
 function formatStorage(size) {
+  if (size === "Not Specify") return "Not Specify"
   return size >= 1 && size < 10 ? `${size}TB` : `${size}GB`
 }
 
 function addCustomPriceRange() {
-  if (customMinPrice.value && customMaxPrice.value && Number(customMinPrice.value) < Number(customMaxPrice.value)) {
+  if (customMinPrice.value && customMaxPrice.value && Number(customMinPrice.value) <= Number(customMaxPrice.value)) {
     const customRange = `${Number(customMinPrice.value).toLocaleString()}-${Number(customMaxPrice.value).toLocaleString()}`
     
     // Check if this range already exists
@@ -242,7 +245,7 @@ function addCustomPriceRange() {
               </div>
               <button
                 @click.stop="addCustomPriceRange"
-                :disabled="!customMinPrice || !customMaxPrice || customMinPrice >= customMaxPrice"
+                :disabled="!customMinPrice || !customMaxPrice || customMinPrice > customMaxPrice"
                 class="w-full mt-3 px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 Add Range
@@ -284,8 +287,8 @@ function addCustomPriceRange() {
                 class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
               >
                 <button
-                  v-for="size in storageOptions"
-                  :key="size"
+                  v-for="(size, index) in storageOptions"
+                  :key="index"
                   :disabled="props.filterStorageSizes.includes(size)"
                   @click.stop="props.onToggleStorageSize(size)"
                   class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"

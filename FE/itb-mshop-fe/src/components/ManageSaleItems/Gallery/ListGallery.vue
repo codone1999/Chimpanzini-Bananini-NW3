@@ -1,3 +1,4 @@
+//ListGallery.vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import FilterAndSort from "./FilterAndSort.vue";
@@ -142,11 +143,19 @@ async function fetchFilteredSaleItems() {
     }
   }
 
-  if (filterStorageSizes.value.length > 0) {
+  if (filterStorageSizes.value.length > 0 ) {
     for (const storage of filterStorageSizes.value) {
-      query.push("filterStorages=" + storage)
+      if (storage === "Not Specify")
+        query.push("filterNullStorage=true")
+      else
+        query.push("filterNullStorage=false")
+
+      if ( !(storage === "Not Specify" && filterStorageSizes.value.length === 1) ){
+        query.push("filterStorages=" + storage)
+      }
     }
-  }
+}
+
 
   if (pageSize.value) query.push("size=" + pageSize.value);
 
@@ -177,6 +186,7 @@ async function fetchFilteredSaleItems() {
     console.error("Fetch error:", error);
   }
 }
+
 
 // -------------- Actions ------------------- //
 function toggleBrand(brandName) {
@@ -278,6 +288,7 @@ onMounted(async () => {
     console.error("Failed to fetch product:", error);
   }
 });
+
 </script>
 
 <template>

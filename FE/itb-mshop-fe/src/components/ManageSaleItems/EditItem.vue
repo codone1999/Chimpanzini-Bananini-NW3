@@ -1,3 +1,4 @@
+//EditItem.vue
 <script setup>
 import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
@@ -17,6 +18,7 @@ const from = route.query.from;
 const brandSelected = ref(null);
 const images = ref([]);
 const showMaxImageWarning = ref(false);
+const oversizedFiles = ref([])
 
 const validationMessages = ref({});
 
@@ -94,6 +96,23 @@ function handleFileChange(event) {
   if (!event.target.files) return;
   
   const newFiles = Array.from(event.target.files);
+  const maxFileSize = 2 * 1024 * 1024 // 2MB in bytes
+  
+  // Separate valid and oversized files
+  const validFiles = []
+  const currentOversizedFiles = []
+  
+  newFiles.forEach(file => {
+    if (file.size > maxFileSize) {
+      currentOversizedFiles.push(file.name)
+    } else {
+      validFiles.push(file)
+    }
+  })
+
+  // Update oversized files list
+  oversizedFiles.value = currentOversizedFiles
+
   const totalImages = images.value.length + newFiles.length;
   
   // Check if user is trying to upload more than 4 total
@@ -389,12 +408,23 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Warning Message -->
-            <div 
-              v-if="showMaxImageWarning" 
-              class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
-            >
-              Maximum 4 pictures are allowed.
+            <!-- Warning Messages -->
+            <div class="space-y-2">
+              <!-- File Size Warning -->
+              <div 
+                v-if="oversizedFiles.length > 0" 
+                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+              >
+                The picture file size cannot be larger than 2MB
+              </div>
+
+              <!-- Max Images Warning -->
+              <div 
+                v-if="showMaxImageWarning" 
+                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+              >
+                Maximum 4 pictures are allowed.
+              </div>
             </div>
 
             <!-- Upload Image Button -->
@@ -633,7 +663,7 @@ onMounted(async () => {
                     ? { name: 'ListDetails', params: { id: product.id } }
                     : { name: 'ListSaleItems' }
                 "
-                class="itbms-cancel-button px-5 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
+                class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded bg-gray-300 hover:bg-gray-400 transition"
               >
                 Cancel
               </router-link>
