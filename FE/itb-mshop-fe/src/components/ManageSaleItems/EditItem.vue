@@ -21,6 +21,8 @@ const showMaxImageWarning = ref(false);
 const oversizedFiles = ref([])
 const selectedImageIndex = ref(0)
 
+const isSubmitting = ref(false)
+
 const validationMessages = ref({});
 
 // -------------- Form --------------------- //
@@ -295,7 +297,11 @@ async function urlToFile(imageName) {
 }
 
 async function handleSubmit() {
+  if (isSubmitting.value) return
+
   try {
+    isSubmitting.value = true
+
     product.value.color = product.value.color === "" ? null : product.value.color
 
     // Build image info + collect files
@@ -390,10 +396,12 @@ async function handleSubmit() {
       }
     } else {
       alert("Fail to Edit Sale Item")
+      isSubmitting.value = false
     }
 
   } catch (error) {
     console.error("Error:", error)
+    isSubmitting.value = false
   }
 }
 
@@ -790,12 +798,15 @@ onMounted(async () => {
               </router-link>
               <button
                 type="submit"
-                :disabled="isSaveDisabled"
+                :disabled="isSaveDisabled || isSubmitting"
                 :class="[
                   'itbms-save-button px-5 py-2 text-white rounded transition',
                   isSaveDisabled
                     ? 'bg-purple-300 cursor-not-allowed'
                     : 'bg-purple-600 hover:bg-purple-700',
+                  isSubmitting
+                    ? 'cursor-not-allowed'
+                    : ''
                 ]"
               >
                 Save

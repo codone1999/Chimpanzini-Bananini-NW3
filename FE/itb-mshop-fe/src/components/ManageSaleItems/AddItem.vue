@@ -11,12 +11,15 @@ const router = useRouter()
 const from = route.query.from
 
 const brandSelected = ref([])
+
 const files = ref([])
 const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
 const showMaxImageWarning = ref(false)
 const oversizedFiles = ref([])
 const selectedImageIndex = ref(0)
+
 const inputRefs = ref([]) // Focus next field in Form
+const isSubmitting = ref(false)
 
 const newSaleItem = ref({
   // id: null,
@@ -147,7 +150,11 @@ function focusNext(index) {
 }
 
 async function handleSubmit() {
+   if (isSubmitting.value) return
+
   try {
+    isSubmitting.value = true
+
     const addedItem = await addItemAndImage(`${import.meta.env.VITE_APP_URL2}/sale-items`, newSaleItem.value, files.value)
     
     if (addedItem && addedItem.id) { // Check for successful response
@@ -157,10 +164,12 @@ async function handleSubmit() {
       })
     } else {
       alert("Failed to submit item!")
+      isSubmitting.value = false
     }
   } catch (error) {
     console.error('Error:', error)
     alert("Failed to submit item!")
+    isSubmitting.value = false
   }
 }
 
@@ -510,12 +519,15 @@ onMounted(async () => {
               </router-link>
               <button
                 type="submit"
-                :disabled="!isFormValid"
+                :disabled="!isFormValid || isSubmitting"
                 :class="[
                   'itbms-save-button px-5 py-2 text-white rounded transition',
                   isFormValid
                     ? 'bg-purple-600 hover:bg-purple-700'
                     : 'bg-purple-300 cursor-not-allowed',
+                  isSubmitting
+                    ? 'cursor-not-allowed'
+                    : ''
                 ]"
               >
                 Save
