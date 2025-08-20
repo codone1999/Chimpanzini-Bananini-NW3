@@ -87,11 +87,6 @@ function handleFileChange(event) {
     // Add all valid files if within limit
     files.value = [...files.value, ...validFiles]
     showMaxImageWarning.value = false
-
-    // Auto-select first uploaded image
-    if (previousLength === 0 && validFiles.length > 0) {
-      selectedImageIndex.value = 0
-    }
   }
   
   // Reset the input value -> same files can be selected again

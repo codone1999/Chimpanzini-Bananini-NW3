@@ -304,20 +304,54 @@ async function handleSubmit() {
     for (let i = 0; i < images.value.length; i++) {
       const image = images.value[i]
       let fileObj
+      let status = "replace" // Default status
 
       if (image.fileName) {
         // Convert server image into File
         fileObj = await urlToFile(image.fileName)
+        
+        // Check if this is an existing image that hasn't been reordered
+        const originalImage = originalProduct.value?.saleItemImages?.find(
+          img => img.fileName === image.fileName
+        )
+        
+        if (originalImage && originalImage.imageViewOrder === (i + 1)) {
+          // Image exists and order hasn't changed - keep as replace
+          status = "replace"
+        } else if (originalImage && originalImage.imageViewOrder !== (i + 1)) {
+          // Image exists but order changed - still replace but with new order
+          status = "replace" 
+        }
       } else if (image.file) {
         // It's a new uploaded file
         fileObj = image.file
+        status = "add"
+      }
+
+      // Check if image was removed (exists in original but not in current)
+      if (originalProduct.value?.saleItemImages) {
+        const removedImages = originalProduct.value.saleItemImages.filter(
+          originalImg => !images.value.some(currentImg => 
+            currentImg.fileName === originalImg.fileName
+          )
+        )
+        
+        // Add removed images with "remove" status
+        removedImages.forEach(removedImg => {
+          imagesInfos.push({
+            pictureFile: null, // No file needed for removal
+            order: removedImg.imageViewOrder,
+            status: "remove",
+            pictureName: removedImg.fileName
+          })
+        })
       }
 
       if (fileObj) {
         imagesInfos.push({
           pictureFile: fileObj,
           order: i + 1,
-          status: null,
+          status: status, // Use the determined status
           pictureName: image.fileName || image.name
         })
       }
