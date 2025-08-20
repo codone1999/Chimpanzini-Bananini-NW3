@@ -19,6 +19,7 @@ const brandSelected = ref(null);
 const images = ref([]);
 const showMaxImageWarning = ref(false);
 const oversizedFiles = ref([])
+const selectedImageIndex = ref(0)
 
 const validationMessages = ref({});
 
@@ -41,6 +42,21 @@ const product = ref({
   color: "", // OPTIONAL
 });
 const originalProduct = ref(null);
+
+// ----------------------- Computed ------------------------ //
+const mainDisplayImage = computed(() => {
+  if (images.value.length > 0 && selectedImageIndex.value < images.value.length) {
+    const selectedImage = images.value[selectedImageIndex.value]
+    if (selectedImage.src) {
+      // Existing image from server
+      return selectedImage.src
+    } else if (selectedImage.file) {
+      // New uploaded file
+      return URL.createObjectURL(selectedImage.file)
+    }
+  }
+  return phoneImg // Fallback to default phone image
+})
 
 const isFormValid = computed(() => isFormSaleItemValid(product.value));
 
@@ -85,6 +101,7 @@ const isSaveDisabled = computed(() => {
   return !isFormValid.value || !isChanged.value;
 });
 
+// ----------------------- Form ---------------------- //
 const inputRefs = ref([])
 
 function focusNext(index) {
@@ -92,6 +109,10 @@ function focusNext(index) {
 }
 
 // ---------------- Image --------------------- //
+function selectImageForDisplay(index) {
+  selectedImageIndex.value = index
+}
+
 function handleFileChange(event) {
   if (!event.target.files) return;
   
@@ -139,14 +160,30 @@ function handleFileChange(event) {
     }));
     images.value = [...images.value, ...filesToAdd];
     showMaxImageWarning.value = false;
+
+    // Auto-select first uploaded image
+    if (previousLength === 0 && validFiles.length > 0) {
+      selectedImageIndex.value = 0
+    }
   }
   
-  // Reset the input value so the same files can be selected again if needed
+  // Reset the input value -> same files can be selected again
   event.target.value = '';
 }
 
-function onToggleImage(fileName) {
+function removeImage(fileName) {
+  const removedIndex = images.value.findIndex(image => (image.fileName || image.name) === fileName)
   images.value = images.value.filter(image => (image.fileName || image.name) !== fileName);
+  
+  // Adjust selected image index if necessary
+  if (removedIndex <= selectedImageIndex.value) {
+    if (images.value.length === 0) {
+      selectedImageIndex.value = 0 // Reset to show default image
+    } else if (selectedImageIndex.value >= images.value.length) {
+      selectedImageIndex.value = images.value.length - 1
+    }
+  }
+  
   // Hide warning if we're back under the limit
   if (images.value.length <= 4) {
     showMaxImageWarning.value = false;
@@ -160,6 +197,14 @@ function moveImageUp(index) {
     const temp = images.value[index - 1]
     images.value[index - 1] = images.value[index]
     images.value[index] = temp
+
+    // Update selected index if it's affected
+    if (selectedImageIndex.value === index) {
+      selectedImageIndex.value = index - 1
+    } else if (selectedImageIndex.value === index - 1) {
+      selectedImageIndex.value = index
+    }
+
     reorderImages()
   }
 }
@@ -169,6 +214,14 @@ function moveImageDown(index) {
     const temp = images.value[index + 1]
     images.value[index + 1] = images.value[index]
     images.value[index] = temp
+
+    // Update selected index if it's affected
+    if (selectedImageIndex.value === index) {
+      selectedImageIndex.value = index + 1
+    } else if (selectedImageIndex.value === index + 1) {
+      selectedImageIndex.value = index
+    }
+
     reorderImages()
   }
 }
@@ -227,6 +280,11 @@ async function loadImages() {
     } catch (error) {
       console.warn(`Failed to load image ${i}:`, error);
     }
+  }
+
+  // Auto-select first image if images were loaded
+  if (images.value.length > 0) {
+    selectedImageIndex.value = 0
   }
 }
 
@@ -393,18 +451,47 @@ onMounted(async () => {
         >
           <div class="flex flex-col">
             <!-- Image Section -->
-            <div class="flex flex-col items-center space-y-2">
-              <img
-                :src="phoneImg"
-                class="w-full object-cover bg-gray-200 rounded-lg"
-              />
-              <div class="flex space-x-3 items-center justify-center">
-                <img
+            <div class="flex flex-col items-center space-y-4">
+              <!-- Main Display Image -->
+              <div class="relative w-full">
+                <div class="aspect-[3/4] bg-gray-200 rounded-lg">
+                  <img
+                    :src="mainDisplayImage"
+                    class="w-full h-full object-cover"
+                    :alt="images.length > 0 ? 'Product image' : 'Default phone image'"
+                  />
+                </div>
+                
+                <!-- Image indicator if there are uploaded images -->
+                <div 
+                  v-if="images.length > 0" 
+                  class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs"
+                >
+                  {{ selectedImageIndex + 1 }} / {{ images.length }}
+                </div>
+              </div>
+              
+              <!-- Image Thumbnails for Selection with 9:16 aspect ratio -->
+              <div class="flex space-x-8 items-center justify-center max-w-sm w-full">
+                <div
                   v-for="(preview, index) in filePreviews"
                   :key="index"
-                  :src="preview"
-                  class="w-1/5 rounded bg-gray-100 object-cover"
-                />
+                  :class="[
+                    'flex-1 max-w-[6rem] cursor-pointer transition-all duration-200 rounded overflow-hidden',
+                    selectedImageIndex === index 
+                      ? 'ring-2 ring-purple-500 ring-offset-2' 
+                      : 'hover:ring-2 hover:ring-purple-300 hover:ring-offset-1'
+                  ]"
+                  @click="selectImageForDisplay(index)"
+                >
+                  <div class="aspect-[3/4] bg-gray-100">
+                    <img
+                      :src="preview"
+                      class="w-full h-full object-cover"
+                      :alt="`Product image ${index + 1}`"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -469,7 +556,7 @@ onMounted(async () => {
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="onToggleImage(getImageName(image))"
+                    @click.stop="removeImage(getImageName(image))"
                     type="button"
                   >
                     <span class="material-icons text-sm">close</span>

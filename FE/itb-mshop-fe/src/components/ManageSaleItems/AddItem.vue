@@ -12,9 +12,11 @@ const from = route.query.from
 
 const brandSelected = ref([])
 const files = ref([])
+const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
 const showMaxImageWarning = ref(false)
 const oversizedFiles = ref([])
-const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
+const selectedImageIndex = ref(0)
+const inputRefs = ref([]) // Focus next field in Form
 
 const newSaleItem = ref({
   // id: null,
@@ -35,11 +37,21 @@ const newSaleItem = ref({
 
 const validationMessages = ref({})
 
+// ---------------- Computed ------------------------ //
 const isFormValid = computed(() => isFormSaleItemValid(newSaleItem.value))
 
-const inputRefs = ref([])
+const mainDisplayImage = computed(() => {
+  if (files.value.length > 0 && selectedImageIndex.value < files.value.length) {
+    return URL.createObjectURL(files.value[selectedImageIndex.value])
+  }
+  return phoneImg // default phone image
+})
 
 // ------------- Image --------------------- //
+function selectImageForDisplay(index) {
+  selectedImageIndex.value = index
+}
+
 function handleFileChange(event) {
   if (!event.target.files) return
   
@@ -75,14 +87,30 @@ function handleFileChange(event) {
     // Add all valid files if within limit
     files.value = [...files.value, ...validFiles]
     showMaxImageWarning.value = false
+
+    // Auto-select first uploaded image
+    if (previousLength === 0 && validFiles.length > 0) {
+      selectedImageIndex.value = 0
+    }
   }
   
-  // Reset the input value so the same files can be selected again if needed
+  // Reset the input value -> same files can be selected again
   event.target.value = ''
 }
 
-function onToggleImage(fileName) {
+function removeImage(fileName) {
+  const removedIndex = files.value.findIndex(file => file.name === fileName)
   files.value = files.value.filter(file => file.name !== fileName)
+
+  // Adjust selected image index if necessary
+  if (removedIndex <= selectedImageIndex.value) {
+    if (files.value.length === 0) {
+      selectedImageIndex.value = 0 // Reset to show default image
+    } else if (selectedImageIndex.value >= files.value.length) {
+      selectedImageIndex.value = files.value.length - 1 // After re-order the selected Image must change
+    }
+  }
+
   // Hide warning if we're back under the limit
   if (files.value.length <= 4) {
     showMaxImageWarning.value = false
@@ -94,6 +122,13 @@ function moveImageUp(index) {
     const temp = files.value[index - 1]
     files.value[index - 1] = files.value[index]
     files.value[index] = temp
+
+    // Update selected index if it's affected
+    if (selectedImageIndex.value === index) {
+      selectedImageIndex.value = index - 1
+    } else if (selectedImageIndex.value === index - 1) {
+      selectedImageIndex.value = index
+    }
   }
 }
 
@@ -102,9 +137,15 @@ function moveImageDown(index) {
     const temp = files.value[index + 1]
     files.value[index + 1] = files.value[index]
     files.value[index] = temp
+
+    // Update selected index if it's affected
+    if (selectedImageIndex.value === index) {
+      selectedImageIndex.value = index + 1
+    } else if (selectedImageIndex.value === index + 1) {
+      selectedImageIndex.value = index
+    }
   }
 }
-
 // ------------- Form --------------------- //
 function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
@@ -167,18 +208,47 @@ onMounted(async () => {
         >
           <div class="flex flex-col">
             <!-- Image Section -->
-            <div class="flex flex-col items-center space-y-2">
-              <img
-                :src="phoneImg"
-                class="w-full object-cover bg-gray-200 rounded-lg"
-              />
-              <div class="flex space-x-3 items-center justify-center">
-                <img
+            <div class="flex flex-col items-center space-y-4">
+              <!-- Main Display Image -->
+              <div class="relative w-full">
+                <div class="aspect-[3/4] bg-gray-200 rounded-lg">
+                  <img
+                    :src="mainDisplayImage"
+                    class="w-full h-full object-cover"
+                    :alt="files.length > 0 ? 'Uploaded product image' : 'Default phone image'"
+                  />
+                </div>
+                
+                <!-- Image indicator if there are uploaded images -->
+                <div 
+                  v-if="files.length > 0" 
+                  class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs"
+                >
+                  {{ selectedImageIndex + 1 }} / {{ files.length }}
+                </div>
+              </div>
+              
+              <!-- Image Thumbnails for Selection with 9:16 aspect ratio -->
+              <div class="flex space-x-8 items-center justify-center w-full">
+                <div
                   v-for="(preview, index) in filePreviews"
                   :key="index"
-                  :src="preview"
-                  class="w-1/5 rounded bg-gray-100 object-cover"
-                />
+                  :class="[
+                    'flex-1 max-w-[6rem] cursor-pointer transition-all duration-200 rounded overflow-hidden',
+                    selectedImageIndex === index 
+                      ? 'ring-2 ring-purple-500 ring-offset-2' 
+                      : 'hover:ring-2 hover:ring-purple-300 hover:ring-offset-1'
+                  ]"
+                  @click="selectImageForDisplay(index)"
+                >
+                  <div class="aspect-[3/4] bg-gray-100">
+                    <img
+                      :src="preview"
+                      class="w-full h-full object-cover"
+                      :alt="`Product image ${index + 1}`"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -243,7 +313,7 @@ onMounted(async () => {
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="onToggleImage(file.name)"
+                    @click.stop="removeImage(file.name)"
                     type="button"
                   >
                     <span class="material-icons text-sm">close</span>
