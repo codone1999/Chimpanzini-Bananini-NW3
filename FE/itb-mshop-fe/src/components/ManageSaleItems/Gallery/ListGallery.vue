@@ -6,6 +6,7 @@ import Pagination from "./Pagination.vue";
 import { getItems } from "@/lib/fetchUtils";
 import { handleQueryAlerts } from "@/lib/alertMessage";
 import phoneImg from "../../../../public/phone.png";
+import Search from "./Search.vue";
 
 // Session Keys
 const SESSION_KEYS = {
@@ -42,6 +43,8 @@ const totalPages = ref(1);
 
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
+
+const search = ref("");
 
 // Visible Pages
 const visiblePages = computed(() => {
@@ -300,6 +303,13 @@ onMounted(async () => {
     <h2 class="text-3xl font-extrabold text-gray-900 mb-10 text-center">
       Shop Our Products
     </h2>
+
+    <!-- Search Box -->
+    <div class="mb-5">
+      <Search
+        v-model="search"
+      />
+    </div>
 
     <div
       v-if="showSuccessMessage"
