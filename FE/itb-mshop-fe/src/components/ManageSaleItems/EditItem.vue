@@ -196,6 +196,7 @@ function removeImage(fileName) {
 
 function moveImageUp(index) {
   if (index > 0) {
+    // Swap the images in the array
     const temp = images.value[index - 1]
     images.value[index - 1] = images.value[index]
     images.value[index] = temp
@@ -207,12 +208,14 @@ function moveImageUp(index) {
       selectedImageIndex.value = index
     }
 
+    // Update the imageViewOrder for all images after swapping
     reorderImages()
   }
 }
 
 function moveImageDown(index) {
   if (index < images.value.length - 1) {
+    // Swap the images in the array
     const temp = images.value[index + 1]
     images.value[index + 1] = images.value[index]
     images.value[index] = temp
@@ -224,6 +227,7 @@ function moveImageDown(index) {
       selectedImageIndex.value = index
     }
 
+    // Update the imageViewOrder for all images after swapping
     reorderImages()
   }
 }
@@ -258,23 +262,24 @@ async function loadImages() {
   }
 
   // Sort images by imageViewOrder before loading
-  const sortedImages = [...product.value.saleItemImages].sort((a, b) => a.imageViewOrder - b.imageViewOrder);
+  const sortedImages = [...product.value.saleItemImages]
+    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0))
   
   // Clear existing images
   images.value = [];
 
-  // Load each image with error handling
+  // Load each image with error handling and proper structure
   for (let i = 0; i < sortedImages.length; i++) {
     try {
       const imageData = sortedImages[i];
       if (imageData && imageData.fileName) {
         const imageUrl = `${url_items}/picture/${imageData.fileName}`;
         
-        // Create image object with metadata
+        // Create image object with all necessary properties
         const imageObject = {
           src: imageUrl,
           fileName: imageData.fileName,
-          imageViewOrder: imageData.imageViewOrder,
+          imageViewOrder: i + 1, // Ensure sequential order starting from 1
         };
         
         images.value.push(imageObject);
@@ -307,43 +312,18 @@ async function handleSubmit() {
     // Build image info + collect files
     const imagesInfos = []
 
-    for (let i = 0; i < images.value.length; i++) {
-      const image = images.value[i]
-      let fileObj
-      let status = "replace" // Default status
-
-      if (image.fileName) {
-        // Convert server image into File
-        fileObj = await urlToFile(image.fileName)
-        
-        // Check if this is an existing image that hasn't been reordered
-        const originalImage = originalProduct.value?.saleItemImages?.find(
-          img => img.fileName === image.fileName
+    // FIRST: Handle removed images (do this ONCE, outside the main loop)
+    if (originalProduct.value?.saleItemImages) {
+      const removedImages = originalProduct.value.saleItemImages.filter(
+        originalImg => !images.value.some(currentImg => 
+          currentImg.fileName === originalImg.fileName
         )
-        
-        if (originalImage && originalImage.imageViewOrder === (i + 1)) {
-          // Image exists and order hasn't changed - keep as replace
-          status = "replace"
-        } else if (originalImage && originalImage.imageViewOrder !== (i + 1)) {
-          // Image exists but order changed - still replace but with new order
-          status = "replace" 
-        }
-      } else if (image.file) {
-        // It's a new uploaded file
-        fileObj = image.file
-        status = "add"
-      }
-
-      // Check if image was removed (exists in original but not in current)
-      if (originalProduct.value?.saleItemImages) {
-        const removedImages = originalProduct.value.saleItemImages.filter(
-          originalImg => !images.value.some(currentImg => 
-            currentImg.fileName === originalImg.fileName
-          )
-        )
-        
-        // Add removed images with "remove" status
-        removedImages.forEach(removedImg => {
+      )
+      
+      // Sort removed images by their original order (process in order)
+      removedImages
+        .sort((a, b) => a.imageViewOrder - b.imageViewOrder)
+        .forEach(removedImg => {
           imagesInfos.push({
             pictureFile: null, // No file needed for removal
             order: removedImg.imageViewOrder,
@@ -351,17 +331,50 @@ async function handleSubmit() {
             pictureName: removedImg.fileName
           })
         })
+    }
+
+    // SECOND: Handle current images (existing and new)
+    // Process all current images and send them with their new positions
+    for (let i = 0; i < images.value.length; i++) {
+      const image = images.value[i]
+      let fileObj
+      let status = "add" // Default for new files
+
+      if (image.fileName) {
+        // This is an existing image - convert to File
+        fileObj = await urlToFile(image.fileName)
+        
+        // For existing images, always use "replace" so backend can handle reordering
+        status = "replace"
+      } else if (image.file) {
+        // This is a new uploaded file
+        fileObj = image.file
+        status = "add"
       }
 
       if (fileObj) {
         imagesInfos.push({
           pictureFile: fileObj,
-          order: i + 1,
-          status: status, // Use the determined status
+          order: i + 1, // New position in the reordered array
+          status: status,
           pictureName: image.fileName || image.name
         })
       }
     }
+
+    // IMPORTANT: Sort the imagesInfos array to process in the correct order
+    // Process removes first (in original order), then adds and replaces (in new order)
+    imagesInfos.sort((a, b) => {
+      // Removes first (by original order)
+      if (a.status === "remove" && b.status === "remove") {
+        return a.order - b.order
+      }
+      if (a.status === "remove") return -1
+      if (b.status === "remove") return 1
+      
+      // Then adds and replaces by new order
+      return a.order - b.order
+    })
 
     const saleItemForSubmit = {
       id: product.value.id,
@@ -390,6 +403,9 @@ async function handleSubmit() {
           name: "ListDetails",
           params: { id: product.value.id },
           query: { edited: "true" }
+        }).then(() => {
+          // Refresh the page to show updated data
+          router.go(0)
         })
       } else {
         router.push({ name: "ListSaleItems", query: { edited: "true" } })

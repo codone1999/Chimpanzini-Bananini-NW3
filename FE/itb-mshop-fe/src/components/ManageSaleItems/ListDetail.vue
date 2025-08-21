@@ -1,3 +1,4 @@
+//ListDetails
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
@@ -48,12 +49,19 @@ async function loadImages() {
     return;
   }
 
+  // Clear existing images
+  images.value = [];
+
+  // Sort images by imageViewOrder to display in correct order
+  const sortedImages = [...product.value.saleItemImages]
+    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0));
+
   // Load each image with error handling
-  for (let i = 0; i < product.value.saleItemImages.length; i++) {
+  for (let i = 0; i < sortedImages.length; i++) {
     try {
-      // Only try to load if the image ID exists
-      if (product.value.saleItemImages[i]) {
-        images.value[i] = `${url}/picture/${product.value.saleItemImages[i].fileName}`;
+      if (sortedImages[i] && sortedImages[i].fileName) {
+        // Use the sorted order, not the original array index
+        images.value.push(`${url}/picture/${sortedImages[i].fileName}`);
       }
     } catch (error) {
       console.warn(`Failed to load image ${i}:`, error);
