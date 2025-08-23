@@ -9,12 +9,14 @@ import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemPictureRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
 import org.example.itbmshopbe.utils.ListMapper;
+import org.example.itbmshopbe.utils.SaleItemSpecifications;
 import org.example.itbmshopbe.utils.SaleItemUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -129,17 +131,17 @@ public class SaleItemService {
             Integer page,
             Integer size,
             String sortField,
-            String sortDirection, Boolean filterNullStorage) throws NoSuchFieldException {
+            String sortDirection,
+            Boolean filterNullStorage,
+            String searchKeyword) throws NoSuchFieldException {
 
-        if (page == null || page < 0) { //check page is not -
+        if (page == null || page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
         }
-        int pageSize = (size == null || size <= 0) ? 10 : size; //Check if size is missing or invalid,
+        int pageSize = (size == null || size <= 0) ? 10 : size;
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        //Default sort is ascending unless sortDirection=desc
         String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
-        //Default sort field is createdOn unless another is given.
 
         Sort.Order order;
         if (String.class.equals(SaleItem.class.getDeclaredField(sortBy).getType())) {
@@ -150,14 +152,14 @@ public class SaleItemService {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
 
-        Page<SaleItem> saleItemsPage = saleItemRepository.filterSaleItem(
-                (filterBrands == null || filterBrands.isEmpty()) ? null : filterBrands.stream().map(String::toLowerCase).toList(),
-                filterPriceLower,
-                filterPriceUpper,
-                (filterStorages == null || filterStorages.isEmpty()) ? null : filterStorages,
-                filterNullStorage,
-                pageable
-        );//use repo to filter
+        Specification<SaleItem> spec = Specification //use saleitem specification instead of sql
+                .where(SaleItemSpecifications.hasBrands(filterBrands))
+                .and(SaleItemSpecifications.minPrice(filterPriceLower))
+                .and(SaleItemSpecifications.maxPrice(filterPriceUpper))
+                .and(SaleItemSpecifications.hasStorage(filterStorages, filterNullStorage))
+                .and(SaleItemSpecifications.keyword(searchKeyword));
+
+        Page<SaleItem> saleItemsPage = saleItemRepository.findAll(spec, pageable);
 
         List<SaleItemDetailDto> content = listMapper.mapList(saleItemsPage.getContent(), SaleItemDetailDto.class, modelMapper);
 
@@ -173,6 +175,7 @@ public class SaleItemService {
 
         return responseDto;
     }
+
     public SaleItemDetailWithImagesDto getSaleItemDetailWithImages(Integer id) {
         SaleItem saleItem = findSaleItemById(id);
         SaleItemDetailWithImagesDto dto = modelMapper.map(saleItem, SaleItemDetailWithImagesDto.class);

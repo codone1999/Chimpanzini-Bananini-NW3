@@ -33,7 +33,6 @@ public class SaleItem {
     private String model;
 
     @NotNull
-    @Lob
     @Column(name = "description", nullable = false)
     private String description;
 
