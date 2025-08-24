@@ -66,4 +66,9 @@ public class SaleItem {
     @UpdateTimestamp
     private Instant updatedOn;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Seller seller;
+
 }

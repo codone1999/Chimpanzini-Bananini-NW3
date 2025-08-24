@@ -36,5 +36,7 @@ public class SaleItemRequestDto {
 
     @Size(max = 255, message = "Color cannot exceed 255 characters")
     private String color;
+
+    private Integer sellerId;
 }
 

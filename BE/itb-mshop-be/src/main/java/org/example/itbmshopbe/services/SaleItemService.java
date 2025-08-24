@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.*;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.entities.SaleItemPicture;
+import org.example.itbmshopbe.entities.Seller;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemPictureRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
+import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.utils.ListMapper;
 import org.example.itbmshopbe.utils.SaleItemSpecifications;
 import org.example.itbmshopbe.utils.SaleItemUtil;
@@ -37,6 +39,7 @@ import static org.example.itbmshopbe.utils.Util.trimFirstAndLastSentence;
 public class SaleItemService {
     private final SaleItemRepository saleItemRepository;
     private final SaleItemPictureRepository saleItemPictureRepository;
+    private final SellerRepository sellerRepository;
     private final BrandRepository brandRepository;
     private final SaleItemUtil saleItemUtil;
     private final ListMapper listMapper;
@@ -76,9 +79,18 @@ public class SaleItemService {
         newItem.setStorageGb(dto.getStorageGb());
         newItem.setScreenSizeInch(dto.getScreenSizeInch());
 
+        // Set seller
+        if (dto.getSellerId() != null) {
+            Seller seller = sellerRepository.findById(dto.getSellerId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Seller not found for id :: " + dto.getSellerId()));
+            newItem.setSeller(seller);
+        }
+
         SaleItem saleItem = saleItemRepository.save(newItem);
         return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
+
 
 
     @Transactional
