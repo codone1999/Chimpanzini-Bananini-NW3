@@ -125,7 +125,16 @@ INSERT INTO account (nickname, email, password, fullname, role)
 VALUES ('default_seller', 'seller@example.com', 'hashedpassword', 'System Seller', 'SELLER');
 INSERT INTO seller (account_id, mobile, bank_account_no, bank_name, national_card_no, national_card_photo)
 VALUES (LAST_INSERT_ID(), '0812345678', '123-456-7890', 'Bangkok Bank', '1234567890123', 'default.jpg');
-
+ALTER TABLE account
+ADD COLUMN status ENUM('INACTIVE','ACTIVE') NOT NULL DEFAULT 'INACTIVE';
+-- Create EmailVerificationToken table
+CREATE TABLE IF NOT EXISTS email_verification_token (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date DATETIME NOT NULL,
+    CONSTRAINT fk_token_account FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert data into the 'sale_item' table
 -- IDs are now auto-incremented, so we don't provide them.
