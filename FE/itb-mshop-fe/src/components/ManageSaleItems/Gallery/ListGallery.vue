@@ -16,6 +16,7 @@ const SESSION_KEYS = {
   SORT_MODE: "session_sortMode",
   PAGE_SIZE: "session_pageSize",
   CURRENT_PAGE: "session_currentPage",
+  SEARCH_KEYWORD: "session_searchKeyword", // Add search to session
 };
 
 // Refs
@@ -35,6 +36,8 @@ const filterStorageSizes = ref([])
 const showStorageSizeList = ref(false)
 const storageSizeToAdd = ref("")
 
+const search = ref("");
+
 const sortMode = ref("none");
 
 const pageSize = ref(10);
@@ -43,8 +46,6 @@ const totalPages = ref(1);
 
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
-
-const search = ref("");
 
 // Visible Pages
 const visiblePages = computed(() => {
@@ -91,6 +92,10 @@ function loadSession() {
 
   const savedPage = sessionStorage.getItem(SESSION_KEYS.CURRENT_PAGE);
   if (savedPage) currentPage.value = parseInt(savedPage);
+
+  // Load search keyword from session
+  const savedSearch = sessionStorage.getItem(SESSION_KEYS.SEARCH_KEYWORD);
+  if (savedSearch) search.value = savedSearch;
 }
 
 function saveSession() {
@@ -101,6 +106,9 @@ function saveSession() {
   sessionStorage.setItem(SESSION_KEYS.SORT_MODE, sortMode.value);
   sessionStorage.setItem(SESSION_KEYS.PAGE_SIZE, pageSize.value.toString());
   sessionStorage.setItem(SESSION_KEYS.CURRENT_PAGE, currentPage.value.toString());
+  
+  // Save search keyword to session
+  sessionStorage.setItem(SESSION_KEYS.SEARCH_KEYWORD, search.value);
 }
 
 // ------------------- Data Fetching ------------------//
@@ -163,6 +171,10 @@ async function fetchFilteredSaleItems() {
       }
   }
 
+  // Add search keyword to query - only if it has value
+  if (search.value && search.value.trim() !== "") {
+    query.push("searchKeyword=" + encodeURIComponent(search.value.trim()));
+  }
 
   if (pageSize.value) query.push("size=" + pageSize.value);
 
@@ -227,6 +239,7 @@ function clearAllFilters() {
   filterBrands.value = [];
   filterPrices.value = [];
   filterStorageSizes.value = [];
+  search.value = ""; // Also clear search when clearing all filters
 }
 
 function changeSort(mode) {
@@ -236,6 +249,14 @@ function changeSort(mode) {
 function goToPage(page) {
   currentPage.value = page;
   fetchFilteredSaleItems();
+}
+
+// Handle search action from Search component
+function handleSearch(searchKeyword) {
+  search.value = searchKeyword;
+  currentPage.value = 1; // Reset to first page when searching
+  saveSession(); // Save the new search term
+  fetchFilteredSaleItems(); // Fetch with new search term
 }
 
 //  ------------- Watchers ------------------ //
@@ -308,6 +329,7 @@ onMounted(async () => {
     <div class="mb-5">
       <Search
         v-model="search"
+        @search="handleSearch"
       />
     </div>
 
