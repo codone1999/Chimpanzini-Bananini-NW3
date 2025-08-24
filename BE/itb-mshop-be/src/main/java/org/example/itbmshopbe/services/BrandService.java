@@ -34,12 +34,6 @@ public class BrandService {
         dto.setNoOfSaleItems(saleItemRepository.countByBrandId(brand.getId()));
         return dto;
     }
-
-   /// // Convert BrandRequestDto to Brand entity
-   /// private Brand convertToBrandEntity(BrandRequestDto dto) {
-   ///     return modelMapper.map(dto, Brand.class);
-   /// }
-///
     public List<BrandDetailsDto> getAllBrands() {
         List<Brand> brands = brandRepository.findAll();
         return listMapper.mapList(brands, BrandDetailsDto.class, modelMapper);
