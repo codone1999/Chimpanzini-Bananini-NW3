@@ -19,4 +19,10 @@ public class AccountController {
         Account account = accountService.registerAccount(registerRequestDto);
         return ResponseEntity.status(201).body(account);
     }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        String massage = accountService.verifyEmail(token);
+        return ResponseEntity.ok(massage);
+    }
 }

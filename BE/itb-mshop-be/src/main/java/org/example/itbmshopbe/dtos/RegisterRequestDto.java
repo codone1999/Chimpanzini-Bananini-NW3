@@ -1,8 +1,6 @@
 package org.example.itbmshopbe.dtos;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,14 +9,17 @@ import lombok.Setter;
 @Setter
 @Data
 public class RegisterRequestDto {
+    @NotNull @NotEmpty
     private String nickName;
+    @NotNull @NotEmpty
     private String fullName;
-    @Email
+    @Email @NotNull @NotEmpty
     private String email;
 
     @Size(min = 8, max = 255)
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).+$",
             message = "Password must contain uppercase, lowercase, number, and special character")
+    @NotNull @NotEmpty
     private String password;
     private String role;
     private String mobile;
