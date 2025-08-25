@@ -52,20 +52,30 @@ public class AccountService {
         EmailVerificationToken verificationToken = new EmailVerificationToken();
         verificationToken.setAccount(savedAccount);
         verificationToken.setToken(token);
-        verificationToken.setExpiryDate(Instant.from(LocalDateTime.now().plusMinutes(15)));
+        verificationToken.setExpiryDate(Instant.now().plusSeconds(15*60));
         tokenRepository.save(verificationToken);
 
         String verificationUrl = "http://intproj24.sit.kmutt.ac.th/nw3/verify-email/?token=" + token;
-        emailService.sendEmail(savedAccount.getEmail(),
-                "verify your account",
-                "Please click the link to verify your account: " + verificationUrl
-                );
+        //emailService.sendEmail(savedAccount.getEmail(),
+        //        "verify your account",
+        //        "Please click the link to verify your account: " + verificationUrl
+        //        );
+        try {
+            emailService.sendEmail(savedAccount.getEmail(),
+                    "verify your account",
+                    "Please click the link to verify your account: " + verificationUrl
+            );
+        } catch (Exception e) {
+            System.out.println("Failed to send verification email: " + e.getMessage());
+            e.printStackTrace(); // print full stack trace
+        }
+
         return savedAccount;
     }
 
     public String verifyEmail(String token){
         EmailVerificationToken verificationToken = tokenRepository.findByToken(token);
-        if (verificationToken.getExpiryDate().isBefore(Instant.from(LocalDateTime.now())) || JwtTokenUtil.isTokenExpired(token)) {
+        if (verificationToken.getExpiryDate().isBefore(Instant.now()) || JwtTokenUtil.isTokenExpired(token)) {
             throw new RuntimeException("Verification token expired. Please request a new one.");
         }
 
