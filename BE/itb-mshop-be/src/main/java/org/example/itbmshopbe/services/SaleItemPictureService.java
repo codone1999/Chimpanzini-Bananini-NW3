@@ -42,7 +42,7 @@ public class SaleItemPictureService {
 
             String newFileName;
             try {
-                newFileName = fileService.storeFile(file, saleItemId, i + 1);
+                newFileName = fileService.storeFile(file, saleItemId, i + 1,false);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to store file " + oldName, e);
             }
@@ -129,7 +129,7 @@ public class SaleItemPictureService {
 
         String newPictureName;
         try {
-            newPictureName = fileService.storeFile(pictureReq.getPictureFile(), saleItemId, newOrder);
+            newPictureName = fileService.storeFile(pictureReq.getPictureFile(), saleItemId, newOrder,false);
         } catch (IOException e) {
             throw new RuntimeException("Failed to add file " + pictureReq.getPictureFile(), e);
         }
@@ -201,7 +201,7 @@ public class SaleItemPictureService {
         }
         String newFileName;
         try {
-            newFileName = fileService.storeFile(pictureRequest.getPictureFile(),saleItemId, pictureRequest.getOrder());
+            newFileName = fileService.storeFile(pictureRequest.getPictureFile(),saleItemId, pictureRequest.getOrder(),false);
         }catch (IOException e) {
             throw new RuntimeException("Failed to replace file " + pictureRequest.getPictureFile(), e);
         }

@@ -41,18 +41,27 @@ public class FileService {
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 
-    public String storeFile(MultipartFile file ,
-                            Integer saleItemId,int index) throws IOException {
-        //create new name
-        String extension = getFileExtension(file.getOriginalFilename());
-        String newFileName = saleItemId + "_" + index + (extension.isEmpty() ? "" : "." + extension);
+    public String storeFile(MultipartFile file,
+                            Integer referenceId,
+                            int index,
+                            boolean keepOriginal) throws IOException {
+        String newFileName;
+        if (keepOriginal) {
+            newFileName = file.getOriginalFilename();
+            if (newFileName == null) {
+                throw new RuntimeException("Invalid file: no name");
+            }
+        } else {
+            String extension = getFileExtension(file.getOriginalFilename());
+            newFileName = referenceId + "_" + index + (extension.isEmpty() ? "" : "." + extension);
+        }
 
         Path targetLocation = this.fileStorageLocation.resolve(newFileName);
-        //It tells Java exactly where to save the file
-
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
         return newFileName;
     }
+
 
     public Resource loadFileAsResource(String fileName) {
         try {

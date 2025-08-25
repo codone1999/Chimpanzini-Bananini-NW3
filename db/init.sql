@@ -135,7 +135,12 @@ CREATE TABLE IF NOT EXISTS email_verification_token (
     expiry_date DATETIME NOT NULL,
     CONSTRAINT fk_token_account FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 ) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Add new columns
+ALTER TABLE seller ADD COLUMN national_card_photo_front VARCHAR(255);
+ALTER TABLE seller ADD COLUMN national_card_photo_back VARCHAR(255);
 
+-- If you want to remove the old column
+ALTER TABLE seller DROP COLUMN national_card_photo;
 -- Insert data into the 'sale_item' table
 -- IDs are now auto-incremented, so we don't provide them.
 -- Use brand_id based on the order brands were inserted (e.g., Apple is 1, Samsung is 2).

@@ -23,11 +23,11 @@ public class RegisterRequestDto {
     private String password;
     @NotNull@NotEmpty
     private String role;
-    
+
     private String mobile;
     private String bankAccountNo;
     private String bankName;
     private String nationalCardNo;
-    private String nationalCardPhoto;
+    //private String nationalCardPhoto;
 
 }

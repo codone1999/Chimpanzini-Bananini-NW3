@@ -39,7 +39,11 @@ public class Seller {
     private String nationalCardNo;
 
     @Size(max = 255)
-    @Column(name = "national_card_photo")
-    private String nationalCardPhoto;
+    @Column(name = "national_card_photo_front")
+    private String nationalCardPhotoFront;
+
+    @Size(max = 255)
+    @Column(name = "national_card_photo_back")
+    private String nationalCardPhotoBack;
 
 }
