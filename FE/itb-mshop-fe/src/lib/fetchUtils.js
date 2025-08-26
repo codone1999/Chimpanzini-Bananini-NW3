@@ -1,3 +1,4 @@
+//fetchUtils.js
 async function getItems(url) {
   try {
     const data = await fetch(url)
@@ -196,4 +197,29 @@ async function editItemAndImage(url, id, editItem) {
   }
 }
 
-export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage }
+// New function specifically for account registration
+async function registerAccount(formData) {
+  const url = `${import.meta.env.VITE_APP_URL2}/account/register`
+  
+  try {
+    // When sending FormData, don't set Content-Type header
+    // The browser will automatically set it to multipart/form-data with boundary
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData // FormData object containing both text fields and files
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Registration failed: ${errorText || `HTTP ${response.status}`}`)
+    }
+
+    const result = await response.json()
+    return result
+  } catch (error) {
+    console.error('Registration error:', error)
+    throw new Error(error.message || 'Registration failed')
+  }
+}
+
+export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount }
