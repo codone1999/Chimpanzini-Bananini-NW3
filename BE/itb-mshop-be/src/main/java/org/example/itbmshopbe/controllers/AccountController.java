@@ -32,4 +32,10 @@ public class AccountController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Account registration failed", e);
         }
     }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        String massage = accountService.verifyEmail(token);
+        return ResponseEntity.ok(massage);
+    }
 }

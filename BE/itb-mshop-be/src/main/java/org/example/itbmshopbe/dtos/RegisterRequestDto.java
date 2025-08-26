@@ -11,9 +11,9 @@ import lombok.Setter;
 public class RegisterRequestDto {
     @NotNull@NotEmpty
     private String nickName;
-    @NotNull@NotEmpty
+    @NotNull @NotEmpty
     private String fullName;
-    @Email
+    @Email @NotNull @NotEmpty
     private String email;
 
     @Size(min = 8, max = 255)
