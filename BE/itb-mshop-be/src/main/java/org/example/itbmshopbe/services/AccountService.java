@@ -24,6 +24,7 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final FileService fileService;
     private final EmailVerificationTokenRepository tokenRepository;
+    private final EmailService emailService;
 
     public Account registerAccount(RegisterRequestDto accountReq,
                                    MultipartFile frontPhoto,
@@ -86,7 +87,7 @@ public class AccountService {
             );
         } catch (Exception e) {
             System.out.println("Failed to send verification email: " + e.getMessage());
-            e.printStackTrace(); // print full stack trace
+            e.printStackTrace(); 
         }
 
         return savedAccount;
