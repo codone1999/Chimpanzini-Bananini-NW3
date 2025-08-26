@@ -264,14 +264,13 @@ function handleCancel() {
         >
           {{ isLoading ? 'Registering...' : 'Submit' }}
         </button>
-        <button 
-          type="button" 
-          @click="handleCancel"
-          :disabled="isLoading" 
-          class="itbms-cancel-button flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
-        >
-          Cancel
-        </button>
+        <router-link to="/"
+            @click="handleCancel"
+            :disabled="isLoading" 
+            class="itbms-cancel-button flex-1 text-center bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
+          >
+            Cancel
+        </router-link>
       </div>
     </form>
 
@@ -396,7 +395,7 @@ function handleCancel() {
             </template>
             <!-- Show placeholder if no image -->
             <template v-else>
-              <span>Front *</span>
+              <span>Front</span>
               <input 
                 type="file" 
                 accept="image/*" 
@@ -427,7 +426,7 @@ function handleCancel() {
             </template>
             <!-- Show placeholder if no image -->
             <template v-else>
-              <span>Back *</span>
+              <span>Back</span>
               <input 
                 type="file" 
                 accept="image/*" 
@@ -450,14 +449,13 @@ function handleCancel() {
         >
           {{ isLoading ? 'Registering...' : 'Submit' }}
         </button>
-        <button 
-          type="button" 
-          @click="handleCancel"
-          :disabled="isLoading"
-          class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
-        >
-          Cancel
-        </button>
+        <router-link to="/"
+            @click="handleCancel"
+            :disabled="isLoading" 
+            class="itbms-cancel-button flex-1 text-center bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
+          >
+            Cancel
+        </router-link>
       </div>
     </form>
 
