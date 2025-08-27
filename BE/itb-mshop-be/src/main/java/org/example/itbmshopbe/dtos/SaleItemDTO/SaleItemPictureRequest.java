@@ -1,4 +1,4 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.SaleItemDTO;
 
 import lombok.Data;
 import lombok.Getter;

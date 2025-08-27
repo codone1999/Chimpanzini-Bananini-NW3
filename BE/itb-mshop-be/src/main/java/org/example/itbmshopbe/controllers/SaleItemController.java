@@ -1,14 +1,10 @@
 package org.example.itbmshopbe.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemDetailDto;
-import org.example.itbmshopbe.dtos.SaleItemGalleryDto;
-import org.example.itbmshopbe.dtos.SaleItemPictureResponseDTO;
-import org.example.itbmshopbe.dtos.SaleItemRequestDto;
-import org.example.itbmshopbe.entities.SaleItemPicture;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemDetailDto;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemGalleryDto;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemPictureResponseDTO;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemRequestDto;
 import org.example.itbmshopbe.exceptions.ItemNotFoundException;
 import org.example.itbmshopbe.services.FileService;
 import org.example.itbmshopbe.services.SaleItemPictureService;

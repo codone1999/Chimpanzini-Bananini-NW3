@@ -1,10 +1,8 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.BrandDTO;
 
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.Instant;
 
 @Getter
 @Setter

@@ -1,7 +1,7 @@
 package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.*;
+import org.example.itbmshopbe.dtos.SaleItemDTO.*;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.entities.SaleItemPicture;
 import org.example.itbmshopbe.entities.Seller;

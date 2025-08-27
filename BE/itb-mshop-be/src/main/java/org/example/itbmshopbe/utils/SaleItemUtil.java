@@ -1,7 +1,7 @@
 package org.example.itbmshopbe.utils;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemRequestDto;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemRequestDto;
 import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.repositories.BrandRepository;
 import org.springframework.http.HttpStatus;

@@ -1,7 +1,9 @@
 package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.RegisterRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
+import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.EmailVerificationToken;
 import org.example.itbmshopbe.entities.Seller;
@@ -9,11 +11,14 @@ import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.EmailVerificationTokenRepository;
 import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -99,4 +104,22 @@ public class AccountService {
 
         tokenRepository.delete(verificationToken);
     }
+
+    public LoginResponseDto loginAccount(LoginRequestDto loginRequestDto) {
+        Optional<Account> accountOpt = accountRepository.findByEmail(loginRequestDto.getEmail());
+        if (accountOpt.isPresent()) {
+            Account account = accountOpt.get();
+            if(passwordEncoder.matches(loginRequestDto.getPassword(), account.getPassword())) {
+                String accessToken = JwtTokenUtil.generateAccessToken(
+                        account.getId(),
+                        account.getEmail(),
+                        account.getNickname(),
+                        account.getRole()
+                );
+                return new LoginResponseDto(accessToken,account.getNickname());
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or Password is incorrect.");
+    }
+
 }

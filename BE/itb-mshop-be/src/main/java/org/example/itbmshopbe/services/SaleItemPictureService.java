@@ -1,8 +1,8 @@
 package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.SaleItemPictureRequest;
-import org.example.itbmshopbe.dtos.SaleItemPictureResponseDTO;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemPictureRequest;
+import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemPictureResponseDTO;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.entities.SaleItemPicture;
 import org.example.itbmshopbe.repositories.SaleItemPictureRepository;

@@ -1,8 +1,8 @@
 package org.example.itbmshopbe.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.BrandDetailsDto;
-import org.example.itbmshopbe.dtos.BrandRequestDto;
+import org.example.itbmshopbe.dtos.BrandDTO.BrandDetailsDto;
+import org.example.itbmshopbe.dtos.BrandDTO.BrandRequestDto;
 import org.example.itbmshopbe.services.BrandService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

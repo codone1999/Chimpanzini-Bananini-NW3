@@ -1,4 +1,4 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.AccountDTO;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

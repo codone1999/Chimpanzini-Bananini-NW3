@@ -1,4 +1,4 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.BrandDTO;
 
 
 import jakarta.validation.constraints.NotBlank;

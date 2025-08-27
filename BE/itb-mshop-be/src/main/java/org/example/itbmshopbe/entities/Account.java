@@ -55,12 +55,6 @@ public class Account {
     @Column(name = "updatedOn")
     @UpdateTimestamp
     private Instant updatedOn;
-//
-    //@NotNull
-    //@ColumnDefault("'INACTIVE'")
-    //@Lob
-    //@Column(name = "status", nullable = false)
-    //private String status;
 
     @NotNull
     @Enumerated(EnumType.STRING)

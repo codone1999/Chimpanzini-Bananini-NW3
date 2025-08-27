@@ -1,9 +1,8 @@
 package org.example.itbmshopbe.services;
 
-import ch.qos.logback.core.model.Model;
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.BrandDetailsDto;
-import org.example.itbmshopbe.dtos.BrandRequestDto;
+import org.example.itbmshopbe.dtos.BrandDTO.BrandDetailsDto;
+import org.example.itbmshopbe.dtos.BrandDTO.BrandRequestDto;
 import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.repositories.BrandRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
@@ -14,9 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.example.itbmshopbe.utils.Util.*;
 

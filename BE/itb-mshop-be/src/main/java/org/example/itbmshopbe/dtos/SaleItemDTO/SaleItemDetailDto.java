@@ -1,12 +1,15 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.SaleItemDTO;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
-import java.util.List;
 
+@Getter
+@Setter
 @Data
-public class SaleItemDetailWithImagesDto {
+public class SaleItemDetailDto {
     private Integer id;
     private String model;
     private String brandName;
@@ -17,7 +20,6 @@ public class SaleItemDetailWithImagesDto {
     private Integer quantity;
     private Integer storageGb;
     private String color;
-    private List<SaleItemImageDto> saleItemImages;
     private Instant createdOn;
     private Instant updatedOn;
 }

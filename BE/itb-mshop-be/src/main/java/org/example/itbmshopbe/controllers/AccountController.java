@@ -1,7 +1,10 @@
 package org.example.itbmshopbe.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.RegisterRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
+import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.services.AccountService;
 import org.example.itbmshopbe.services.FileService;
@@ -37,5 +40,17 @@ public class AccountController {
     public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
         accountService.verifyEmail(token);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDto> Login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
+        try {
+            LoginResponseDto loginResponse = accountService.loginAccount(loginRequestDto);
+            return ResponseEntity.ok(loginResponse);
+        }catch (ResponseStatusException e) {
+            throw e;
+        }catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed", e);
+        }
     }
 }

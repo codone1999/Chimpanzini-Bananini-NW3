@@ -1,7 +1,8 @@
-package org.example.itbmshopbe.dtos;
+package org.example.itbmshopbe.dtos.SaleItemDTO;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import org.example.itbmshopbe.dtos.BrandDTO.BrandDto;
 
 @Data
 public class SaleItemRequestDto {
