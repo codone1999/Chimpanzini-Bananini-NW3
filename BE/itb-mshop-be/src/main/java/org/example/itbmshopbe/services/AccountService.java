@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
 import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.EmailVerificationToken;
 import org.example.itbmshopbe.entities.Seller;
@@ -11,6 +12,7 @@ import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.EmailVerificationTokenRepository;
 import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,12 +31,12 @@ public class AccountService {
     private final FileService fileService;
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
-
-    public Account registerAccount(RegisterRequestDto accountReq,
-                                   MultipartFile frontPhoto,
-                                   MultipartFile backPhoto) {
+    private final ModelMapper modelMapper;
+    public UserResponseDto registerAccount(RegisterRequestDto accountReq,
+                                           MultipartFile frontPhoto,
+                                           MultipartFile backPhoto) {
         if (accountRepository.existsByEmail(accountReq.getEmail())) {
-            throw new RuntimeException("Email already in use!");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use!");
         }
 
         // Create account
@@ -48,7 +50,7 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(newAccount);
 
-        // If seller, create seller entity
+        // If seller, save seller info...
         if ("SELLER".equalsIgnoreCase(accountReq.getRole())) {
             Seller seller = new Seller();
             seller.setAccount(savedAccount);
@@ -68,43 +70,54 @@ public class AccountService {
             } catch (Exception e) {
                 throw new RuntimeException("Error saving seller card photos", e);
             }
-
             sellerRepository.save(seller);
         }
 
-        String token= JwtTokenUtil.generateToken(savedAccount.getEmail());
+        // Generate token + send email
+        String token = JwtTokenUtil.generateToken(savedAccount.getEmail());
         EmailVerificationToken verificationToken = new EmailVerificationToken();
         verificationToken.setAccount(savedAccount);
         verificationToken.setToken(token);
-        verificationToken.setExpiryDate(Instant.now().plusSeconds(60*60));
+        verificationToken.setExpiryDate(Instant.now().plusSeconds(60 * 60));
         tokenRepository.save(verificationToken);
 
-        String verificationUrl = "http://intproj24.sit.kmutt.ac.th/nw3/verify-email/?token=" + token;
+        String verificationUrl = "http://localhost:8080/v2/account/verify-email?token=" + token;
         try {
             emailService.sendEmail(savedAccount.getEmail(),
-                    "verify your account",
-                    "Please click the link to verify your account: " + verificationUrl
-            );
+                    "Verify your account",
+                    "Please click the link to verify your account: " + verificationUrl);
         } catch (Exception e) {
             System.out.println("Failed to send verification email: " + e.getMessage());
         }
 
-        return savedAccount;
+        return mapToUserResponseDto(savedAccount);
     }
 
-    public void verifyEmail(String token){
+    public UserResponseDto verifyEmail(String token) {
         EmailVerificationToken verificationToken = tokenRepository.findByToken(token);
+        if (verificationToken == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification token");
+        }
         if (verificationToken.getExpiryDate().isBefore(Instant.now()) || JwtTokenUtil.isTokenExpired(token)) {
-            throw new RuntimeException("Verification token expired. Please request a new one.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification token expired. Please request a new one.");
         }
 
         Account account = verificationToken.getAccount();
         account.setStatus(Account.Status.ACTIVE);
-        accountRepository.save(account);
+        Account updated = accountRepository.save(account);
 
         tokenRepository.delete(verificationToken);
+
+        return mapToUserResponseDto(updated);
     }
 
+    private UserResponseDto mapToUserResponseDto(Account account) {
+        UserResponseDto dto = modelMapper.map(account, UserResponseDto.class);
+        Optional<Seller> sellerOpt = sellerRepository.findById(account.getId());
+        dto.setPhoneNumber(sellerOpt.map(Seller::getMobile).orElse(null));
+
+        return dto;
+    }
     public LoginResponseDto loginAccount(LoginRequestDto loginRequestDto) {
         Optional<Account> accountOpt = accountRepository.findByEmail(loginRequestDto.getEmail());
         if (accountOpt.isPresent()) {

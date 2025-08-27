@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
 import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.services.AccountService;
 import org.example.itbmshopbe.services.FileService;
@@ -22,24 +23,21 @@ public class AccountController {
     private final AccountService accountService;
     private final FileService fileService;
 
+
     @PostMapping("/register")
-    public ResponseEntity<Account> registerAccount(
+    public ResponseEntity<UserResponseDto> registerAccount(
             @ModelAttribute RegisterRequestDto registerDto,
             @RequestParam(required = false) MultipartFile nationalCardPhotoFront,
             @RequestParam(required = false) MultipartFile nationalCardPhotoBack
     ) {
-        try {
-            Account createdAccount = accountService.registerAccount(registerDto, nationalCardPhotoFront, nationalCardPhotoBack);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Account registration failed", e);
-        }
+        UserResponseDto createdAccount = accountService.registerAccount(registerDto, nationalCardPhotoFront, nationalCardPhotoBack);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
     }
 
-    @GetMapping("/verify-email")
-    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
-        accountService.verifyEmail(token);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    @PostMapping("/verify-email")
+    public ResponseEntity<UserResponseDto> verifyEmail(@RequestParam String token) {
+        UserResponseDto user = accountService.verifyEmail(token);
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/login")
