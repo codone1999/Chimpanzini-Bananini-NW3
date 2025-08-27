@@ -1,6 +1,6 @@
 //RegisterForm.vue
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { registerAccount } from '@/lib/fetchUtils'
 
 // active tab
@@ -24,6 +24,43 @@ const form = ref({
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+// ------------------ Computed ----------------------- //
+const isBuyerFormValid = computed(() => {
+  return form.value.nickName.trim() !== '' &&
+         form.value.email.trim() !== '' &&
+         form.value.password !== '' &&
+         form.value.fullName.trim() !== '' &&
+         validatePassword(form.value.password) &&
+         validateFullname(form.value.fullName) &&
+         isValidEmail(form.value.email)
+})
+
+const isSellerFormValid = computed(() => {
+  return form.value.nickName.trim() !== '' &&
+         form.value.email.trim() !== '' &&
+         form.value.password !== '' &&
+         form.value.fullName.trim() !== '' &&
+         form.value.mobile.trim() !== '' &&
+         form.value.bankAccountNo.trim() !== '' &&
+         form.value.bankName.trim() !== '' &&
+         form.value.nationalCardNo.trim() !== '' &&
+         form.value.nationalCardFront !== null &&
+         form.value.nationalCardBack !== null &&
+         validatePassword(form.value.password) &&
+         validateFullname(form.value.fullName) &&
+         isValidEmail(form.value.email)
+})
+
+const isSubmitDisabled = computed(() => {
+  if (isLoading.value) return true
+  
+  if (activeRole.value === 'buyer') {
+    return !isBuyerFormValid.value
+  } else {
+    return !isSellerFormValid.value
+  }
+})
 
 function setRole(role) {
   activeRole.value = role
@@ -64,7 +101,12 @@ function removeFile(side) {
   form.value[side] = null
 }
 
-// Helper function to validate password
+// ------------------------ Validate -------------------- //
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email.trim())
+}
+
 function validatePassword(password) {
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/
   return passwordRegex.test(password) && password.length >= 8
@@ -76,7 +118,7 @@ function validateFullname(fullName) {
 }
 
 async function handleSubmit() {
-  if (isLoading.value) return
+  if (isLoading.value || isSubmitDisabled.value) return
   
   errorMessage.value = ''
   successMessage.value = ''
@@ -91,46 +133,20 @@ async function handleSubmit() {
     return
   }
 
+  if (!isValidEmail(form.value.email)) {
+    errorMessage.value = 'Please enter a valid email address'
+    return
+  }
+
   isLoading.value = true
 
   try {
-    // Create FormData for multipart/form-data submission
-    const formData = new FormData()
-    
-    // Add basic fields
-    formData.append('nickName', form.value.nickName.trim())
-    formData.append('email', form.value.email.trim())
-    formData.append('password', form.value.password)
-    formData.append('fullName', form.value.fullName.trim())
-    formData.append('role', activeRole.value.toUpperCase()) // BUYER or SELLER
-
-    // Add seller-specific fields
-    if (activeRole.value === 'seller') {
-      formData.append('mobile', form.value.mobile.trim())
-      formData.append('bankAccountNo', form.value.bankAccountNo.trim())
-      formData.append('bankName', form.value.bankName.trim())
-      formData.append('nationalCardNo', form.value.nationalCardNo.trim())
-      
-      // Add file uploads
-      if (form.value.nationalCardFront && form.value.nationalCardFront.file) {
-        formData.append('nationalCardPhotoFront', form.value.nationalCardFront.file)
-      }
-      
-      if (form.value.nationalCardBack && form.value.nationalCardBack.file) {
-        formData.append('nationalCardPhotoBack', form.value.nationalCardBack.file)
-      }
-    }
-
     console.log('Submitting registration:', activeRole.value)
-    // Log FormData contents for debugging
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value instanceof File ? `File: ${value.name}` : value)
-    }
     
-    const result = await registerAccount(formData)
+    const result = await registerAccount(form.value, activeRole.value)
     
     successMessage.value = `${activeRole.value === 'buyer' ? 'Buyer' : 'Seller'} account created successfully!`
-    console.log('Registration successful:', result)
+    // console.log('Registration successful:', result)
     
     // Optionally redirect or clear form after successful registration
     setTimeout(() => {
@@ -259,8 +275,13 @@ function handleCancel() {
       <div class="flex gap-2 pt-4">
         <button 
           type="submit" 
-          :disabled="isLoading"
-          class="itbms-submit-button flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          :disabled="isSubmitDisabled"
+          :class="[
+            'itbms-submit-button flex-1 py-2 rounded-md transition-colors',
+            isSubmitDisabled
+              ? 'bg-red-300 text-gray-600 cursor-not-allowed'
+              : 'bg-green-500 text-white hover:bg-green-600'
+          ]"
         >
           {{ isLoading ? 'Registering...' : 'Submit' }}
         </button>
@@ -444,8 +465,13 @@ function handleCancel() {
       <div class="flex gap-2 pt-4">
         <button 
           type="submit"
-          :disabled="isLoading"
-          class="flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          :disabled="isSubmitDisabled"
+          :class="[
+            'flex-1 py-2 rounded-md transition-colors',
+            isSubmitDisabled
+              ? 'bg-red-300 text-gray-600 cursor-not-allowed'
+              : 'bg-green-500 text-white hover:bg-green-600'
+          ]"
         >
           {{ isLoading ? 'Registering...' : 'Submit' }}
         </button>

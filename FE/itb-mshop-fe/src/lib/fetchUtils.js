@@ -8,6 +8,7 @@ async function getItems(url) {
     throw new Error('can not get your items')
   }
 }
+
 async function getItemById(url, id) {
   try {
     const data = await fetch(`${url}/${id}`)
@@ -198,15 +199,48 @@ async function editItemAndImage(url, id, editItem) {
 }
 
 // New function specifically for account registration
-async function registerAccount(formData) {
+async function registerAccount(formData, role) {
   const url = `${import.meta.env.VITE_APP_URL2}/account/register`
   
   try {
+    // Create FormData for multipart/form-data submission
+    const formDataToSend = new FormData()
+    
+    // Add basic fields
+    formDataToSend.append('nickName', formData.nickName.trim())
+    formDataToSend.append('email', formData.email.trim())
+    formDataToSend.append('password', formData.password)
+    formDataToSend.append('fullName', formData.fullName.trim())
+    formDataToSend.append('role', role.toUpperCase()) // BUYER or SELLER
+
+    // Add seller-specific fields
+    if (role === 'seller') {
+      formDataToSend.append('mobile', formData.mobile.trim())
+      formDataToSend.append('bankAccountNo', formData.bankAccountNo.trim())
+      formDataToSend.append('bankName', formData.bankName.trim())
+      formDataToSend.append('nationalCardNo', formData.nationalCardNo.trim())
+      
+      // Add file uploads
+      if (formData.nationalCardFront && formData.nationalCardFront.file) {
+        formDataToSend.append('nationalCardPhotoFront', formData.nationalCardFront.file)
+      }
+      
+      if (formData.nationalCardBack && formData.nationalCardBack.file) {
+        formDataToSend.append('nationalCardPhotoBack', formData.nationalCardBack.file)
+      }
+    }
+
+    // Log FormData contents for debugging
+    // console.log('FormData contents:')
+    // for (let [key, value] of formDataToSend.entries()) {
+    //   console.log(key, value instanceof File ? `File: ${value.name}` : value)
+    // }
+
     // When sending FormData, don't set Content-Type header
     // The browser will automatically set it to multipart/form-data with boundary
     const response = await fetch(url, {
       method: 'POST',
-      body: formData // FormData object containing both text fields and files
+      body: formDataToSend // FormData object containing both text fields and files
     })
 
     if (!response.ok) {

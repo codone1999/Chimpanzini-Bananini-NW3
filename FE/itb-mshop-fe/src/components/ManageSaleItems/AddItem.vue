@@ -23,6 +23,7 @@ const isSubmitting = ref(false)
 
 const newSaleItem = ref({
   // id: null,
+  sellerId: 1,
   brand: {
     id: null,
     // name: '',
@@ -144,6 +145,16 @@ function moveImageDown(index) {
     }
   }
 }
+
+function checkAndClearOversized() {
+  if (oversizedFiles.value.length > 0) {
+    setTimeout(() => {
+      oversizedFiles.value = [];
+    }, 2000);
+    return true;
+  }
+  return false;
+}
 // ------------- Form --------------------- //
 function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
@@ -260,7 +271,7 @@ onMounted(async () => {
             <div class="space-y-2">
               <!-- File Size Warning -->
               <div 
-                v-if="oversizedFiles.length > 0" 
+                v-if="checkAndClearOversized()" 
                 class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
               >
                 The picture file size cannot be larger than 2MB

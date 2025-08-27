@@ -62,7 +62,6 @@ const mainDisplayImage = computed(() => {
 
 const isFormValid = computed(() => isFormSaleItemValid(product.value));
 
-// Computed property for image previews
 const filePreviews = computed(() => {
   return images.value.map(image => {
     if (image.src) {
@@ -76,31 +75,107 @@ const filePreviews = computed(() => {
   }).filter(Boolean);
 });
 
-// Updated to handle imageViewOrder
 const isChanged = computed(() => {
   if (!originalProduct.value) return false;
   
-  // Check product
-  const productDataChanged = JSON.stringify(product.value) !== JSON.stringify(originalProduct.value);
+  // Deep comparison function for objects
+  const deepEqual = (obj1, obj2) => {
+    if (obj1 === obj2) return true;
+    
+    if (obj1 == null || obj2 == null) return obj1 === obj2;
+    
+    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+      return obj1 === obj2;
+    }
+    
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    for (let key of keys1) {
+      if (!keys2.includes(key)) return false;
+      if (!deepEqual(obj1[key], obj2[key])) return false;
+    }
+    
+    return true;
+  };
   
-  // Check images with order
-  const originalImages = originalProduct.value.saleItemImages
-    ?.sort((a, b) => a.imageViewOrder - b.imageViewOrder)
-    .map(img => ({ fileName: img.fileName, imageViewOrder: img.imageViewOrder })) || [];
+  // Create clean copies for comparison (excluding nested objects that might cause issues)
+  const currentProductClean = {
+    id: product.value.id,
+    model: product.value.model?.trim() || "",
+    brandName: product.value.brandName?.trim() || "",
+    description: product.value.description?.trim() || "",
+    price: Number(product.value.price) || 0,
+    ramGb: Number(product.value.ramGb) || 0,
+    screenSizeInch: Number(product.value.screenSizeInch) || 0,
+    quantity: Number(product.value.quantity) || 0,
+    storageGb: Number(product.value.storageGb) || 0,
+    color: product.value.color?.trim() || "",
+  };
   
-  const currentImages = images.value
-    ?.map((img, index) => ({
-      fileName: img.fileName || img.name,
+  const originalProductClean = {
+    id: originalProduct.value.id,
+    model: originalProduct.value.model?.trim() || "",
+    brandName: originalProduct.value.brandName?.trim() || "",
+    description: originalProduct.value.description?.trim() || "",
+    price: Number(originalProduct.value.price) || 0,
+    ramGb: Number(originalProduct.value.ramGb) || 0,
+    screenSizeInch: Number(originalProduct.value.screenSizeInch) || 0,
+    quantity: Number(originalProduct.value.quantity) || 0,
+    storageGb: Number(originalProduct.value.storageGb) || 0,
+    color: originalProduct.value.color?.trim() || "",
+  };
+  
+  // Check if product data changed
+  const productDataChanged = !deepEqual(currentProductClean, originalProductClean);
+  
+  // Enhanced image comparison with better handling of edge cases
+  const originalImages = originalProduct.value.saleItemImages || [];
+  const originalImagesList = originalImages
+    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0))
+    .map(img => ({
+      fileName: img.fileName,
+      imageViewOrder: img.imageViewOrder || 0
+    }));
+  
+  const currentImagesList = (images.value || [])
+    .map((img, index) => ({
+      fileName: img.fileName || img.name || "",
       imageViewOrder: index + 1
-    })) || [];
+    }));
   
-  const imagesChanged = JSON.stringify(originalImages) !== JSON.stringify(currentImages);
+  // Check if images changed (count, order, or files)
+  const imagesChanged = !deepEqual(originalImagesList, currentImagesList);
   
   return productDataChanged || imagesChanged;
 });
 
 const isSaveDisabled = computed(() => {
-  return !isFormValid.value || !isChanged.value;
+  // Check if form is valid
+  if (!isFormValid.value) return true;
+  
+  // Check if anything actually changed
+  if (!isChanged.value) return true;
+  
+  // Check if currently submitting
+  if (isSubmitting.value) return true;
+  
+  // Additional validation: ensure required fields are not empty after trimming
+  const requiredFields = ['model', 'brandName', 'description'];
+  for (const field of requiredFields) {
+    if (!product.value[field] || product.value[field].toString().trim() === '') {
+      return true;
+    }
+  }
+  
+  // Ensure price and quantity are positive numbers
+  if (product.value.price <= 0 || product.value.quantity <= 0) {
+    return true;
+  }
+  
+  return false;
 });
 
 // ----------------------- Form ---------------------- //
@@ -119,24 +194,36 @@ function handleFileChange(event) {
   if (!event.target.files) return;
   
   const newFiles = Array.from(event.target.files);
-  const maxFileSize = 2 * 1024 * 1024 // 2MB in bytes
+  const maxFileSize = 2 * 1024 * 1024; // 2MB in bytes
+  const previousLength = images.value.length;
   
   // Separate valid and oversized files
-  const validFiles = []
-  const currentOversizedFiles = []
+  const validFiles = [];
+  const currentOversizedFiles = [];
   
   newFiles.forEach(file => {
-    if (file.size > maxFileSize) {
-      currentOversizedFiles.push(file.name)
-    } else {
-      validFiles.push(file)
+    // Check for duplicate files by name and size
+    const isDuplicate = images.value.some(existingImg => 
+      (existingImg.name === file.name || existingImg.fileName === file.name) &&
+      existingImg.file?.size === file.size
+    );
+    
+    if (isDuplicate) {
+      // Skip duplicate files silently or show a message
+      return;
     }
-  })
+    
+    if (file.size > maxFileSize) {
+      currentOversizedFiles.push(file.name);
+    } else {
+      validFiles.push(file);
+    }
+  });
 
   // Update oversized files list
-  oversizedFiles.value = currentOversizedFiles
+  oversizedFiles.value = currentOversizedFiles;
 
-  const totalImages = images.value.length + newFiles.length;
+  const totalImages = images.value.length + validFiles.length;
   
   // Check if user is trying to upload more than 4 total
   if (totalImages > 4) {
@@ -144,8 +231,8 @@ function handleFileChange(event) {
     const allowedCount = 4 - images.value.length;
     if (allowedCount > 0) {
       // Only add the allowed number of files
-      const filesToAdd = newFiles.slice(0, allowedCount).map((file, index) => ({
-        file: file, // Store the actual File object
+      const filesToAdd = validFiles.slice(0, allowedCount).map((file, index) => ({
+        file: file,
         name: file.name,
         imageViewOrder: images.value.length + index + 1,
         isNewFile: true
@@ -154,8 +241,8 @@ function handleFileChange(event) {
     }
   } else {
     // Add all new files if within limit
-    const filesToAdd = newFiles.map((file, index) => ({
-      file: file, // Store the actual File object
+    const filesToAdd = validFiles.map((file, index) => ({
+      file: file,
       name: file.name,
       imageViewOrder: images.value.length + index + 1,
       isNewFile: true
@@ -165,11 +252,11 @@ function handleFileChange(event) {
 
     // Auto-select first uploaded image
     if (previousLength === 0 && validFiles.length > 0) {
-      selectedImageIndex.value = 0
+      selectedImageIndex.value = 0;
     }
   }
   
-  // Reset the input value -> same files can be selected again
+  // Reset the input value so same files can be selected again
   event.target.value = '';
 }
 
@@ -254,6 +341,16 @@ function getImageName(item) {
   }
 }
 
+function checkAndClearOversized() {
+  if (oversizedFiles.value.length > 0) {
+    setTimeout(() => {
+      oversizedFiles.value = [];
+    }, 2000);
+    return true;
+  }
+  return false;
+}
+
 async function loadImages() {
   // Check if product and images array exist
   if (!product.value?.saleItemImages) {
@@ -301,6 +398,7 @@ async function urlToFile(imageName) {
   return new File([blob], imageName, { type: blob.type })
 }
 
+// ---------------- Submit & OnMounted --------------------- //
 async function handleSubmit() {
   if (isSubmitting.value) return
 
@@ -557,7 +655,7 @@ onMounted(async () => {
             <div class="space-y-2">
               <!-- File Size Warning -->
               <div 
-                v-if="oversizedFiles.length > 0" 
+                v-if="checkAndClearOversized()" 
                 class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
               >
                 The picture file size cannot be larger than 2MB
