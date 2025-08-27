@@ -34,8 +34,8 @@ public class AccountController {
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        String massage = accountService.verifyEmail(token);
-        return ResponseEntity.ok(massage);
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        accountService.verifyEmail(token);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }
