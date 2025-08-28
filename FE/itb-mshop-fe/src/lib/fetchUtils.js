@@ -199,9 +199,7 @@ async function editItemAndImage(url, id, editItem) {
 }
 
 // New function specifically for account registration
-async function registerAccount(formData, role) {
-  const url = `${import.meta.env.VITE_APP_URL2}/account/register`
-  
+async function registerAccount(url, formData, role) {  
   try {
     // Create FormData for multipart/form-data submission
     const formDataToSend = new FormData()
@@ -256,4 +254,7 @@ async function registerAccount(formData, role) {
   }
 }
 
-export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount }
+async function loginAccount(url, data) {
+  
+}
+export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount, loginAccount }

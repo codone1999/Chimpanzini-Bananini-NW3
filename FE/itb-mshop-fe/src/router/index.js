@@ -10,6 +10,7 @@ import AddBrand from "@/components/ManageBrands/AddBrand.vue";
 import EditBrand from "@/components/ManageBrands/EditBrand.vue";
 import PageNotFound from "@/components/PageNotFound.vue";
 import RegisterForm from "@/components/Registers/RegisterForm.vue";
+import LogInForm from "@/components/Registers/LogInForm.vue";
 
 const routes = [
     {
@@ -59,8 +60,13 @@ const routes = [
     },
     {
         path: '/register',
-        name: 'RegisterForm',
+        name: 'Register',
         component: RegisterForm
+    },
+    {
+        path: '/login',
+        name: 'Login',
+        component: LogInForm
     },
     {
         path: '/:NotFound(.*)',

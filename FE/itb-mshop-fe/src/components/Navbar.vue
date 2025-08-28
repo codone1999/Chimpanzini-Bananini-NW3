@@ -25,7 +25,7 @@ const mobileMenuOpen = ref(false)
             class="px-4 py-2 rounded-md text-gray-200 border border-gray-500 hover:bg-gray-800 transition">
             Sign In
           </router-link>
-          <router-link :to="{ name: 'RegisterForm'}" 
+          <router-link :to="{ name: 'Register'}" 
             class="itbms-register-button px-4 py-2 rounded-md bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition">
             Register
           </router-link>
@@ -47,7 +47,7 @@ const mobileMenuOpen = ref(false)
 
        <!-- Auth buttons for mobile -->
       <router-link to="/signIn" class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800">Sign In</router-link>
-      <router-link :to="{ name: 'RegisterForm'}" class="block py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md">Register</router-link>
+      <router-link :to="{ name: 'Register'}" class="block py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md">Register</router-link>
     </div>
   </header>
 </template>
