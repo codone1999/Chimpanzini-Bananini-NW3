@@ -129,7 +129,13 @@ public class AccountService {
                         account.getNickname(),
                         account.getRole()
                 );
-                return new LoginResponseDto(accessToken,account.getNickname());
+                String refreshToken = JwtTokenUtil.generateRefreshToken(
+                        account.getId(),
+                        account.getEmail(),
+                        account.getNickname(),
+                        account.getRole()
+                );
+                return new LoginResponseDto(accessToken, refreshToken);
             }
         }
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or Password is incorrect.");

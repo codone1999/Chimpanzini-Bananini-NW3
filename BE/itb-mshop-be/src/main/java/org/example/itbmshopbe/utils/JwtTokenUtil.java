@@ -70,6 +70,25 @@ public class JwtTokenUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
+    public static String generateRefreshToken(Integer id, String email, String nickname, String role) {
+        Map<String,Object> claims = new HashMap<>();
+        claims.put("id",id);
+        claims.put("email",email);
+        claims.put("nickname",nickname);
+        claims.put("role",role);
+
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuer("http://intproj24.sit.kmutt.ac.th/nw3/")
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     public static String getEmailFromToken(String token) {
         return (String) validateToken(token).get("email");
     }

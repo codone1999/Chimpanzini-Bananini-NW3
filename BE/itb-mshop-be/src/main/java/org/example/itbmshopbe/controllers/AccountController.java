@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/v2/account")
+@RequestMapping("/v2/users")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "${frontend.url}")
 public class AccountController {
@@ -40,7 +40,7 @@ public class AccountController {
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/login")
+    @PostMapping("/authentications")
     public ResponseEntity<LoginResponseDto> Login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         try {
             LoginResponseDto loginResponse = accountService.loginAccount(loginRequestDto);
