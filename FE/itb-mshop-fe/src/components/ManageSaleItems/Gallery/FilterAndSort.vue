@@ -133,82 +133,87 @@ function addCustomPriceRange() {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8 bg-[#1e1e1e] p-2 rounded-lg shadow-md">
-
+  <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8
+  bg-gray-900/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-800">
+ 
     <!-- Filter Section (Expandable Left Side) -->
     <div class="flex items-center gap-3 flex-grow w-full">
-
+ 
       <!-- Pill Brands -->
-      <div 
-        class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
+      <div
+        class="relative flex-1 border border-gray-700 rounded-xl px-5 py-2 bg-gray-800/60
+        hover:border-purple-500 transition-all duration-200 shadow-sm cursor-pointer"
         @click="props.toggleBrandList"
       >
-        <div class="text-sm font-medium text-gray-800">Brand</div>
+        <div class="text-sm font-semibold text-gray-300">Brand</div>
         <div class="text-xs text-gray-400 mt-1">
           <span v-if="props.filterBrands.length === 0">Filter by brand(s)</span>
-          
+         
           <!-- Selected Brands -->
-          <span 
-            v-else 
+          <span
+            v-else
             v-for="brand in props.filterBrands" :key="brand"
-            class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
+            class="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
           >
             {{ brand }}
-            <button 
+            <button
               class="itbms-filter-item-clear hover:text-red-500 -mb-1"
               @click.stop="props.onToggleBrand(brand)"
             >
               <span class="material-icons">close</span>
             </button>
           </span>
-
+ 
           <!-- Brand Dropdown -->
-          <div 
+          <div
             v-if="props.showBrandList"
-            class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+            class="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl
+            shadow-xl z-10 w-full max-h-72 overflow-y-auto"
           >
             <button
               v-for="brand in props.brands"
               :key="brand.id"
               :disabled="props.filterBrands.includes(brand.name)"
               @click.stop="props.onToggleBrand(brand.name)"
-              class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-              :class="props.filterBrands.includes(brand.name) ? 'text-gray-300' : 'text-black'"
+              class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition"
+              :class="props.filterBrands.includes(brand.name) ? 'text-gray-500' : 'text-gray-200'"
             >
               {{ brand.name }}
             </button>
           </div>
         </div>
       </div>
-
+ 
       <!-- Pill Price -->
-      <div 
-        class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
+      <div
+        class="relative flex-1 border border-gray-700 rounded-xl px-5 py-2 bg-gray-800/60
+        hover:border-purple-500 transition-all duration-200 shadow-sm cursor-pointer"
         @click="props.togglePriceList"  
       >
-        <div class="text-sm font-medium text-gray-800">Price</div>
+        <div class="text-sm font-semibold text-gray-300">Price</div>
         <div class="text-xs text-gray-400 mt-1">
           <span v-if="props.filterPrices.length === 0">Price Range</span>
-          
+         
           <!-- Selected Prices -->
-          <span 
-            v-else 
+          <span
+            v-else
             v-for="price in props.filterPrices" :key="price"
-            class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
+            class="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
           >
             {{ price }}
-            <button 
+            <button
               class="itbms-filter-item-clear hover:text-red-500 -mb-1"
               @click.stop="props.onTogglePrice(price)"
             >
               <span class="material-icons">close</span>
             </button>
           </span>
-
+ 
           <!-- Price Dropdown -->
-          <div 
+          <div
             v-if="props.showPriceList"
-            class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+            class="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl
+            shadow-xl z-10 w-full max-h-72 overflow-y-auto"
           >
             <!-- Fixed option -->
             <div class="border-b border-gray-200 pb-2">
@@ -217,21 +222,22 @@ function addCustomPriceRange() {
                 :key="price"
                 :disabled="props.filterPrices.includes(price)"
                 @click.stop="props.onTogglePrice(price)"
-                class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-                :class="props.filterPrices.includes(price) ? 'text-gray-300' : 'text-black'"
+                class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition"
+                :class="props.filterPrices.includes(price) ? 'text-gray-500' : 'text-gray-200'"
               >
                 {{ price }}
               </button>
             </div>
-            
+           
             <!-- Custom Price Range Input -->
-            <div class="p-4">
+            <div class="p-4 border-t border-gray-700">
               <div class="flex items-center gap-2">
                 <input
                   type="number"
                   placeholder="Min"
                   v-model="customMinPrice"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  class="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm
+                       text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   @click.stop
                 />
                 <span class="text-gray-500 text-sm">-</span>
@@ -239,14 +245,15 @@ function addCustomPriceRange() {
                   type="number"
                   placeholder="Max"
                   v-model="customMaxPrice"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  class="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm
+                  text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   @click.stop
                 />
               </div>
               <button
                 @click.stop="addCustomPriceRange"
                 :disabled="!customMinPrice || !customMaxPrice || customMinPrice > customMaxPrice"
-                class="w-full mt-3 px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                class="w-full mt-3 px-4 py-2 bg-purple-600 text-gray-200 text-sm rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 Add Range
               </button>
@@ -254,52 +261,54 @@ function addCustomPriceRange() {
           </div>
         </div>
       </div>
-
+ 
       <!-- Pill Storage Size -->
       <div  
-        class="relative flex-1 border rounded-full px-6 py-1.5 border-gray-700 bg-gray-100 shadow-sm text-left hover:border-purple-500 transition-all duration-200"
+        class="relative flex-1 border border-gray-700 rounded-xl px-5 py-2 bg-gray-800/60
+        hover:border-purple-500 transition-all duration-200 shadow-sm cursor-pointer"
         @click="props.toggleStorageSizeList"
       >
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm font-medium text-gray-800">Storage Size</div>
+            <div class="text-sm font-semibold text-gray-300">Storage Size</div>
             <div class="text-xs text-gray-400 mt-1">
               <span v-if="props.filterStorageSizes.length === 0">Storage Range</span>
-              
+             
               <!-- Selected Storages -->
-              <span 
-                v-else 
+              <span
+                v-else
                 v-for="storageSize in props.filterStorageSizes" :key="storageSize"
-                class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-0.5 pr-1.5 rounded-full text-sm font-medium"
+                class="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
               >
                 {{ formatStorage(storageSize) }}
-                <button 
+                <button
                   class="itbms-filter-item-clear hover:text-red-500 -mb-1"
                   @click.stop="props.onToggleStorageSize(storageSize)"
                 >
                   <span class="material-icons">close</span>
                 </button>
               </span>
-
+ 
               <!-- Storage Dropdown -->
-              <div 
+              <div
                 v-if="props.showStorageSizeList"
-                class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded shadow-md z-10 w-full max-h-72 overflow-y-auto"
+                class="absolute top-full left-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl
+                shadow-xl z-10 w-full max-h-72 overflow-y-auto"
               >
                 <button
                   v-for="(size, index) in storageOptions"
                   :key="index"
                   :disabled="props.filterStorageSizes.includes(size)"
                   @click.stop="props.onToggleStorageSize(size)"
-                  class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-purple-100"
-                  :class="props.filterStorageSizes.includes(size) ? 'text-gray-300' : 'text-black'"
+                  class="itbms-filter-item block w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition"
+                  :class="props.filterStorageSizes.includes(size) ? 'text-gray-500' : 'text-gray-200'"
                 >
                   {{ formatStorage(size) }}
                 </button>
               </div>
             </div>
           </div>
-
+ 
           <!-- Filter Icon -->
           <!-- <button
             @click="props.toggleBrandList"
@@ -307,9 +316,9 @@ function addCustomPriceRange() {
           >
             <span class="material-icons text-gray-700">filter_alt</span>
           </button> -->
-
+ 
           <!-- Clear Filters -->
-          <button 
+          <button
             @click.stop="props.onClearBrands"
             class="itbms-brand-filter-clear flex items-center gap-1 -mr-4 p-3 text-white bg-red-600 hover:bg-red-800 rounded-full transition"
           >
@@ -317,9 +326,9 @@ function addCustomPriceRange() {
           </button>
         </div>
       </div>
-      
+     
     </div>
-
+ 
     <!-- Sort + Page Size (Right Side) -->
     <div class="flex md:flex-nowrap gap-2 items-center w-full md:w-auto">
       <div class="flex items-center gap-2 text-base">
@@ -334,7 +343,7 @@ function addCustomPriceRange() {
           <option :value="20">20</option>
         </select>
       </div>
-
+ 
       <!-- Sort: None -->
       <button
         class="itbms-brand-none px-3 py-2 text-2xl rounded transition"
@@ -346,12 +355,12 @@ function addCustomPriceRange() {
       >
         <span class="material-icons">view_headline</span>
       </button>
-
+ 
       <!-- Sort: Asc -->
       <button
         class="itbms-brand-asc flex px-3 py-3 text-2xl rounded transition"
-        :class="props.sortMode === 'asc' 
-          ? 'bg-white text-black border border-gray-300' 
+        :class="props.sortMode === 'asc'
+          ? 'bg-white text-black border border-gray-300'
           : 'bg-[#7e5bef] text-white'"
         @click="props.onChangeSort('asc')"
         title="Sort Ascending"
@@ -359,7 +368,7 @@ function addCustomPriceRange() {
         <span class="material-icons">north</span>
         <span class="material-icons">sort</span>
       </button>
-
+ 
       <!-- Sort: Desc -->
       <button
         class="itbms-brand-desc flex px-3 py-3 text-2xl rounded transition"

@@ -198,35 +198,35 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 text-gray-800 font-sans">
+  <div class="min-h-screen bg-gray-900 text-gray-100 font-sans">
     <main class="max-w-6xl mx-auto py-10 px-6">
       <!-- Header -->
-      <div class="mb-6 text-sm text-gray-500 flex items-center space-x-2">
+      <div class="mb-6 text-sm text-gray-400 flex items-center space-x-2">
         <router-link
           :to="{ name: 'ListGallery' }"
-          class="text-purple-600 hover:underline font-medium"
+          class="text-purple-400 hover:underline font-medium"
         >
           Home
         </router-link>
         <span>/</span>
-        <span class="text-gray-800 font-semibold">New Sale Item</span>
+        <span class="text-gray-200 font-semibold">New Sale Item</span>
       </div>
 
       <!-- Title -->
-      <h1 class="text-3xl font-bold text-gray-900 mb-4">Add New Sale Item</h1>
+      <h1 class="text-3xl font-bold text-white mb-6">Add New Sale Item</h1>
 
       <!-- Main -->
-      <div class="bg-white rounded-2xl shadow-xl py-5 px-7">
+      <div class="bg-gray-800 rounded-2xl shadow-2xl py-8 px-8 border border-gray-700">
         <form
           class="grid grid-cols-1 md:grid-cols-2 gap-10"
           @submit.prevent="handleSubmit"
         >
           <div class="flex flex-col">
             <!-- Image Section -->
-            <div class="flex flex-col items-center space-y-4">
+            <div class="flex flex-col items-center space-y-5">
               <!-- Main Display Image -->
               <div class="relative w-full">
-                <div class="aspect-[3/4] bg-gray-200 rounded-lg">
+                <div class="aspect-[3/4] bg-gray-700 rounded-lg overflow-hidden">
                   <img
                     :src="mainDisplayImage"
                     class="w-full h-full object-cover"
@@ -251,12 +251,12 @@ onMounted(async () => {
                   :class="[
                     'flex-1 max-w-[6rem] cursor-pointer transition-all duration-200 rounded overflow-hidden',
                     selectedImageIndex === index 
-                      ? 'ring-2 ring-purple-500 ring-offset-2' 
+                      ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900' 
                       : 'hover:ring-2 hover:ring-purple-300 hover:ring-offset-1'
                   ]"
                   @click="selectImageForDisplay(index)"
                 >
-                  <div class="aspect-[3/4] bg-gray-100">
+                  <div class="aspect-[3/4] bg-gray-700">
                     <img
                       :src="preview"
                       class="w-full h-full object-cover"
@@ -268,11 +268,11 @@ onMounted(async () => {
             </div>
 
             <!-- Warning Messages -->
-            <div class="space-y-2">
+            <div class="space-y-2 mt-4">
               <!-- File Size Warning -->
               <div 
                 v-if="checkAndClearOversized()" 
-                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+                class="p-2 bg-red-900 border border-red-700 rounded-lg text-red-300 text-sm font-medium"
               >
                 The picture file size cannot be larger than 2MB
               </div>
@@ -280,7 +280,7 @@ onMounted(async () => {
               <!-- Max Images Warning -->
               <div 
                 v-if="showMaxImageWarning" 
-                class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium"
+                class="p-2 bg-red-900 border border-red-700 rounded-lg text-red-300 text-sm font-medium"
               >
                 Maximum 4 pictures are allowed.
               </div>
@@ -290,10 +290,10 @@ onMounted(async () => {
             <label
               for="fileInput"
               :class="[
-                'mt-5 py-2 w-2/7 font-medium border rounded-2xl cursor-pointer text-center transition',
+                'mt-6 py-2 w-2/7 font-medium border rounded-xl cursor-pointer text-center transition',
                 files.length >= 4
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300'
-                  : 'bg-purple-500 text-white hover:bg-purple-600 border-purple-500'
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 border-purple-600'
               ]"
             >
               Upload Images
@@ -316,7 +316,9 @@ onMounted(async () => {
                 v-if="files.length > 0"
                 v-for="(file, index) in files"
                 :key="index"
-                class="inline-flex items-center justify-between gap-2 bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-sm font-medium"
+                class="inline-flex items-center justify-between gap-3 
+                bg-gray-800 border border-purple-600 text-gray-200 
+                px-4 py-1.5 rounded-full text-sm font-medium shadow-sm"
               >
                 <!-- Filename with truncate -->
                 <span class="truncate min-w-0 max-w-[200px]">
@@ -324,7 +326,7 @@ onMounted(async () => {
                 </span>
 
                 <!-- Button Right Side -->
-                <div class="flex gap-1">
+                <div class="flex gap-2 items-center">
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
@@ -341,7 +343,7 @@ onMounted(async () => {
                     <!-- Swap Up -->
                     <button
                       class="flex-shrink-0 "
-                      :class="index === 0 ? 'cursor-not-allow text-gray-500 ': 'hover:text-purple-500' "
+                      :class="index === 0 ? 'cursor-not-allow text-gray-500 ': 'hover:text-purple-400' "
                       @click="moveImageUp(index)"
                       type="button"
                     >
@@ -351,7 +353,7 @@ onMounted(async () => {
                     <!-- Swap Down -->
                     <button
                       class="flex-shrink-0"
-                      :class="index === files.length - 1 ? 'cursor-not-allow text-gray-500' : 'hover:text-purple-500' "
+                      :class="index === files.length - 1 ? 'cursor-not-allow text-gray-500' : 'hover:text-purple-400' "
                       @click="moveImageDown(index)"
                       type="button"
                     >
@@ -366,9 +368,9 @@ onMounted(async () => {
           </div>
 
           <!-- Form Fields -->
-          <div class="space-y-6 mt-10">
+          <div class="space-y-6 mt-6 md:mt-10">
             <div>
-              <label class="block mb-1 font-semibold text-gray-700"
+              <label class="block mb-1 font-semibold text-gray-200"
                 >Brand</label
               >
               <select
@@ -376,7 +378,7 @@ onMounted(async () => {
                 @blur="validateInputSaleItem(newSaleItem, 'brandName', validationMessages)"
                 :ref="el => inputRefs[0] = el"
                 @keydown.enter.prevent="focusNext(0)"
-                class="itbms-brand w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                class="itbms-brand w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
               >
                 <option value="">Select Brand</option>
                 <option
@@ -393,14 +395,14 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block mb-1 font-semibold text-gray-700">Model</label>
+              <label class="block mb-1 font-semibold text-gray-200">Model</label>
               <input
                 v-model.trim="newSaleItem.model"
                 @blur="validateInputSaleItem(newSaleItem, 'model', validationMessages)"
                 :ref="el => inputRefs[1] = el"
                 @keydown.enter.prevent="focusNext(1)"
                 type="text"
-                class="itbms-model w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                class="itbms-model w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 required
               />
               <p v-if="validationMessages.model" class="itbms-message text-sm text-red-600 mt-1">
@@ -409,14 +411,14 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block mb-1 font-semibold text-gray-700">Price (Baht)</label>
+              <label class="block mb-1 font-semibold text-gray-200">Price (Baht)</label>
               <input
                 v-model.number="newSaleItem.price"
                 @blur="validateInputSaleItem(newSaleItem, 'price', validationMessages)"
                 :ref="el => inputRefs[2] = el"
                 @keydown.enter.prevent="focusNext(2)"
                 type="number"
-                class="itbms-price w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                class="itbms-price w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 required
               />
               <p v-if="validationMessages.price" class="itbms-message text-sm text-red-600 mt-1">
@@ -425,14 +427,14 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block mb-1 font-semibold text-gray-700">Description</label>
+              <label class="block mb-1 font-semibold text-gray-200">Description</label>
               <textarea
                 v-model.trim="newSaleItem.description"
                 @blur="validateInputSaleItem(newSaleItem, 'description', validationMessages)"
                 :ref="el => inputRefs[3] = el"
                 @keydown.enter.prevent="focusNext(3)"
                 rows="3"
-                class="itbms-description w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                class="itbms-description w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 required
               ></textarea>
               <p v-if="validationMessages.description" class="itbms-message text-sm text-red-600 mt-1">
@@ -442,21 +444,21 @@ onMounted(async () => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block mb-1 font-semibold text-gray-700">RAM (GB)</label>
+                <label class="block mb-1 font-semibold text-gray-200">RAM (GB)</label>
                 <input
                   v-model.number="newSaleItem.ramGb"
                   @blur="validateInputSaleItem(newSaleItem, 'ramGb', validationMessages)"
                   :ref="el => inputRefs[4] = el"
                   @keydown.enter.prevent="focusNext(4)"
                   type="number"
-                  class="itbms-ramGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                  class="itbms-ramGb w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 />
                 <p v-if="validationMessages.ramGb" class="itbms-message text-sm text-red-600 mt-1">
                   {{ validationMessages.ramGb }}
                 </p>
               </div>
               <div>
-                <label class="block mb-1 font-semibold text-gray-700">Screen Size (Inch)</label>
+                <label class="block mb-1 font-semibold text-gray-200">Screen Size (Inch)</label>
                 <input
                   v-model.number="newSaleItem.screenSizeInch"
                   @blur="validateInputSaleItem(newSaleItem, 'screenSizeInch', validationMessages)"
@@ -464,35 +466,35 @@ onMounted(async () => {
                   @keydown.enter.prevent="focusNext(5)"
                   type="number"
                   step="any"
-                  class="itbms-screenSizeInch w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                  class="itbms-screenSizeInch w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 />
                 <p v-if="validationMessages.screenSizeInch" class="itbms-message text-sm text-red-600 mt-1">
                   {{ validationMessages.screenSizeInch }}
                 </p>
               </div>
               <div>
-                <label class="block mb-1 font-semibold text-gray-700">Storage (GB)</label>
+                <label class="block mb-1 font-semibold text-gray-200">Storage (GB)</label>
                 <input
                   v-model.number="newSaleItem.storageGb"
                   @blur="validateInputSaleItem(newSaleItem, 'storageGb', validationMessages)"
                   :ref="el => inputRefs[6] = el"
                   @keydown.enter.prevent="focusNext(6)"
                   type="number"
-                  class="itbms-storageGb w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                  class="itbms-storageGb w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 />
                 <p v-if="validationMessages.storageGb" class="itbms-message text-sm text-red-600 mt-1">
                   {{ validationMessages.storageGb }}
                 </p>
               </div>
               <div>
-                <label class="block mb-1 font-semibold text-gray-700">Color</label>
+                <label class="block mb-1 font-semibold text-gray-200">Color</label>
                 <input
                   v-model.trim="newSaleItem.color"
                   @blur="validateInputSaleItem(newSaleItem, 'color', validationMessages)"
                   :ref="el => inputRefs[7] = el"
                   @keydown.enter.prevent="focusNext(7)"
                   type="text"
-                  class="itbms-color w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                  class="itbms-color w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 />
                 <p v-if="validationMessages.color" class="itbms-message text-sm text-red-600 mt-1">
                   {{ validationMessages.color }}
@@ -501,14 +503,14 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block mb-1 font-semibold text-gray-700">Quantity</label>
+              <label class="block mb-1 font-semibold text-gray-200">Quantity</label>
               <input
                 v-model.number="newSaleItem.quantity"
                 @blur="validateInputSaleItem(newSaleItem, 'quantity', validationMessages)"
                 :ref="el => inputRefs[8] = el"
                 @keydown.enter.prevent="validateInputSaleItem(newSaleItem, 'quantity', validationMessages)"
                 type="number"
-                class="itbms-quantity w-full border border-gray-300 px-3 py-2 rounded focus:ring-2 focus:ring-purple-500"
+                class="itbms-quantity w-full bg-gray-700 border border-gray-600 px-3 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-100"
                 required
               />
               <p v-if="validationMessages.quantity" class="itbms-message text-sm text-red-600 mt-1">
@@ -524,7 +526,7 @@ onMounted(async () => {
                     ? { name: 'ListGallery' }
                     : { name: 'ListSaleItems' }
                 "
-                class="itbms-cancel-button px-5 py-2 border border-gray-300 text-gray-600 rounded bg-gray-300 hover:bg-gray-400 transition"
+                class="itbms-cancel-button px-5 py-2 rounded-lg border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600 transition"
               >
                 Cancel
               </router-link>
@@ -532,10 +534,10 @@ onMounted(async () => {
                 type="submit"
                 :disabled="!isFormValid || isSubmitting"
                 :class="[
-                  'itbms-save-button px-5 py-2 text-white rounded transition',
+                  'itbms-save-button px-5 py-2 rounded-lg transition',
                   isFormValid
-                    ? 'bg-purple-600 hover:bg-purple-700'
-                    : 'bg-purple-300 cursor-not-allowed',
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-purple-900 text-gray-400 cursor-not-allowed',
                   isSubmitting
                     ? 'cursor-not-allowed'
                     : ''

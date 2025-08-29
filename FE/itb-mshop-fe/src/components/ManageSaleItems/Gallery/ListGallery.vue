@@ -320,13 +320,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="bg-gray-100 py-16 px-4 md:px-10">
-    <h2 class="text-3xl font-extrabold text-gray-900 mb-10 text-center">
+  <section class="bg-gray-900 py-16 px-4 md:px-10 min-h-screen">
+    <h2 class="text-3xl font-extrabold mb-10 text-center bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">
       Shop Our Products
     </h2>
 
     <!-- Search Box -->
-    <div class="mb-5">
+    <div class="mb-6 max-w-xl mx-auto">
       <Search
         v-model="search"
         @search="handleSearch"
@@ -361,17 +361,19 @@ onMounted(async () => {
       :show-storage-size-list="showStorageSizeList"
       :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
       :on-toggle-storage-size="toggleStorageSize"
-      
+
       :on-change-sort="changeSort"
       :sort-mode="sortMode"
       :page-size="pageSize"
     />
 
     <!-- Add Item Button -->
-    <div class="mb-8 text-center">
+    <div class="mb-10 text-center">
       <router-link
         :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
-        class="itbms-sale-item-add inline-block bg-[#7e5bef] hover:bg-[#6847d5] text-white pl-3 pr-4 py-4 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
+        hover:opacity-90 text-white px-5 py-3 rounded-xl text-base font-semibold shadow-lg 
+        transition duration-300"
       >
         <div class="flex justify-between gap-1">
           <span class="material-icons">add</span>
@@ -396,7 +398,9 @@ onMounted(async () => {
       <div
         v-for="product in products"
         :key="product.id"
-        class="itbms-row bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col"
+        class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
+        hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
+        transition duration-300 flex flex-col cursor-pointer"
       >
         <router-link
           :to="{ name: 'ListDetails', params: { id: product.id } }"
@@ -405,15 +409,15 @@ onMounted(async () => {
           <img
             :src="phoneImg"
             :alt="product.model"
-            class="w-full h-56 object-contain bg-gray-300"
+            class="w-full h-56 object-contain bg-gray-800"
           />
 
           <div class="p-5 flex flex-col flex-grow text-center">
-            <h3 class="itbms-brand text-sm font-medium text-gray-500 uppercase tracking-wide">
+            <h3 class="itbms-brand text-xs font-medium text-gray-400 uppercase tracking-wide">
               {{ product.brandName }}
             </h3>
 
-            <p class="text-[#7e5bef] font-semibold mt-1 mb-2 line-clamp-2">
+            <p class="text-[#7e5bef] font-semibold mt-2 mb-4 line-clamp-2">
               <span class="itbms-model">{{ product.model }}</span> /
               <span class="itbms-ramGb">{{ product.ramGb ?? '-' }}</span>
               <span class="itbms-ramGb-unit">GB</span> /
@@ -422,7 +426,9 @@ onMounted(async () => {
             </p>
 
             <button
-              class="itbms-button mt-auto w-full bg-[#7e5bef] hover:bg-[#6847d5] text-white py-2 rounded-lg font-bold transition"
+              class="itbms-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
+              hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
+              shadow-inner shadow-purple-900/40 transition"
             >
               Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
             </button>
