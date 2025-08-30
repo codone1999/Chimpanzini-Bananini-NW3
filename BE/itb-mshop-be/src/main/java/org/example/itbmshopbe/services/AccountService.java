@@ -85,7 +85,7 @@ public class AccountService {
         try {
             emailService.sendEmail(savedAccount.getEmail(),
                     "Verify your account",
-                    "Please click the link to verify your account: " + verificationUrl);
+                    verificationUrl);
         } catch (Exception e) {
             System.out.println("Failed to send verification email: " + e.getMessage());
         }
