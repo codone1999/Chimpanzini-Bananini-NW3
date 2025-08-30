@@ -1,7 +1,10 @@
 //RegisterForm.vue
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { registerAccount } from '@/lib/fetchUtils'
+
+const router = useRouter()
 
 // active tab
 const activeRole = ref('buyer') // Set Default to buyer
@@ -37,14 +40,14 @@ const isBuyerFormValid = computed(() => {
 })
 
 const isSellerFormValid = computed(() => {
-  return form.value.nickName.trim() !== '' &&
-         form.value.email.trim() !== '' &&
+  return form.value.nickName?.trim() !== '' &&
+         form.value.email?.trim() !== '' &&
          form.value.password !== '' &&
-         form.value.fullName.trim() !== '' &&
-         form.value.mobile.trim() !== '' &&
-         form.value.bankAccountNo.trim() !== '' &&
-         form.value.bankName.trim() !== '' &&
-         form.value.nationalCardNo.trim() !== '' &&
+         form.value.fullName?.trim() !== '' &&
+         form.value.mobile?.trim() !== '' &&
+         form.value.bankAccountNo?.trim() !== '' &&
+         form.value.bankName?.trim() !== '' &&
+         form.value.nationalCardNo?.trim() !== '' &&
          form.value.nationalCardFront !== null &&
          form.value.nationalCardBack !== null &&
          validatePassword(form.value.password) &&
@@ -151,7 +154,8 @@ async function handleSubmit() {
     // Optionally redirect or clear form after successful registration
     setTimeout(() => {
       resetForm()
-    }, 2000)
+      router.push({ name: 'VerifyEmail'})
+    }, 3000)
     
   } catch (error) {
     console.error('Registration failed:', error)

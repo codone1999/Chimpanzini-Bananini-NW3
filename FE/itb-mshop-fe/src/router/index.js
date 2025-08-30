@@ -11,6 +11,7 @@ import EditBrand from "@/components/ManageBrands/EditBrand.vue";
 import PageNotFound from "@/components/PageNotFound.vue";
 import RegisterForm from "@/components/Registers/RegisterForm.vue";
 import LogInForm from "@/components/Registers/LogInForm.vue";
+import ShowVerify from "@/components/Registers/VerifyEmail.vue";
 
 const routes = [
     {
@@ -67,6 +68,11 @@ const routes = [
         path: '/login',
         name: 'Login',
         component: LogInForm
+    },
+    {
+        path: '/verify-email',
+        name: 'VerifyEmail',
+        component: ShowVerify
     },
     {
         path: '/:NotFound(.*)',

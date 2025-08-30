@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { loginAccount } from '@/lib/fetchUtils'
+// import { loginAccount } from '@/lib/fetchUtils'
 
 // form state
 const form = ref({
@@ -51,10 +51,10 @@ async function handleSubmit() {
   try {
     // console.log('Logging in:', form.value.email)
 
-    const result = await loginAccount(
-      `${import.meta.env.VITE_APP_URL2}/users/login`,
-      form.value
-    )
+    // const result = await loginAccount(
+    //   `${import.meta.env.VITE_APP_URL2}/users/login`,
+    //   form.value
+    // )
 
     successMessage.value = 'Login successful! Redirecting...'
 

@@ -21,7 +21,7 @@ const mobileMenuOpen = ref(false)
 
         <!-- Auth Buttons -->
         <div class="space-x-3">
-          <router-link to="/signIn" 
+          <router-link :to="{ name : 'Login'}" 
             class="px-4 py-2 rounded-md text-gray-200 border border-gray-500 hover:bg-gray-800 transition">
             Sign In
           </router-link>
