@@ -5,7 +5,7 @@ const mobileMenuOpen = ref(false)
 </script>
 
 <template>
-  <header class="bg-gray-900 text-gray-100 shadow w-full top-0 z-50">
+  <header class="bg-gray-950 text-gray-100 shadow w-full top-0 z-50">
     <nav class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
       <router-link to="/" class="flex items-center space-x-2">
         <img src="/public/favicon.ico" alt="Logo" class="h-8 w-8" />

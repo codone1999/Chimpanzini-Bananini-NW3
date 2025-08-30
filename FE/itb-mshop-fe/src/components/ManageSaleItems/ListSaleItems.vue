@@ -62,7 +62,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-8 min-h-screen bg-gray-50">
+  <div class="p-8 min-h-screen bg-gray-900 text-gray-200">
     <!-- Success Message -->
     <transition name="fade">
       <div 
@@ -77,7 +77,7 @@ onMounted(async () => {
     <div class="flex justify-between items-center mb-8">
       <router-link
         :to="{ name: 'AddItem', query: { from: 'SaleItem' } }"
-        class="itbms-sale-item-add flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white pl-3 pr-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        class="itbms-sale-item-add flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white pl-3 pr-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
       >
         <span class="material-icons">
           add
@@ -87,7 +87,7 @@ onMounted(async () => {
 
       <router-link
         :to="{ name: 'ListBrands' }"
-        class="itbms-manage-brand flex items-center gap-2 bg-[#7e5bef] hover:bg-[#6847d5] text-white px-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        class="itbms-manage-brand flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
       >
         <span class="material-icons">
           build
@@ -97,30 +97,30 @@ onMounted(async () => {
     </div>
 
     <!-- No Items -->
-    <div v-if="products.length === 0" class="text-center text-gray-500 text-lg py-10">
+    <div v-if="products.length === 0" class="text-center text-gray-400 text-lg py-10">
       No sale item found.
     </div>
 
     <!-- Product Table -->
-    <div v-else class="overflow-x-auto shadow-xl ring-1 ring-gray-200 rounded-2xl">
-      <table class="min-w-full bg-white text-sm text-center table-auto">
-        <thead class="bg-purple-300 text-gray-700 font-semibold uppercase tracking-wide">
+    <div v-else class="overflow-x-auto shadow-2xl rounded-2xl border border-gray-700">
+      <table class="min-w-full bg-gray-800 text-sm text-center table-auto rounded-2xl overflow-hidden">
+        <thead class="bg-gray-700 text-gray-300 font-semibold uppercase tracking-wide">
           <tr>
-            <th class="px-4 py-4 border-b border-gray-300">ID</th>
-            <th class="px-4 py-4 border-b border-gray-300">Brand</th>
-            <th class="px-4 py-4 border-b border-gray-300">Model</th>
-            <th class="px-4 py-4 border-b border-gray-300">RAM</th>
-            <th class="px-4 py-4 border-b border-gray-300">Storage</th>
-            <th class="px-4 py-4 border-b border-gray-300">Color</th>
-            <th class="px-4 py-4 border-b border-gray-300">Price</th>
-            <th class="px-4 py-4 border-b border-gray-300">Action</th>
+            <th class="px-4 py-4 border-b border-gray-600">ID</th>
+            <th class="px-4 py-4 border-b border-gray-600">Brand</th>
+            <th class="px-4 py-4 border-b border-gray-600">Model</th>
+            <th class="px-4 py-4 border-b border-gray-600">RAM</th>
+            <th class="px-4 py-4 border-b border-gray-600">Storage</th>
+            <th class="px-4 py-4 border-b border-gray-600">Color</th>
+            <th class="px-4 py-4 border-b border-gray-600">Price</th>
+            <th class="px-4 py-4 border-b border-gray-600">Action</th>
           </tr>
         </thead>
-        <tbody class="text-gray-800 divide-y divide-gray-100">
+        <tbody class="divide-y divide-gray-700">
           <tr
             v-for="product in products"
             :key="product.id"
-            class="itbms-row hover:bg-purple-50 transition duration-200"
+            class="itbms-row hover:bg-gray-700/50 transition duration-200"
           >
             <td class="itbms-id px-4 py-3">{{ product.id }}</td>
             <td class="itbms-brand px-4 py-3">{{ product.brandName }}</td>
@@ -133,7 +133,7 @@ onMounted(async () => {
               <div class="flex justify-center gap-2">
                 <router-link 
                   :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'SaleItem' } }" 
-                  class="itbms-edit-button bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg font-medium shadow-sm transition"
+                  class="itbms-edit-button bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white p-2 rounded-lg shadow transition duration-300"
                 >
                   <span class="material-icons">
                   edit
@@ -141,7 +141,7 @@ onMounted(async () => {
                 </router-link>
                 <button
                   @click="confirmDelete(product.id)"
-                  class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg font-medium shadow-sm transition"
+                  class="itbms-delete-button bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow transition duration-300"
                 >
                   <span class="material-icons">
                   delete

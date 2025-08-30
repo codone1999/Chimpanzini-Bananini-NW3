@@ -86,7 +86,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-8 min-h-screen bg-gray-50">
+  <div class="p-8 min-h-screen bg-gray-900 text-gray-200">
     <div class="w-full max-w-screen-lg mx-auto">
 
       <!-- Success Message -->
@@ -101,14 +101,14 @@ onMounted(async () => {
 
       <!-- Breadcrumb & Header -->
       <div class="flex justify-between items-center mb-6">
-        <div class="text-sm text-gray-500 flex items-center gap-2">
+        <div class="text-sm text-gray-400 flex items-center gap-2">
           <router-link
             :to="{ name: 'ListSaleItems'}"
             class="Itbms-item-list hover:underline hover:text-[#7e5bef] transition"
           >
             Sale Item List
           </router-link>
-          <span class="text-gray-400">›</span>
+          <span class="text-gray-600">›</span>
           <router-link
             :to="{ name: 'AddBrand'}"
             class="itbms-add-button hover:underline hover:text-[#7e5bef] transition"
@@ -119,33 +119,33 @@ onMounted(async () => {
       </div>
 
       <!-- Brand Table -->
-      <div class="overflow-x-auto shadow-xl ring-1 ring-gray-200 rounded-2xl">
-        <table class="min-w-full bg-white text-sm text-center table-auto">
-          <thead class="bg-purple-300 text-gray-700 font-semibold uppercase tracking-wide">
+      <div class="overflow-x-auto shadow-2xl border border-gray-800 rounded-2xl bg-gradient-to-b from-gray-900 to-gray-950">
+        <table class="min-w-full text-sm text-center table-auto">
+          <thead class="bg-gradient-to-t from-purple-700 to-indigo-700 text-gray-100 font-semibold uppercase tracking-wide">
             <tr>
-              <th class="px-4 py-4 border-b border-gray-300">ID</th>
-              <th class="px-4 py-4 border-b border-gray-300">Name</th>
-              <th class="px-4 py-4 border-b border-gray-300">Action</th>
+              <th class="px-4 py-4 border-b border-gray-800">ID</th>
+              <th class="px-4 py-4 border-b border-gray-800">Name</th>
+              <th class="px-4 py-4 border-b border-gray-800">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr 
               v-for="brand in brands" :key="brand.id" 
-              class="itbms-row hover:bg-purple-50 transition duration-200"
+              class="itbms-row hover:bg-purple-800/30 transition duration-200"
             >
-              <td class="itbms-id px-4 py-3">{{ brand.id }}</td>
-              <td class="itbms-name px-4 py-3">{{ brand.name }}</td>
+              <td class="itbms-id px-4 py-3 text-gray-300">{{ brand.id }}</td>
+              <td class="itbms-name px-4 py-3 font-medium">{{ brand.name }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-center items-center gap-2">
                   <router-link
                     :to="{ name: 'EditBrand', params: { id: brand.id }}"
-                    class="itbms-edit-button bg-[#9f7aea] hover:bg-[#805ad5] text-white p-2 rounded-lg font-medium shadow transition duration-300"
+                    class="itbms-edit-button bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white p-2 rounded-lg shadow transition duration-300"
                   >
                     <span class="material-icons">edit</span>
                   </router-link>
                   <button
                     @click="confirmDelete(brand.id, brand.name)"
-                    class="itbms-delete-button bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg font-medium shadow transition duration-300"
+                    class="itbms-delete-button bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow transition duration-300"
                   >
                     <span class="material-icons">delete</span>
                   </button>
