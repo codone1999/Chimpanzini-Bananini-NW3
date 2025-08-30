@@ -81,7 +81,7 @@ public class AccountService {
         verificationToken.setExpiryDate(Instant.now().plusSeconds(60 * 60));
         tokenRepository.save(verificationToken);
 
-        String verificationUrl = "http://intproj24.sit.kmutt.ac.th/nw3/api/v2/users/verify-email?token=" + token;
+        String verificationUrl = "http://intproj24.sit.kmutt.ac.th/nw3/verify-email?token=" + token;
         try {
             emailService.sendEmail(savedAccount.getEmail(),
                     "Verify your account",
