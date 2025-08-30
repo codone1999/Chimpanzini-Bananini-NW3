@@ -25,9 +25,7 @@ onMounted(async () => {
     })
     
     const result = await response.json()
-    status.value = result.status
-    console.log(response)
-    console.log(result)
+    status.value = response.status
   } catch (error) {
     console.error('Email verification error:', error)
   }
