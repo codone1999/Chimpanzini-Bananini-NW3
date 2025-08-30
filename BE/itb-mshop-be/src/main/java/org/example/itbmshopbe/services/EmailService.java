@@ -21,19 +21,17 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
 
-            String htmlContent = "<!DOCTYPE html>" +
-                    "<html>" +
+            String htmlContent =
                     "<body style='font-family: Arial, sans-serif;'>" +
-                    "  <h1 style='color: #4CAF50; text-align: center;'>Welcome to ITBMS-Shop</h1>" +
-                    "  <p style='font-size: 16px; text-align: center;'>Please click below to verify your account:</p>" +
-                    "  <p style='text-align: center;'>" +
-                    "    <a href='" + verificationUrl + "' target='_blank'>Click here</a>" +
-                    "  </p>" +
-                    "  <p style='text-align: center;'>Or copy and paste this link into your browser:</p>" +
-                    "  <p style='text-align: center;'>" + verificationUrl + "</p>" +
-                    "</body>" +
-                    "</html>";
-            helper.setText("Verify your account using this link: " + verificationUrl, htmlContent);
+                            "  <h1 style='color: #4CAF50; text-align: center;'>Welcome to ITBMS-Shop</h1>" +
+                            "  <p style='font-size: 16px; text-align: center;'>Please click below to verify your account:</p>" +
+                            "  <p style='text-align: center;'>" +
+                            "    <a href=" + verificationUrl + ">Click here</a>" +
+                            "  </p>" +
+                            "  <p style='text-align: center;'>Or copy and paste this link into your browser:</p>" +
+                            "  <p style='text-align: center;'>" + verificationUrl + "</p>" +
+                            "</body>";
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
 
