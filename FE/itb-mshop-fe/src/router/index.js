@@ -65,7 +65,7 @@ const routes = [
         component: RegisterForm
     },
     {
-        path: '/login',
+        path: '/signin',
         name: 'Login',
         component: LogInForm
     },

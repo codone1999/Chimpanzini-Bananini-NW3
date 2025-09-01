@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-// import { loginAccount } from '@/lib/fetchUtils'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // form state
 const form = ref({
@@ -12,6 +14,7 @@ const form = ref({
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const isRedirecting = ref(false)
 
 // ---------------- Validate ---------------- //
 function isValidEmail(email) {
@@ -19,8 +22,30 @@ function isValidEmail(email) {
   return emailRegex.test(email.trim())
 }
 
+function validateEmail(email) {
+  if (!email || email.trim() === '') {
+    return 'Email cannot be empty'
+  }
+  if (email.length > 50) {
+    return 'Email must not exceed 50 characters'
+  }
+  if (!isValidEmail(email)) {
+    return 'Please enter a valid email format'
+  }
+  return null
+}
+
 function validatePassword(password) {
-  return password.length >= 8
+  if (!password || password.trim() === '') {
+    return 'Password cannot be empty'
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long'
+  }
+  if (password.length > 14) {
+    return 'Password must not exceed 14 characters'
+  }
+  return null
 }
 
 // ---------------- Handlers ---------------- //
@@ -28,67 +53,102 @@ function resetForm() {
   form.value = { email: '', password: '' }
   errorMessage.value = ''
   successMessage.value = ''
+  isRedirecting.value = false
 }
 
 async function handleSubmit() {
-  if (isLoading.value) return
+  if (isLoading.value || isRedirecting.value) return
+
+  // Check if user is already logged in
+  const existingToken = localStorage.getItem('access_token')
+  if (existingToken) {
+    successMessage.value = 'You are already logged in!'
+    isRedirecting.value = true
+    setTimeout(() => {
+      router.push({ name: 'ListGallery' })
+    }, 1500)
+    return
+  }
 
   errorMessage.value = ''
   successMessage.value = ''
 
-  if (!isValidEmail(form.value.email)) {
-    errorMessage.value = 'Please enter a valid email address'
+  // Validate email
+  const emailError = validateEmail(form.value.email)
+  if (emailError) {
+    errorMessage.value = emailError
     return
   }
 
-  if (!validatePassword(form.value.password)) {
-    errorMessage.value = 'Password must be at least 8 characters long'
+  // Validate password
+  const passwordError = validatePassword(form.value.password)
+  if (passwordError) {
+    errorMessage.value = passwordError
     return
   }
 
   isLoading.value = true
 
   try {
-    // console.log('Logging in:', form.value.email)
+    // Call your login API
+    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/users/authentications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: form.value.email,
+        password: form.value.password
+      })
+    })
 
-    // const result = await loginAccount(
-    //   `${import.meta.env.VITE_APP_URL2}/users/login`,
-    //   form.value
-    // )
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    
+    // Store tokens in localStorage
+    localStorage.setItem('access_token', result.access_token)
+    localStorage.setItem('refresh_token', result.refresh_token)
 
     successMessage.value = 'Login successful! Redirecting...'
+    isLoading.value = false
+    isRedirecting.value = true
 
-    // Example redirect simulation
     setTimeout(() => {
       resetForm()
-      // e.g., use router.push('/dashboard')
+      router.push({name: 'ListGallery'}).then( () => router.go(0))
     }, 1500)
+
   } catch (error) {
     console.error('Login failed:', error)
 
     let displayMessage = 'Login failed. Please try again.'
 
-    if (error.message.includes('401')) {
-      displayMessage = 'Invalid email or password.'
-    } else if (error.message.includes('500')) {
-      displayMessage = 'Server error. Please try again later.'
+    if (error.message.includes('401') || error.message.includes('400')) {
+      displayMessage = 'Email or Password is incorrect.'
+    } else if (error.message.includes('403')) {
+      displayMessage = 'You need to activate your accout before signing in.'
     } else {
-      displayMessage = error.message
+      displayMessage = 'There is a problem. Please try again later.'
     }
 
     errorMessage.value = displayMessage
-  } finally {
     isLoading.value = false
   }
-}
-
-function handleCancel() {
-  resetForm()
 }
 </script>
 
 <template>
   <div class="max-w-md mx-auto bg-white shadow-md rounded-lg p-6 my-20">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+        Welcome To ITB-MShop
+      </h1>
+      <p class="text-gray-600 text-sm">Sign in to your account</p>
+    </div>
     <!-- Success Message -->
     <div v-if="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
       {{ successMessage }}
@@ -106,8 +166,10 @@ function handleCancel() {
           v-model="form.email"
           type="email"
           required
-          :disabled="isLoading"
+          maxlength="50"
+          :disabled="isLoading || isRedirecting"
           class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100"
+          placeholder="Enter your email address"
         />
       </div>
 
@@ -118,33 +180,27 @@ function handleCancel() {
           type="password"
           required
           minlength="8"
-          :disabled="isLoading"
+          maxlength="14"
+          :disabled="isLoading || isRedirecting"
           class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100"
+          placeholder="Enter your password (8-14 characters)"
         />
       </div>
 
       <!-- Buttons -->
-      <div class="flex gap-2 pt-4">
+      <div class="pt-4">
         <button
           type="submit"
-          :disabled="isLoading"
+          :disabled="isLoading || isRedirecting"
           :class="[
-            'flex-1 py-2 rounded-md transition-colors',
-            isLoading
-              ? 'bg-red-300 text-gray-600 cursor-not-allowed'
+            'w-full py-2 rounded-md transition-colors',
+            isLoading || isRedirecting
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
               : 'bg-green-500 text-white hover:bg-green-600'
           ]"
         >
-          {{ isLoading ? 'Logging in...' : 'Login' }}
+          {{ isRedirecting ? 'Redirecting...' : (isLoading ? 'Logging in...' : 'Login') }}
         </button>
-        <router-link
-          to="/"
-          @click="handleCancel"
-          :disabled="isLoading"
-          class="flex-1 text-center bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
-        >
-          Cancel
-        </router-link>
       </div>
     </form>
   </div>

@@ -254,7 +254,4 @@ async function registerAccount(url, formData, role) {
   }
 }
 
-async function loginAccount(url, data) {
-  
-}
-export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount, loginAccount }
+export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount }
