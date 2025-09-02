@@ -123,6 +123,10 @@ public class AccountService {
         if (accountOpt.isPresent()) {
             Account account = accountOpt.get();
             if(passwordEncoder.matches(loginRequestDto.getPassword(), account.getPassword())) {
+                if (account.getStatus() != Account.Status.ACTIVE) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not activated. Please verify your email first.");
+                }
+
                 String accessToken = JwtTokenUtil.generateAccessToken(
                         account.getId(),
                         account.getEmail(),
