@@ -1,29 +1,41 @@
 //EditItem.vue
 <script setup>
-import { useRoute, useRouter } from "vue-router";
-import { ref, onMounted, computed } from "vue";
-import { getItemById, getItems, editItemAndImage, editItem } from "@/lib/fetchUtils";
+import { useRoute, useRouter } from "vue-router"
+import { ref, onMounted, computed } from "vue"
+import { getItemById, getItems, editItemAndImage } from "@/lib/fetchUtils"
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
-import phoneImg from "../../../public/phone.png";
+import { useImageUpload } from '@/composables/useImageUpload'
 
 const url_brands = `${import.meta.env.VITE_APP_URL}/brands`
 const url_items = `${import.meta.env.VITE_APP_URL}/sale-items`
 const url_items2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
 
-const route = useRoute();
-const router = useRouter();
-const id = route.params.id;
-const from = route.query.from;
+const route = useRoute()
+const router = useRouter()
+const id = route.params.id
+const from = route.query.from
 
-const brandSelected = ref(null);
-const images = ref([]);
-const showMaxImageWarning = ref(false);
-const oversizedFiles = ref([])
-const selectedImageIndex = ref(0)
-
+const brandSelected = ref(null)
 const isSubmitting = ref(false)
+const validationMessages = ref({})
 
-const validationMessages = ref({});
+// Use image upload composable (true = EditItem mode)
+const {
+  images,
+  showMaxImageWarning,
+  selectedImageIndex,
+  filePreviews,
+  mainDisplayImage,
+  selectImageForDisplay,
+  handleFileChange,
+  removeImage,
+  moveImageUp,
+  moveImageDown,
+  getImageName,
+  checkAndClearOversized,
+  loadImages,
+  urlToFile
+} = useImageUpload(true)
 
 // -------------- Form --------------------- //
 const product = ref({
@@ -36,70 +48,43 @@ const product = ref({
   brandName: "",
   description: "",
   price: 0,
-  ramGb: 0, // OPTIONAL
+  ramGb: 0,
   saleItemImages: [],
-  screenSizeInch: 0, // OPTIONAL
+  screenSizeInch: 0,
   quantity: 0,
-  storageGb: 0, // OPTIONAL
-  color: "", // OPTIONAL
-});
-const originalProduct = ref(null);
+  storageGb: 0,
+  color: "",
+})
+const originalProduct = ref(null)
 
 // ----------------------- Computed ------------------------ //
-const mainDisplayImage = computed(() => {
-  if (images.value.length > 0 && selectedImageIndex.value < images.value.length) {
-    const selectedImage = images.value[selectedImageIndex.value]
-    if (selectedImage.src) {
-      // Existing image from server
-      return selectedImage.src
-    } else if (selectedImage.file) {
-      // New uploaded file
-      return URL.createObjectURL(selectedImage.file)
-    }
-  }
-  return phoneImg // Fallback to default phone image
-})
-
-const isFormValid = computed(() => isFormSaleItemValid(product.value));
-
-const filePreviews = computed(() => {
-  return images.value.map(image => {
-    if (image.src) {
-      // Existing image from server
-      return image.src;
-    } else if (image.file) {
-      // New uploaded file
-      return URL.createObjectURL(image.file);
-    }
-    return null;
-  }).filter(Boolean);
-});
+const isFormValid = computed(() => isFormSaleItemValid(product.value))
 
 const isChanged = computed(() => {
-  if (!originalProduct.value) return false;
+  if (!originalProduct.value) return false
   
   // Deep comparison function for objects
   const deepEqual = (obj1, obj2) => {
-    if (obj1 === obj2) return true;
+    if (obj1 === obj2) return true
     
-    if (obj1 == null || obj2 == null) return obj1 === obj2;
+    if (obj1 == null || obj2 == null) return obj1 === obj2
     
     if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
-      return obj1 === obj2;
+      return obj1 === obj2
     }
     
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
+    const keys1 = Object.keys(obj1)
+    const keys2 = Object.keys(obj2)
     
-    if (keys1.length !== keys2.length) return false;
+    if (keys1.length !== keys2.length) return false
     
     for (let key of keys1) {
-      if (!keys2.includes(key)) return false;
-      if (!deepEqual(obj1[key], obj2[key])) return false;
+      if (!keys2.includes(key)) return false
+      if (!deepEqual(obj1[key], obj2[key])) return false
     }
     
-    return true;
-  };
+    return true
+  }
   
   // Create clean copies for comparison (excluding nested objects that might cause issues)
   const currentProductClean = {
@@ -113,7 +98,7 @@ const isChanged = computed(() => {
     quantity: Number(product.value.quantity) || 0,
     storageGb: Number(product.value.storageGb) || 0,
     color: product.value.color?.trim() || "",
-  };
+  }
   
   const originalProductClean = {
     id: originalProduct.value.id,
@@ -126,276 +111,63 @@ const isChanged = computed(() => {
     quantity: Number(originalProduct.value.quantity) || 0,
     storageGb: Number(originalProduct.value.storageGb) || 0,
     color: originalProduct.value.color?.trim() || "",
-  };
+  }
   
   // Check if product data changed
-  const productDataChanged = !deepEqual(currentProductClean, originalProductClean);
+  const productDataChanged = !deepEqual(currentProductClean, originalProductClean)
   
   // Enhanced image comparison with better handling of edge cases
-  const originalImages = originalProduct.value.saleItemImages || [];
+  const originalImages = originalProduct.value.saleItemImages || []
   const originalImagesList = originalImages
     .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0))
     .map(img => ({
       fileName: img.fileName,
       imageViewOrder: img.imageViewOrder || 0
-    }));
+    }))
   
   const currentImagesList = (images.value || [])
     .map((img, index) => ({
       fileName: img.fileName || img.name || "",
       imageViewOrder: index + 1
-    }));
+    }))
   
   // Check if images changed (count, order, or files)
-  const imagesChanged = !deepEqual(originalImagesList, currentImagesList);
+  const imagesChanged = !deepEqual(originalImagesList, currentImagesList)
   
-  return productDataChanged || imagesChanged;
-});
+  return productDataChanged || imagesChanged
+})
 
 const isSaveDisabled = computed(() => {
   // Check if form is valid
-  if (!isFormValid.value) return true;
+  if (!isFormValid.value) return true
   
   // Check if anything actually changed
-  if (!isChanged.value) return true;
+  if (!isChanged.value) return true
   
   // Check if currently submitting
-  if (isSubmitting.value) return true;
+  if (isSubmitting.value) return true
   
   // Additional validation: ensure required fields are not empty after trimming
-  const requiredFields = ['model', 'brandName', 'description'];
+  const requiredFields = ['model', 'brandName', 'description']
   for (const field of requiredFields) {
     if (!product.value[field] || product.value[field].toString().trim() === '') {
-      return true;
+      return true
     }
   }
   
   // Ensure price and quantity are positive numbers
   if (product.value.price <= 0 || product.value.quantity <= 0) {
-    return true;
+    return true
   }
   
-  return false;
-});
+  return false
+})
 
 // ----------------------- Form ---------------------- //
 const inputRefs = ref([])
 
 function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
-}
-
-// ---------------- Image --------------------- //
-function selectImageForDisplay(index) {
-  selectedImageIndex.value = index
-}
-
-function handleFileChange(event) {
-  if (!event.target.files) return;
-  
-  const newFiles = Array.from(event.target.files);
-  const maxFileSize = 2 * 1024 * 1024; // 2MB in bytes
-  const previousLength = images.value.length;
-  
-  // Separate valid and oversized files
-  const validFiles = [];
-  const currentOversizedFiles = [];
-  
-  newFiles.forEach(file => {
-    // Check for duplicate files by name and size
-    const isDuplicate = images.value.some(existingImg => 
-      (existingImg.name === file.name || existingImg.fileName === file.name) &&
-      existingImg.file?.size === file.size
-    );
-    
-    if (isDuplicate) {
-      // Skip duplicate files silently or show a message
-      return;
-    }
-    
-    if (file.size > maxFileSize) {
-      currentOversizedFiles.push(file.name);
-    } else {
-      validFiles.push(file);
-    }
-  });
-
-  // Update oversized files list
-  oversizedFiles.value = currentOversizedFiles;
-
-  const totalImages = images.value.length + validFiles.length;
-  
-  // Check if user is trying to upload more than 4 total
-  if (totalImages > 4) {
-    showMaxImageWarning.value = true;
-    const allowedCount = 4 - images.value.length;
-    if (allowedCount > 0) {
-      // Only add the allowed number of files
-      const filesToAdd = validFiles.slice(0, allowedCount).map((file, index) => ({
-        file: file,
-        name: file.name,
-        imageViewOrder: images.value.length + index + 1,
-        isNewFile: true
-      }));
-      images.value = [...images.value, ...filesToAdd];
-    }
-  } else {
-    // Add all new files if within limit
-    const filesToAdd = validFiles.map((file, index) => ({
-      file: file,
-      name: file.name,
-      imageViewOrder: images.value.length + index + 1,
-      isNewFile: true
-    }));
-    images.value = [...images.value, ...filesToAdd];
-    showMaxImageWarning.value = false;
-
-    // Auto-select first uploaded image
-    if (previousLength === 0 && validFiles.length > 0) {
-      selectedImageIndex.value = 0;
-    }
-  }
-  
-  // Reset the input value so same files can be selected again
-  event.target.value = '';
-}
-
-function removeImage(fileName) {
-  const removedIndex = images.value.findIndex(image => (image.fileName || image.name) === fileName)
-  images.value = images.value.filter(image => (image.fileName || image.name) !== fileName);
-  
-  // Adjust selected image index if necessary
-  if (removedIndex <= selectedImageIndex.value) {
-    if (images.value.length === 0) {
-      selectedImageIndex.value = 0 // Reset to show default image
-    } else if (selectedImageIndex.value >= images.value.length) {
-      selectedImageIndex.value = images.value.length - 1
-    }
-  }
-  
-  // Hide warning if we're back under the limit
-  if (images.value.length <= 4) {
-    showMaxImageWarning.value = false;
-  }
-  // Reorder remaining images
-  reorderImages();
-}
-
-function moveImageUp(index) {
-  if (index > 0) {
-    // Swap the images in the array
-    const temp = images.value[index - 1]
-    images.value[index - 1] = images.value[index]
-    images.value[index] = temp
-
-    // Update selected index if it's affected
-    if (selectedImageIndex.value === index) {
-      selectedImageIndex.value = index - 1
-    } else if (selectedImageIndex.value === index - 1) {
-      selectedImageIndex.value = index
-    }
-
-    // Update the imageViewOrder for all images after swapping
-    reorderImages()
-  }
-}
-
-function moveImageDown(index) {
-  if (index < images.value.length - 1) {
-    // Swap the images in the array
-    const temp = images.value[index + 1]
-    images.value[index + 1] = images.value[index]
-    images.value[index] = temp
-
-    // Update selected index if it's affected
-    if (selectedImageIndex.value === index) {
-      selectedImageIndex.value = index + 1
-    } else if (selectedImageIndex.value === index + 1) {
-      selectedImageIndex.value = index
-    }
-
-    // Update the imageViewOrder for all images after swapping
-    reorderImages()
-  }
-}
-
-function reorderImages() {
-  images.value.forEach((image, index) => {
-    image.imageViewOrder = index + 1
-  })
-}
-
-function getImageName(item) {
-  if (typeof item === 'string') {
-    // It's a URL - extract filename after the last '/'
-    return item.split('/').pop()
-  } else if (item.fileName) {
-    // It's an existing image object with fileName
-    return item.fileName
-  } else if (item.name) {
-    // It's a new file object with name property
-    return item.name
-  } else {
-    // Fallback
-    return 'Unknown'
-  }
-}
-
-function checkAndClearOversized() {
-  if (oversizedFiles.value.length > 0) {
-    setTimeout(() => {
-      oversizedFiles.value = [];
-    }, 2000);
-    return true;
-  }
-  return false;
-}
-
-async function loadImages() {
-  // Check if product and images array exist
-  if (!product.value?.saleItemImages) {
-    console.warn('No images found for this product');
-    return;
-  }
-
-  // Sort images by imageViewOrder before loading
-  const sortedImages = [...product.value.saleItemImages]
-    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0))
-  
-  // Clear existing images
-  images.value = [];
-
-  // Load each image with error handling and proper structure
-  for (let i = 0; i < sortedImages.length; i++) {
-    try {
-      const imageData = sortedImages[i];
-      if (imageData && imageData.fileName) {
-        const imageUrl = `${url_items}/picture/${imageData.fileName}`;
-        
-        // Create image object with all necessary properties
-        const imageObject = {
-          src: imageUrl,
-          fileName: imageData.fileName,
-          imageViewOrder: i + 1, // Ensure sequential order starting from 1
-        };
-        
-        images.value.push(imageObject);
-      }
-    } catch (error) {
-      console.warn(`Failed to load image ${i}:`, error);
-    }
-  }
-
-  // Auto-select first image if images were loaded
-  if (images.value.length > 0) {
-    selectedImageIndex.value = 0
-  }
-}
-
-async function urlToFile(imageName) {
-  const response = await fetch(`${url_items}/picture/${imageName}`)
-  const blob = await response.blob()
-  return new File([blob], imageName, { type: blob.type })
 }
 
 // ---------------- Submit & OnMounted --------------------- //
@@ -440,7 +212,7 @@ async function handleSubmit() {
 
       if (image.fileName) {
         // This is an existing image - convert to File
-        fileObj = await urlToFile(image.fileName)
+        fileObj = await urlToFile(image.fileName, url_items)
         
         // For existing images, always use "replace" so backend can handle reordering
         status = "replace"
@@ -491,9 +263,9 @@ async function handleSubmit() {
     const saleItem = {
       saleItem: saleItemForSubmit,
       imagesInfos: imagesInfos
-    };
+    }
 
-    const editedItem = await editItemAndImage(url_items2, id, saleItem);
+    const editedItem = await editItemAndImage(url_items2, id, saleItem)
 
     if (typeof editedItem !== 'number') {
       if (from === "Gallery") {
@@ -521,11 +293,11 @@ async function handleSubmit() {
 
 onMounted(async () => {
   try {
-    const item = await getItemById(url_items2, id);
+    const item = await getItemById(url_items2, id)
     if (typeof item === 'number') {
-      router.push({ name: 'ListGallery'});
-      alert("The requested sale item does not exist.");
-      return;
+      router.push({ name: 'ListGallery'})
+      alert("The requested sale item does not exist.")
+      return
     }
 
     const data = {
@@ -538,32 +310,32 @@ onMounted(async () => {
       model: item.model,
       description: item.description,
       price: item.price,
-      ramGb: item.ramGb, // OPTIONAL
+      ramGb: item.ramGb,
       saleItemImages: item.saleItemImages,
-      screenSizeInch: item.screenSizeInch, // OPTIONAL
+      screenSizeInch: item.screenSizeInch,
       quantity: item.quantity,
-      storageGb: item.storageGb, // OPTIONAL
+      storageGb: item.storageGb,
       color: item.color,
-    };
-    product.value = data;
-    originalProduct.value = JSON.parse(JSON.stringify(data));
+    }
+    product.value = data
+    originalProduct.value = JSON.parse(JSON.stringify(data))
 
-    await loadImages();
+    await loadImages(product.value, url_items)
   } catch (error) {
-    console.error("Failed to fetch product:", error);
+    console.error("Failed to fetch product:", error)
   }
 
   try {
-    const brand = await getItems(url_brands);
+    const brand = await getItems(url_brands)
     if (typeof brand === 'number') {
       alert('The requested sale brand does not exist.')
-      return;
+      return
     }
-    brandSelected.value = brand;
+    brandSelected.value = brand
   } catch (error) {
-    console.error("Failed to fetch brands:", error);
+    console.error("Failed to fetch brands:", error)
   }
-});
+})
 </script>
 
 <template>
@@ -714,7 +486,7 @@ onMounted(async () => {
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="removeImage(getImageName(image))"
+                    @click.stop="removeImage(index)"
                     type="button"
                   >
                     <span class="material-icons text-sm">close</span>
@@ -918,8 +690,8 @@ onMounted(async () => {
                 :class="[
                   'itbms-save-button px-5 py-2 rounded-lg transition',
                   isSaveDisabled
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-purple-900 text-gray-400 cursor-not-allowed',
+                    ? 'bg-purple-900 text-gray-400 cursor-not-allowed'    // Disabled styling
+                    : 'bg-purple-600 text-white hover:bg-purple-700',     // Enabled styling
                   isSubmitting
                     ? 'cursor-not-allowed'
                     : ''

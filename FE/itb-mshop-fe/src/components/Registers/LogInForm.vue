@@ -1,6 +1,8 @@
+//LoginForm.vue
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
 
 const router = useRouter()
 
@@ -11,42 +13,49 @@ const form = ref({
 })
 
 // states
-const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const isRedirecting = ref(false)
 
-// ---------------- Validate ---------------- //
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email.trim())
+// Individual field validation messages
+const fieldErrors = ref({
+  email: '',
+  password: ''
+})
+
+// Handle individual field validation on blur
+function handleEmailBlur() {
+  const error = validateEmail(form.value.email)
+  fieldErrors.value.email = error || ''
 }
 
-function validateEmail(email) {
-  if (!email || email.trim() === '') {
-    return 'Email cannot be empty'
-  }
-  if (email.length > 50) {
-    return 'Email must not exceed 50 characters'
-  }
-  if (!isValidEmail(email)) {
-    return 'Please enter a valid email format'
-  }
-  return null
+function handlePasswordBlur() {
+  const error = validatePassword(form.value.password)
+  fieldErrors.value.password = error || ''
 }
 
-function validatePassword(password) {
-  if (!password || password.trim() === '') {
-    return 'Password cannot be empty'
+// Clear field error when user starts typing
+function handleEmailInput() {
+  if (fieldErrors.value.email) {
+    fieldErrors.value.email = ''
   }
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters long'
-  }
-  if (password.length > 14) {
-    return 'Password must not exceed 14 characters'
-  }
-  return null
 }
+
+function handlePasswordInput() {
+  if (fieldErrors.value.password) {
+    fieldErrors.value.password = ''
+  }
+}
+
+// Computed property to check if form is valid
+const isFormValid = computed(() => {
+  return isLoginFormValid(form.value)
+})
+
+// Check if button should be disabled
+const isButtonDisabled = computed(() => {
+  return !isFormValid.value || isRedirecting.value
+})
 
 // ---------------- Handlers ---------------- //
 function resetForm() {
@@ -54,10 +63,11 @@ function resetForm() {
   errorMessage.value = ''
   successMessage.value = ''
   isRedirecting.value = false
+  fieldErrors.value = { email: '', password: '' }
 }
 
 async function handleSubmit() {
-  if (isLoading.value || isRedirecting.value) return
+  if (isRedirecting.value) return
 
   // Check if user is already logged in
   const existingToken = localStorage.getItem('access_token')
@@ -73,21 +83,16 @@ async function handleSubmit() {
   errorMessage.value = ''
   successMessage.value = ''
 
-  // Validate email
+  // Validate all fields before submit
   const emailError = validateEmail(form.value.email)
-  if (emailError) {
-    errorMessage.value = emailError
-    return
-  }
-
-  // Validate password
   const passwordError = validatePassword(form.value.password)
-  if (passwordError) {
-    errorMessage.value = passwordError
+  
+  fieldErrors.value.email = emailError || ''
+  fieldErrors.value.password = passwordError || ''
+
+  if (emailError || passwordError) {
     return
   }
-
-  isLoading.value = true
 
   try {
     // Call your login API
@@ -113,7 +118,6 @@ async function handleSubmit() {
     localStorage.setItem('refresh_token', result.refresh_token)
 
     successMessage.value = 'Login successful! Redirecting...'
-    isLoading.value = false
     isRedirecting.value = true
 
     setTimeout(() => {
@@ -135,7 +139,6 @@ async function handleSubmit() {
     }
 
     errorMessage.value = displayMessage
-    isLoading.value = false
   }
 }
 </script>
@@ -168,10 +171,18 @@ async function handleSubmit() {
           type="email"
           required
           maxlength="50"
-          :disabled="isLoading || isRedirecting"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100"
+          :disabled="isRedirecting"
+          @blur="handleEmailBlur"
+          @input="handleEmailInput"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+          ]"
           placeholder="Enter your email address"
         />
+        <p v-if="fieldErrors.email" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.email }}
+        </p>
       </div>
 
       <div>
@@ -180,27 +191,34 @@ async function handleSubmit() {
           v-model="form.password"
           type="password"
           required
-          minlength="8"
           maxlength="14"
-          :disabled="isLoading || isRedirecting"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100"
-          placeholder="Enter your password (8-14 characters)"
+          :disabled="isRedirecting"
+          @blur="handlePasswordBlur"
+          @input="handlePasswordInput"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+          ]"
+          placeholder="Enter your password 14 characters"
         />
+        <p v-if="fieldErrors.password" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.password }}
+        </p>
       </div>
 
       <!-- Buttons -->
       <div class="pt-4">
         <button
           type="submit"
-          :disabled="isLoading || isRedirecting"
+          :disabled="isButtonDisabled"
           :class="[
             'w-full py-2 rounded-md transition-colors',
-            isLoading || isRedirecting
+            isButtonDisabled
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
               : 'bg-green-500 text-white hover:bg-green-600'
           ]"
         >
-          {{ isRedirecting ? 'Redirecting...' : (isLoading ? 'Logging in...' : 'Login') }}
+          {{ isRedirecting ? 'Redirecting...' : 'Login' }}
         </button>
       </div>
     </form>

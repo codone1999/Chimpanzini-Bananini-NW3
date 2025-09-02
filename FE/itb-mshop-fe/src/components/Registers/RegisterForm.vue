@@ -3,6 +3,18 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { registerAccount } from '@/lib/fetchUtils'
+import { 
+  validateNickName,
+  validateRegistrationEmail,
+  validateRegistrationPassword,
+  validateFullname,
+  validateMobile,
+  validateBankAccountNo,
+  validateBankName,
+  validateNationalCardNo,
+  isBuyerFormValid,
+  isSellerFormValid
+} from '@/lib/validateInput'
 
 const router = useRouter()
 
@@ -28,40 +40,75 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// ------------------ Computed ----------------------- //
-const isBuyerFormValid = computed(() => {
-  return form.value.nickName.trim() !== '' &&
-         form.value.email.trim() !== '' &&
-         form.value.password !== '' &&
-         form.value.fullName.trim() !== '' &&
-         validatePassword(form.value.password) &&
-         validateFullname(form.value.fullName) &&
-         isValidEmail(form.value.email)
+// Individual field validation messages
+const fieldErrors = ref({
+  nickName: '',
+  email: '',
+  password: '',
+  fullName: '',
+  mobile: '',
+  bankAccountNo: '',
+  bankName: '',
+  nationalCardNo: ''
 })
 
-const isSellerFormValid = computed(() => {
-  return form.value.nickName?.trim() !== '' &&
-         form.value.email?.trim() !== '' &&
-         form.value.password !== '' &&
-         form.value.fullName?.trim() !== '' &&
-         form.value.mobile?.trim() !== '' &&
-         form.value.bankAccountNo?.trim() !== '' &&
-         form.value.bankName?.trim() !== '' &&
-         form.value.nationalCardNo?.trim() !== '' &&
-         form.value.nationalCardFront !== null &&
-         form.value.nationalCardBack !== null &&
-         validatePassword(form.value.password) &&
-         validateFullname(form.value.fullName) &&
-         isValidEmail(form.value.email)
+// Handle individual field validation on blur
+function handleFieldBlur(fieldName) {
+  let error = null
+  
+  switch(fieldName) {
+    case 'nickName':
+      error = validateNickName(form.value.nickName)
+      break
+    case 'email':
+      error = validateRegistrationEmail(form.value.email)
+      break
+    case 'password':
+      error = validateRegistrationPassword(form.value.password)
+      break
+    case 'fullName':
+      error = validateFullname(form.value.fullName)
+      break
+    case 'mobile':
+      error = validateMobile(form.value.mobile)
+      break
+    case 'bankAccountNo':
+      error = validateBankAccountNo(form.value.bankAccountNo)
+      break
+    case 'bankName':
+      error = validateBankName(form.value.bankName)
+      break
+    case 'nationalCardNo':
+      error = validateNationalCardNo(form.value.nationalCardNo)
+      break
+  }
+  
+  fieldErrors.value[fieldName] = error || ''
+}
+
+// Clear field error when user starts typing
+function handleFieldInput(fieldName) {
+  if (fieldErrors.value[fieldName]) {
+    fieldErrors.value[fieldName] = ''
+  }
+}
+
+// ------------------ Computed ----------------------- //
+const isBuyerFormValidComputed = computed(() => {
+  return isBuyerFormValid(form.value)
+})
+
+const isSellerFormValidComputed = computed(() => {
+  return isSellerFormValid(form.value)
 })
 
 const isSubmitDisabled = computed(() => {
   if (isLoading.value) return true
   
   if (activeRole.value === 'buyer') {
-    return !isBuyerFormValid.value
+    return !isBuyerFormValidComputed.value
   } else {
-    return !isSellerFormValid.value
+    return !isSellerFormValidComputed.value
   }
 })
 
@@ -82,6 +129,16 @@ function resetForm() {
     nationalCardNo: '',
     nationalCardFront: null,
     nationalCardBack: null
+  }
+  fieldErrors.value = {
+    nickName: '',
+    email: '',
+    password: '',
+    fullName: '',
+    mobile: '',
+    bankAccountNo: '',
+    bankName: '',
+    nationalCardNo: ''
   }
   errorMessage.value = ''
   successMessage.value = ''
@@ -104,40 +161,27 @@ function removeFile(side) {
   form.value[side] = null
 }
 
-// ------------------------ Validate -------------------- //
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email.trim())
-}
-
-function validatePassword(password) {
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/
-  return passwordRegex.test(password) && password.length >= 8
-}
-
-function validateFullname(fullName) {
-  const trimmedName = fullName.trim()
-  return trimmedName.length >= 4 && trimmedName.length <= 40
-}
-
 async function handleSubmit() {
   if (isLoading.value || isSubmitDisabled.value) return
   
   errorMessage.value = ''
   successMessage.value = ''
 
-  if (!validateFullname(form.value.fullName)) {
-    errorMessage.value = 'Full name must be between 4 and 40 characters long'
-    return
+  // Validate all fields before submit
+  const fieldsToValidate = ['nickName', 'email', 'password', 'fullName']
+  if (activeRole.value === 'seller') {
+    fieldsToValidate.push('mobile', 'bankAccountNo', 'bankName', 'nationalCardNo')
   }
 
-  if (!validatePassword(form.value.password)) {
-    errorMessage.value = 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character (@$!%*?&)'
-    return
-  }
+  let hasErrors = false
+  fieldsToValidate.forEach(field => {
+    handleFieldBlur(field)
+    if (fieldErrors.value[field]) {
+      hasErrors = true
+    }
+  })
 
-  if (!isValidEmail(form.value.email)) {
-    errorMessage.value = 'Please enter a valid email address'
+  if (hasErrors) {
     return
   }
 
@@ -149,12 +193,9 @@ async function handleSubmit() {
     const result = await registerAccount(`${import.meta.env.VITE_APP_URL2}/users/register`, form.value, activeRole.value)
     
     successMessage.value = `${activeRole.value === 'buyer' ? 'Buyer' : 'Seller'} account created successfully!`
-    // console.log('Registration successful:', result)
-    
-    // Optionally redirect or clear form after successful registration
+
     setTimeout(() => {
       resetForm()
-      router.push({ name: 'VerifyEmail'})
     }, 3000)
     
   } catch (error) {
@@ -233,8 +274,16 @@ function handleCancel() {
           type="text" 
           required
           :disabled="isLoading"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('nickName')"
+          @input="handleFieldInput('nickName')"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.nickName ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.nickName" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.nickName }}
+        </p>
       </div>
 
       <div>
@@ -244,8 +293,16 @@ function handleCancel() {
           type="email" 
           required
           :disabled="isLoading"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('email')"
+          @input="handleFieldInput('email')"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.email" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.email }}
+        </p>
       </div>
 
       <div>
@@ -257,9 +314,16 @@ function handleCancel() {
           minlength="8"
           pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$"
           :disabled="isLoading"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('password')"
+          @input="handleFieldInput('password')"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
-        <small class="text-gray-500 text-xs">Must contain uppercase, lowercase, number, and special character (@$!%*?&)</small>
+        <p v-if="fieldErrors.password" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.password }}
+        </p>
       </div>
 
       <div>
@@ -271,9 +335,16 @@ function handleCancel() {
           minlength="4"
           maxlength="40"
           :disabled="isLoading"
-          class="mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('fullName')"
+          @input="handleFieldInput('fullName')"
+          :class="[
+            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
-        <small class="text-gray-500 text-xs">Must be between 4 and 40 characters</small>
+        <p v-if="fieldErrors.fullName" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.fullName }}
+        </p>
       </div>
 
       <div class="flex gap-2 pt-4">
@@ -308,8 +379,16 @@ function handleCancel() {
           type="text"
           required
           :disabled="isLoading"
-          class="itbms-nickname mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('nickName')"
+          @input="handleFieldInput('nickName')"
+          :class="[
+            'itbms-nickname mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.nickName ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.nickName" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.nickName }}
+        </p>
       </div>
 
       <div>
@@ -319,8 +398,16 @@ function handleCancel() {
           type="email"
           required
           :disabled="isLoading"
-          class="itbms-email mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('email')"
+          @input="handleFieldInput('email')"
+          :class="[
+            'itbms-email mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.email" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.email }}
+        </p>
       </div>
 
       <div>
@@ -332,9 +419,16 @@ function handleCancel() {
           minlength="8"
           pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$"
           :disabled="isLoading"
-          class="itbms-password mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('password')"
+          @input="handleFieldInput('password')"
+          :class="[
+            'itbms-password mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
-        <small class="text-gray-500 text-xs">Must contain uppercase, lowercase, number, and special character (@$!%*?&)</small>
+        <p v-if="fieldErrors.password" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.password }}
+        </p>
       </div>
 
       <div>
@@ -346,9 +440,16 @@ function handleCancel() {
           minlength="4"
           maxlength="40"
           :disabled="isLoading"
-          class="itbms-fullname mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('fullName')"
+          @input="handleFieldInput('fullName')"
+          :class="[
+            'itbms-fullname mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
-        <small class="text-gray-500 text-xs">Must be between 4 and 40 characters</small>
+        <p v-if="fieldErrors.fullName" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.fullName }}
+        </p>
       </div>
 
       <div>
@@ -358,8 +459,16 @@ function handleCancel() {
           type="text"
           required
           :disabled="isLoading"
-          class="itbms-mobile mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('mobile')"
+          @input="handleFieldInput('mobile')"
+          :class="[
+            'itbms-mobile mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.mobile ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.mobile" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.mobile }}
+        </p>
       </div>
 
       <div>
@@ -369,8 +478,16 @@ function handleCancel() {
           type="text"
           required
           :disabled="isLoading"
-          class="itbms-bank-account-no mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('bankAccountNo')"
+          @input="handleFieldInput('bankAccountNo')"
+          :class="[
+            'itbms-bank-account-no mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.bankAccountNo ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.bankAccountNo" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.bankAccountNo }}
+        </p>
       </div>
 
       <div>
@@ -380,8 +497,16 @@ function handleCancel() {
           type="text"
           required
           :disabled="isLoading"
-          class="itbms-back-name mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('bankName')"
+          @input="handleFieldInput('bankName')"
+          :class="[
+            'itbms-back-name mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.bankName ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.bankName" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.bankName }}
+        </p>
       </div>
 
       <div>
@@ -391,8 +516,16 @@ function handleCancel() {
           type="text"
           required
           :disabled="isLoading"
-          class="itbms-card-no mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100" 
+          @blur="handleFieldBlur('nationalCardNo')"
+          @input="handleFieldInput('nationalCardNo')"
+          :class="[
+            'itbms-card-no mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            fieldErrors.nationalCardNo ? 'border-red-500' : 'border-gray-300'
+          ]"
         />
+        <p v-if="fieldErrors.nationalCardNo" class="text-sm text-red-600 mt-1">
+          {{ fieldErrors.nationalCardNo }}
+        </p>
       </div>
 
       <!-- National Card Photo Section -->

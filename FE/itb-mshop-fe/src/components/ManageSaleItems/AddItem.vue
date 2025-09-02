@@ -4,29 +4,35 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getItems, addItemAndImage } from '@/lib/fetchUtils'
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
-import phoneImg from "../../../public/phone.png";
+import { useImageUpload } from '@/composables/useImageUpload'
 
 const route = useRoute()
 const router = useRouter()
 const from = route.query.from
 
 const brandSelected = ref([])
-
-const files = ref([])
-const filePreviews = computed( () => files.value.map(file => URL.createObjectURL(file)) )
-const showMaxImageWarning = ref(false)
-const oversizedFiles = ref([])
-const selectedImageIndex = ref(0)
-
 const inputRefs = ref([]) // Focus next field in Form
 const isSubmitting = ref(false)
 
+// Use image upload composable (false = AddItem mode)
+const {
+  files,
+  showMaxImageWarning,
+  selectedImageIndex,
+  filePreviews,
+  mainDisplayImage,
+  selectImageForDisplay,
+  handleFileChange,
+  removeImage,
+  moveImageUp,
+  moveImageDown,
+  checkAndClearOversized
+} = useImageUpload(false)
+
 const newSaleItem = ref({
-  // id: null,
   sellerId: 1,
   brand: {
     id: null,
-    // name: '',
   },
   brandName: '',
   model: '',
@@ -44,124 +50,13 @@ const validationMessages = ref({})
 // ---------------- Computed ------------------------ //
 const isFormValid = computed(() => isFormSaleItemValid(newSaleItem.value))
 
-const mainDisplayImage = computed(() => {
-  if (files.value.length > 0 && selectedImageIndex.value < files.value.length) {
-    return URL.createObjectURL(files.value[selectedImageIndex.value])
-  }
-  return phoneImg // default phone image
-})
-
-// ------------- Image --------------------- //
-function selectImageForDisplay(index) {
-  selectedImageIndex.value = index
-}
-
-function handleFileChange(event) {
-  if (!event.target.files) return
-  
-  const newFiles = Array.from(event.target.files)
-  const maxFileSize = 2 * 1024 * 1024 // 2MB in bytes
-  
-  // Separate valid and oversized files
-  const validFiles = []
-  const currentOversizedFiles = []
-  
-  newFiles.forEach(file => {
-    if (file.size > maxFileSize) {
-      currentOversizedFiles.push(file.name)
-    } else {
-      validFiles.push(file)
-    }
-  })
-  
-  // Update oversized files list
-  oversizedFiles.value = currentOversizedFiles
-  
-  const totalFiles = files.value.length + validFiles.length
-  
-  // Check if user is trying to upload more than 4 total (only counting valid files)
-  if (totalFiles > 4) {
-    showMaxImageWarning.value = true
-    const allowedCount = 4 - files.value.length
-    if (allowedCount > 0) {
-      // Only add the allowed number of valid files
-      files.value = [...files.value, ...validFiles.slice(0, allowedCount)]
-    }
-  } else {
-    // Add all valid files if within limit
-    files.value = [...files.value, ...validFiles]
-    showMaxImageWarning.value = false
-  }
-  
-  // Reset the input value -> same files can be selected again
-  event.target.value = ''
-}
-
-function removeImage(fileName) {
-  const removedIndex = files.value.findIndex(file => file.name === fileName)
-  files.value = files.value.filter(file => file.name !== fileName)
-
-  // Adjust selected image index if necessary
-  if (removedIndex <= selectedImageIndex.value) {
-    if (files.value.length === 0) {
-      selectedImageIndex.value = 0 // Reset to show default image
-    } else if (selectedImageIndex.value >= files.value.length) {
-      selectedImageIndex.value = files.value.length - 1 // After re-order the selected Image must change
-    }
-  }
-
-  // Hide warning if we're back under the limit
-  if (files.value.length <= 4) {
-    showMaxImageWarning.value = false
-  }
-}
-
-function moveImageUp(index) {
-  if (index > 0) {
-    const temp = files.value[index - 1]
-    files.value[index - 1] = files.value[index]
-    files.value[index] = temp
-
-    // Update selected index if it's affected
-    if (selectedImageIndex.value === index) {
-      selectedImageIndex.value = index - 1
-    } else if (selectedImageIndex.value === index - 1) {
-      selectedImageIndex.value = index
-    }
-  }
-}
-
-function moveImageDown(index) {
-  if (index < files.value.length - 1) {
-    const temp = files.value[index + 1]
-    files.value[index + 1] = files.value[index]
-    files.value[index] = temp
-
-    // Update selected index if it's affected
-    if (selectedImageIndex.value === index) {
-      selectedImageIndex.value = index + 1
-    } else if (selectedImageIndex.value === index + 1) {
-      selectedImageIndex.value = index
-    }
-  }
-}
-
-function checkAndClearOversized() {
-  if (oversizedFiles.value.length > 0) {
-    setTimeout(() => {
-      oversizedFiles.value = [];
-    }, 2000);
-    return true;
-  }
-  return false;
-}
 // ------------- Form --------------------- //
 function focusNext(index) {
   inputRefs.value[index + 1]?.focus()
 }
 
 async function handleSubmit() {
-   if (isSubmitting.value) return
+  if (isSubmitting.value) return
 
   try {
     isSubmitting.value = true
@@ -194,7 +89,6 @@ onMounted(async () => {
     console.error('Error loading brands:', error)
   }
 })
-
 </script>
 
 <template>
@@ -330,7 +224,7 @@ onMounted(async () => {
                   <!-- Remove Image -->
                   <button 
                     class="flex-shrink-0 hover:text-red-500 -mb-1"
-                    @click.stop="removeImage(file.name)"
+                    @click.stop="removeImage(index)"
                     type="button"
                   >
                     <span class="material-icons text-sm">close</span>
