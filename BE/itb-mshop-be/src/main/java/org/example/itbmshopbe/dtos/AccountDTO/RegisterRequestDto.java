@@ -13,10 +13,12 @@ public class RegisterRequestDto {
     private String nickName;
     @NotNull @NotEmpty
     private String fullName;
-    @Email @NotNull @NotEmpty
+    
+    @Email(message = "Invalid email format")
+    @NotNull @NotEmpty
     private String email;
 
-    @Size(min = 8, max = 255)
+    @Size(min = 8, max = 14)
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).+$",
             message = "Password must contain uppercase, lowercase, number, and special character")
     @NotNull@NotEmpty
