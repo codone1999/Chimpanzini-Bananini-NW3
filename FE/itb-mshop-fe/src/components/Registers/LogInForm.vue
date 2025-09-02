@@ -102,11 +102,11 @@ async function handleSubmit() {
       })
     })
 
+    const result = await response.json()
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-
-    const result = await response.json()
     
     // Store tokens in localStorage
     localStorage.setItem('access_token', result.access_token)
@@ -118,7 +118,7 @@ async function handleSubmit() {
 
     setTimeout(() => {
       resetForm()
-      router.push({name: 'ListGallery'}).then( () => router.go(0))
+      router.push({name: 'ListGallery'}).then( () => router.go(0) )
     }, 1500)
 
   } catch (error) {
@@ -129,7 +129,7 @@ async function handleSubmit() {
     if (error.message.includes('401') || error.message.includes('400')) {
       displayMessage = 'Email or Password is incorrect.'
     } else if (error.message.includes('403')) {
-      displayMessage = 'You need to activate your accout before signing in.'
+      displayMessage = 'You need to activate your account before signing in.'
     } else {
       displayMessage = 'There is a problem. Please try again later.'
     }
@@ -149,6 +149,7 @@ async function handleSubmit() {
       </h1>
       <p class="text-gray-600 text-sm">Sign in to your account</p>
     </div>
+    
     <!-- Success Message -->
     <div v-if="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
       {{ successMessage }}
