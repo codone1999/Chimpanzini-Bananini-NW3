@@ -13,7 +13,6 @@ public class RegisterRequestDto {
     private String nickName;
     @NotNull @NotEmpty
     private String fullName;
-    
     @Email(message = "Invalid email format")
     @NotNull @NotEmpty
     private String email;

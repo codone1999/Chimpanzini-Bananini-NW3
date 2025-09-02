@@ -45,12 +45,13 @@ public class JwtTokenUtil {
         return SECRET_KEY;
     }
 
-    public static String generateAccessToken(Integer id,String email,String nickname,String role) {
+    public static String generateAccessToken(Integer id,String email,String nickname,String role,String status) {
         Map<String,Object> claims = new HashMap<>();
         claims.put("id",id);
         claims.put("email",email);
         claims.put("nickname",nickname);
         claims.put("role",role);
+        claims.put("status",status);
         Date now = new Date();
         Date expiration = new Date(now.getTime() + 1800000);
 
@@ -70,12 +71,13 @@ public class JwtTokenUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
-    public static String generateRefreshToken(Integer id, String email, String nickname, String role) {
+    public static String generateRefreshToken(Integer id, String email, String nickname, String role,String status) {
         Map<String,Object> claims = new HashMap<>();
         claims.put("id",id);
         claims.put("email",email);
         claims.put("nickname",nickname);
         claims.put("role",role);
+        claims.put("status",status);
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // 24 hours

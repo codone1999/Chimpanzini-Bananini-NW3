@@ -127,13 +127,15 @@ public class AccountService {
                         account.getId(),
                         account.getEmail(),
                         account.getNickname(),
-                        account.getRole()
+                        account.getRole(),
+                        account.getStatus().name()
                 );
                 String refreshToken = JwtTokenUtil.generateRefreshToken(
                         account.getId(),
                         account.getEmail(),
                         account.getNickname(),
-                        account.getRole()
+                        account.getRole(),
+                        account.getStatus().name()
                 );
                 return new LoginResponseDto(accessToken, refreshToken);
             }
