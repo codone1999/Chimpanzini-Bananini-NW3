@@ -1,5 +1,7 @@
 package org.example.itbmshopbe.services;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
@@ -146,5 +148,40 @@ public class AccountService {
         }
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or Password is incorrect.");
     }
-
+    public void logout(String refreshToken) {
+        try {
+            JwtTokenUtil.validateToken(refreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
+        }
+        Integer userId = JwtTokenUtil.getIdFromToken(refreshToken);
+        Optional<Account> accountOpt = accountRepository.findById(userId);
+        if(accountOpt.isEmpty()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found");
+        }
+        Account account = accountOpt.get();
+        if (account.getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
+        }
+    }
+    public String refreshAccessToken(String refreshToken) {
+        try {
+            JwtTokenUtil.validateToken(refreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
+        }
+        Integer userId = JwtTokenUtil.getIdFromToken(refreshToken);
+        Account account = accountRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found"));
+        if (account.getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
+        }
+        return JwtTokenUtil.generateAccessToken(
+                account.getId(),
+                account.getEmail(),
+                account.getNickname(),
+                account.getRole(),
+                account.getStatus().name()
+        );
+    }
 }

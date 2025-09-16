@@ -90,20 +90,15 @@ public class JwtTokenUtil {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+    public static String getEmailFromToken(String token) {
+        return (String) validateToken(token).get("email");}
 
-    //public static String getEmailFromToken(String token) {
-    //    return (String) validateToken(token).get("email");
-    //}
-//
-    //public static String getNicknameFromToken(String token) {
-    //    return (String) validateToken(token).get("nickname");
-    //}
-//
-    //public static Integer getIdFromToken(String token) {
-    //    return (Integer) validateToken(token).get("id");
-    //}
-//
-    //public static String getRoleFromToken(String token) {
-    //    return (String) validateToken(token).get("role");
-    //}
+    public static String getNicknameFromToken(String token) {
+        return (String) validateToken(token).get("nickname");}
+
+    public static Integer getIdFromToken(String token) {
+        return (Integer) validateToken(token).get("id");}
+
+    public static String getRoleFromToken(String token) {
+        return (String) validateToken(token).get("role");}
 }

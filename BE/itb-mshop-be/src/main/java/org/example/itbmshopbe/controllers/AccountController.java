@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/v2/users")
+@RequestMapping("/v2/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "${frontend.url}")
 public class AccountController {
@@ -40,7 +40,7 @@ public class AccountController {
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/authentications")
+    @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> Login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         try {
             LoginResponseDto loginResponse = accountService.loginAccount(loginRequestDto);
@@ -49,6 +49,39 @@ public class AccountController {
             throw e;
         }catch (Exception e){
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed", e);
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+        if(refreshToken==null || refreshToken.isEmpty()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh token is empty");
+        }
+        try{
+            accountService.logout(refreshToken);
+            return ResponseEntity.noContent()
+                    .header("Set-Cookie",
+                            "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict")
+                    .build();
+        }catch (ResponseStatusException e) {
+            throw e;
+        }catch (Exception e){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Logout failed", e);
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDto> refreshToken(
+            @CookieValue(value = "refresh_token", required = true) String refreshToken
+    ){
+        try {
+            String newAccessToken = accountService.refreshAccessToken(refreshToken);
+            return ResponseEntity.ok(new LoginResponseDto(newAccessToken, refreshToken));
+
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refresh failed", e);
         }
     }
 }
