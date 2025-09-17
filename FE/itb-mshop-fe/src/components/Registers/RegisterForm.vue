@@ -190,7 +190,7 @@ async function handleSubmit() {
   try {
     console.log('Submitting registration:', activeRole.value)
     
-    const result = await registerAccount(`${import.meta.env.VITE_APP_URL2}/users/register`, form.value, activeRole.value)
+    const result = await registerAccount(`${import.meta.env.VITE_APP_URL2}/auth/register`, form.value, activeRole.value)
     
     successMessage.value = `${activeRole.value === 'buyer' ? 'Buyer' : 'Seller'} account created successfully!`
 

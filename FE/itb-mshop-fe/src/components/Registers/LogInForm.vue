@@ -96,7 +96,7 @@ async function handleSubmit() {
 
   try {
     // Call your login API
-    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/users/authentications`, {
+    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

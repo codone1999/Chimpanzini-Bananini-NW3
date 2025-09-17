@@ -14,7 +14,7 @@ onMounted(async () => {
   try {
     if (!token) throw new Error('Token is missing')
     
-    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/users/verify-email?token=${encodeURIComponent(token)}`, {
+    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/auth/verify-email?token=${encodeURIComponent(token)}`, {
       method: "POST",
       headers: {
         'Content-Type': 'application/json'

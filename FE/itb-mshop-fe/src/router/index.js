@@ -12,6 +12,8 @@ import PageNotFound from "@/components/PageNotFound.vue";
 import RegisterForm from "@/components/Registers/RegisterForm.vue";
 import LogInForm from "@/components/Registers/LogInForm.vue";
 import ShowVerify from "@/components/Registers/VerifyEmail.vue";
+import PreviewProfile from "@/views/profile/PreviewProfile.vue";
+import EditProfile from "@/views/profile/EditProfile.vue";
 
 const routes = [
     {
@@ -73,6 +75,16 @@ const routes = [
         path: '/verify-email',
         name: 'VerifyEmail',
         component: ShowVerify
+    },
+    {
+        path: '/profile',
+        name: 'Profile',
+        component: PreviewProfile
+    },
+    {
+        path: '/profile/edit',
+        name: 'EditProfile',
+        component: EditProfile
     },
     {
         path: '/:NotFound(.*)',

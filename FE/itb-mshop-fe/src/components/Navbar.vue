@@ -3,8 +3,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const mobileMenuOpen = ref(false)
 
+const mobileMenuOpen = ref(false)
 // Reactive token state
 const accessToken = ref(localStorage.getItem('access_token'))
 
@@ -39,15 +39,18 @@ const userInfo = computed(() => {
 })
 
 // Get nickname from user info
-const userNickname = computed(() => {
-  if (!userInfo.value) return null
-  // Adjust these property names based on your JWT payload structure
-  return userInfo.value.nickname || 'User_Nickname'
-})
+// const userNickname = computed(() => {
+//   if (!userInfo.value) return null
+//   // Adjust these property names based on your JWT payload structure
+//   return userInfo.value.nickname || 'User_Nickname'
+// })
+
+const userNickname = "BOOM"
 
 // Check if user is logged in
 const isLoggedIn = computed(() => {
-  return accessToken.value !== null
+  // return accessToken.value !== null
+  return true
 })
 
 // Logout function
@@ -64,6 +67,10 @@ function handleLogout() {
   
   // Close mobile menu if open
   mobileMenuOpen.value = false
+}
+
+function goToProfile() {
+  router.push({ name: 'Profile'})
 }
 
 </script>
@@ -98,15 +105,15 @@ function handleLogout() {
           </template>
           
           <template v-else>
-            <!-- Logged in - show nickname and logout -->
-            <div class="flex items-center space-x-3">
-              <button @click="handleLogout"
-                class="px-4 py-2 rounded-md bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition">
-                Logout
+            <!-- Logged in - show profile dropdown -->
+            <div class="relative">
+              <button @click="goToProfile()" class="flex items-center space-x-2 focus:outline-none">
+                <!-- Circle avatar with first letter of nickname -->
+                <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
+                  {{ userNickname?.charAt(0).toUpperCase() }}
+                </div>
+                <span class="text-sm text-gray-300">{{ userNickname }}</span>
               </button>
-              <span v-if="userNickname" class="text-gray-300 text-sm">
-                Hello, <b>{{ userNickname }}</b>
-              </span>
             </div>
           </template>
         </div>
