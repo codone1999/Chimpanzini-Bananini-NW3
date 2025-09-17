@@ -3,10 +3,7 @@ package org.example.itbmshopbe.services;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
-import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
-import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
-import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
+import org.example.itbmshopbe.dtos.AccountDTO.*;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.EmailVerificationToken;
 import org.example.itbmshopbe.entities.Seller;
@@ -41,7 +38,6 @@ public class AccountService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use!");
         }
 
-        // Create account
         Account newAccount = new Account();
         newAccount.setNickname(accountReq.getNickName());
         newAccount.setFullname(accountReq.getFullName());
@@ -52,7 +48,6 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(newAccount);
 
-        // If seller, save seller info...
         if ("SELLER".equalsIgnoreCase(accountReq.getRole())) {
             Seller seller = new Seller();
             seller.setAccount(savedAccount);
@@ -183,5 +178,26 @@ public class AccountService {
                 account.getRole(),
                 account.getStatus().name()
         );
+    }
+    public UserProfileResponseDto getUserProfile(Integer userId) {
+        Optional<Account> accountOpt = accountRepository.findById(userId);
+        if (accountOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found");
+        }
+        Account account = accountOpt.get();
+        if(account.getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
+        }
+        UserProfileResponseDto responseDto = modelMapper.map(account, UserProfileResponseDto.class);
+        if("SELLER".equalsIgnoreCase(account.getRole())) {
+            Optional<Seller> sellerOpt = sellerRepository.findById(account.getId());
+            if(sellerOpt.isPresent()) {
+                Seller seller = sellerOpt.get();
+                responseDto.setPhoneNumber(seller.getMobile());
+                responseDto.setBankName(seller.getBankName());
+                responseDto.setBankAccount(seller.getBankAccountNo());
+            }
+        }
+        return responseDto;
     }
 }
