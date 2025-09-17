@@ -1,36 +1,23 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
 
 const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 // Reactive token state
-const accessToken = ref(localStorage.getItem('access_token'))
+const accessToken = ref(null)
 
-// Function to decode JWT token
-function decodeJWT(token) {
-  if (!token) return null
-  
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-    
-    // Decode payload (middle part)
-    const payload = parts[1]
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    const parsed = JSON.parse(decoded)
-    
-    // Check if token is expired
-    if (parsed.exp && parsed.exp < Math.floor(Date.now() / 1000)) {
-      return null // Token expired
-    }
-    
-    return parsed
-  } catch (error) {
-    return null
-  }
-}
+// Initialize token on component mount
+onMounted(() => {
+  accessToken.value = getAccessToken()
+})
+
+// if user logs in/out in another tab or component
+watch(() => router.currentRoute.value, () => {
+  accessToken.value = getAccessToken()
+})
 
 // Get user info from token
 const userInfo = computed(() => {
@@ -39,40 +26,21 @@ const userInfo = computed(() => {
 })
 
 // Get nickname from user info
-// const userNickname = computed(() => {
-//   if (!userInfo.value) return null
-//   // Adjust these property names based on your JWT payload structure
-//   return userInfo.value.nickname || 'User_Nickname'
-// })
-
-const userNickname = "BOOM"
-
-// Check if user is logged in
-const isLoggedIn = computed(() => {
-  // return accessToken.value !== null
-  return true
+const userNickname = computed(() => {
+  if (!userInfo.value) return null
+  return userInfo.value.nickname || 'User_Nickname'
 })
 
-// Logout function
-function handleLogout() {
-  // Clear tokens
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-  
-  // Update reactive state
-  accessToken.value = null
-  
-  // Redirect to home
-  router.push('/')
-  
-  // Close mobile menu if open
-  mobileMenuOpen.value = false
-}
+// Check if user is logged in using AuthUtils
+const isLoggedIn = computed(() => {
+  return isAuthenticated() && accessToken.value !== null
+})
 
 function goToProfile() {
   router.push({ name: 'Profile'})
+  // Close mobile menu if open
+  mobileMenuOpen.value = false
 }
-
 </script>
 
 <template>
@@ -105,9 +73,10 @@ function goToProfile() {
           </template>
           
           <template v-else>
-            <!-- Logged in - show profile dropdown -->
-            <div class="relative">
-              <button @click="goToProfile()" class="flex items-center space-x-2 focus:outline-none">
+            <!-- Logged in - show user info and logout -->
+            <div class="flex items-center space-x-3">
+              <!-- User Profile Button -->
+              <button @click="goToProfile()" class="flex items-center space-x-2 focus:outline-none hover:bg-gray-800 px-2 py-1 rounded-md transition">
                 <!-- Circle avatar with first letter of nickname -->
                 <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
                   {{ userNickname?.charAt(0).toUpperCase() }}
@@ -119,40 +88,45 @@ function goToProfile() {
         </div>
       </div>
 
-      <!-- Mobile -->
+      <!-- Mobile Menu Button -->
       <button class="md:hidden text-gray-200" @click="mobileMenuOpen = !mobileMenuOpen">
-        <span class="material-icons">menu</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
       </button>
     </nav>
 
     <!-- Mobile dropdown -->
     <div v-if="mobileMenuOpen" class="md:hidden px-4 py-3 bg-gray-900 shadow text-center space-y-2 border-t border-gray-700">
-      <router-link to="/" class="block py-2 hover:text-purple-400">Home</router-link>
-      <router-link :to="{ name: 'ListGallery'}" class="block py-2 hover:text-purple-400">Shop</router-link>
-      <router-link :to="{ name: 'ListSaleItems'}" class="block py-2 hover:text-purple-400">Categories</router-link>
-      <router-link to="/contact" class="block py-2 hover:text-purple-400">Contact</router-link>
+      <router-link to="/" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Home</router-link>
+      <router-link :to="{ name: 'ListGallery'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Shop</router-link>
+      <router-link :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Categories</router-link>
+      <router-link to="/contact" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Contact</router-link>
 
       <!-- Auth buttons for mobile - Dynamic -->
-      <div>
+      <div class="pt-2 border-t border-gray-700 space-y-2">
         <template v-if="!isLoggedIn">
           <router-link :to="{ name: 'Login'}" 
-            class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800 mb-2">
+            @click="mobileMenuOpen = false"
+            class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800">
             Sign In
           </router-link>
           <router-link :to="{ name: 'Register'}" 
+            @click="mobileMenuOpen = false"
             class="block py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md">
             Register
           </router-link>
         </template>
         
         <template v-else>
+          <!-- Logged in - show user info and logout -->
           <div class="space-y-2">
-            <div v-if="userNickname" class="text-center py-2 text-gray-300 text-sm border-b border-gray-700">
-              Hello, <b>{{ userNickname }}</b>
-            </div>
-            <button @click="handleLogout"
-              class="block w-full py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-              Logout
+            <!-- User Profile -->
+            <button @click="goToProfile()" class="flex items-center justify-center space-x-2 w-full py-2 hover:bg-gray-800 rounded-md transition">
+              <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                {{ userNickname?.charAt(0).toUpperCase()}}
+              </div>
+              <span class="text-sm text-gray-300">{{ userNickname }}</span>
             </button>
           </div>
         </template>

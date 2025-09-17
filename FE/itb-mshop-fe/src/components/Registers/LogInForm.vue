@@ -3,6 +3,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
+import { setAuthTokens, isAuthenticated, clearAuthTokens } from '@/lib/authUtils'
 
 const router = useRouter()
 
@@ -69,9 +70,8 @@ function resetForm() {
 async function handleSubmit() {
   if (isRedirecting.value) return
 
-  // Check if user is already logged in
-  const existingToken = localStorage.getItem('access_token')
-  if (existingToken) {
+  // Check if user is already logged in using AuthUtils
+  if (isAuthenticated()) {
     successMessage.value = 'You are already logged in!'
     isRedirecting.value = true
     setTimeout(() => {
@@ -113,9 +113,8 @@ async function handleSubmit() {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    // Store tokens in localStorage
-    localStorage.setItem('access_token', result.access_token)
-    localStorage.setItem('refresh_token', result.refresh_token)
+    // Store tokens using AuthUtils - much cleaner!
+    setAuthTokens(result.access_token, result.refresh_token)
 
     successMessage.value = 'Login successful! Redirecting...'
     isRedirecting.value = true
@@ -127,6 +126,9 @@ async function handleSubmit() {
 
   } catch (error) {
     console.error('Login failed:', error)
+    
+    // Clear any existing tokens on login failure
+    clearAuthTokens()
 
     let displayMessage = 'Login failed. Please try again.'
 
