@@ -61,7 +61,7 @@ public class SaleItemService {
         return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public SaleItemDetailDto addSaleItem(SaleItemRequestDto dto) {
+    public SaleItemDetailDto addSaleItem(Integer sellerId,SaleItemRequestDto dto) {
 
         saleItemUtil.validateRequiredFields(dto);
 
@@ -79,11 +79,10 @@ public class SaleItemService {
         newItem.setStorageGb(dto.getStorageGb());
         newItem.setScreenSizeInch(dto.getScreenSizeInch());
 
-        // Set seller
-        if (dto.getSellerId() != null) {
-            Seller seller = sellerRepository.findById(dto.getSellerId())
+        if (sellerId != null) {
+            Seller seller = sellerRepository.findById(sellerId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Seller not found for id :: " + dto.getSellerId()));
+                            "Seller not found for id :: " + sellerId));
             newItem.setSeller(seller);
         }
 
