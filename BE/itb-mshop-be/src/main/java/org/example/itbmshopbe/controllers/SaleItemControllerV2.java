@@ -53,7 +53,7 @@ public class SaleItemControllerV2 {
             @RequestParam(required = false) List<MultipartFile> images
     ){
         try {
-            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(saleItemDto);
+            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(1,saleItemDto);
             if (images != null && !images.isEmpty()) {
                 if (images.size() > 4) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");

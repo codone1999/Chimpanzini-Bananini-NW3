@@ -41,7 +41,7 @@ public class SaleItemController {
     @PostMapping("")
     public ResponseEntity<?> addSaleItem(@RequestBody SaleItemRequestDto requestDto) {
         try {
-            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(requestDto);
+            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(1,requestDto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(saleItemService.getSaleItemDetails(createdSaleItem.getId()));
         } catch (Exception e) {
