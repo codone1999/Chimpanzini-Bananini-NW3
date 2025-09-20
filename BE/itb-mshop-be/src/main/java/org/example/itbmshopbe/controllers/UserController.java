@@ -35,10 +35,7 @@ public class UserController {
             UserProfileResponseDto userProfile =  accountService.getUserProfile(id);
             return ResponseEntity.ok(userProfile);
         } catch (Exception e) {
-            if (e instanceof ResponseStatusException) {
-                throw e;
-            }
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }
