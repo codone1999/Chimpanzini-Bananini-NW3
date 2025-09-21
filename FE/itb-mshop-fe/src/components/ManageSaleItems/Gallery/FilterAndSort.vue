@@ -336,7 +336,7 @@ function addCustomPriceRange() {
         <select
           :value="props.pageSize"
           @change="handlePageSizeChange"
-          class="itbms-page-size border border-gray-300 bg-gray-100 rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          class="itbms-page-size border border-gray-300 bg-gray-100 text-black rounded pl-3 pr-2 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           <option :value="5">5</option>
           <option :value="10">10</option>

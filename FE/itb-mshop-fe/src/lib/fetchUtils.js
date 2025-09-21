@@ -263,11 +263,78 @@ async function getProfileByIdAndToken(url, id, token) {
         'Content-Type': 'application/json'
       }
     })
-    return await response.json()
+    
+    // Check if response is successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
+    }
+    
+    const data = await response.json()
+    return data
+    
   } catch (error) {
-    // Re-throw the error so the caller can handle it
-    throw error
+    console.error('API request failed:', error)
+    // Re-throw with more context
+    throw new Error(`Failed to fetch user profile: ${error.message}`)
   }
 }
 
-export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount, getProfileByIdAndToken }
+async function editProfileByIdAndToken(url, id, token, editItem) {
+  try {
+    const response = await fetch(`${url}/${id}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(editItem)
+    })
+    
+    // Check if response is successful
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}. ${errorText}`)
+    }
+    
+    const data = await response.json()
+    return data
+    
+  } catch (error) {
+    console.error('Edit profile API request failed:', error)
+    throw new Error(`Failed to edit user profile: ${error.message}`)
+  }
+}
+
+async function getSellerItemsByToken(url, token) {
+  try {
+    const response = await fetch(`${url}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    if (data.status === 404) return []
+    throw new Error('can not get your item')
+  }
+}
+
+export { 
+  getItems, 
+  getItemById, 
+  deleteItemById, 
+  addItem, 
+  editItem, 
+  addItemAndImage, 
+  editItemAndImage, 
+
+  registerAccount, 
+  getProfileByIdAndToken, 
+  editProfileByIdAndToken,
+
+  getSellerItemsByToken,
+ }

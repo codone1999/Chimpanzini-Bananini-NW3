@@ -1,7 +1,8 @@
+//EditProfile.vue
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { editItem } from '@/lib/fetchUtils'
+import { editProfileByIdAndToken } from '@/lib/fetchUtils'
 import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
 import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 
@@ -35,7 +36,31 @@ async function loadUserData() {
     router.push({ name: 'Login' })
     return
   }
+  
+  // Check if data was passed from router state
+  const routerState = history.state?.userData
 
+  if (routerState) {
+    // Use data from router state instead of fetching
+    form.value.nickName = routerState.nickName || ''
+    form.value.email = routerState.email || ''
+    form.value.fullName = routerState.fullName || ''
+    form.value.role = routerState.role || 'BUYER'
+    form.value.mobile = routerState.phoneNumber || ''
+    form.value.bankAccountNo = routerState.bankAccount || ''
+    form.value.bankName = routerState.bankName || ''
+
+    // Store original data for comparison
+    originalData.value = {
+      nickName: routerState.nickName || '',
+      fullName: routerState.fullName || ''
+    }
+
+    isDataLoaded.value = true
+    return
+  }
+
+  // Fallback to API fetch if no router state
   isLoading.value = true
   errorMessage.value = ''
 
@@ -134,26 +159,22 @@ async function handleSubmit() {
   errorMessage.value = ''
 
   try {
-    // Only send fields that can be edited
+    const token = getAccessToken()
+    const tokenData = decodeJWT(token)
+
     const updateData = {
       nickName: form.value.nickName?.trim(),
       fullName: form.value.fullName?.trim()
-      // Note: Don't send readonly fields like email, mobile, bank info
     }
 
-    const response = await editItem(`${import.meta.env.VITE_APP_URL2}/v2/profile`, updateData)
+    const response = await editProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, tokenData.id, token, updateData)
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        router.push({ name: 'Login' })
-        return
-      }
-      throw new Error(`HTTP error! status: ${response.status}`)
+    if (response && response.status === 200) {
+      form.value.nickName = response.nickname || updateData.nickName
+      form.value.fullName = response.fullName || updateData.fullName
     }
 
-    // Success - redirect back to profile view
     router.push({ name: 'Profile' })
-
   } catch (error) {
     console.error('Failed to update profile:', error)
     errorMessage.value = 'Failed to update profile. Please try again.'
@@ -166,7 +187,6 @@ async function handleSubmit() {
 function handleCancel() {
   router.push({ name: 'Profile' })
 }
-
 
 // Computed property to check if we should show seller fields
 const isSellerRole = computed(() => {
@@ -210,27 +230,8 @@ const isSellerRole = computed(() => {
           v-model="form.email" 
           type="email" 
           readonly 
-          class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
+          class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
         />
-      </div>
-
-      <!-- Password (masked, readonly) -->
-      <div>
-        <label class="block text-sm font-medium">Password</label>
-        <div class="flex items-center gap-2">
-          <input 
-            type="password" 
-            value="••••••••" 
-            readonly 
-            class="flex-1 border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
-          />
-          <router-link 
-            to="/change-password" 
-            class="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-          >
-            Change
-          </router-link>
-        </div>
       </div>
 
       <!-- Fullname -->
@@ -253,7 +254,7 @@ const isSellerRole = computed(() => {
           <input 
             :value="maskNumber(form.mobile)" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
+            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
           <p class="text-xs text-gray-500 mt-1">Contact support to change mobile number</p>
         </div>
@@ -264,7 +265,7 @@ const isSellerRole = computed(() => {
           <input 
             :value="maskNumber(form.bankAccountNo)" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
+            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
           <p class="text-xs text-gray-500 mt-1">Contact support to change bank details</p>
         </div>
@@ -275,28 +276,8 @@ const isSellerRole = computed(() => {
           <input 
             v-model="form.bankName" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
+            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
-        </div>
-
-        <!-- National Card No (masked, readonly) -->
-        <div>
-          <label class="block text-sm font-medium">National Card No</label>
-          <input 
-            :value="maskNumber(form.nationalCardNo)" 
-            readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600" 
-          />
-          <p class="text-xs text-gray-500 mt-1">Contact support to change national card info</p>
-        </div>
-
-        <!-- Photos hidden, just message -->
-        <div>
-          <label class="block text-sm font-medium">National Card Photos</label>
-          <div class="border px-3 py-2 rounded-md bg-gray-100">
-            <p class="text-gray-600">✓ Documents verified</p>
-            <p class="text-xs text-gray-500 mt-1">Contact support if you need to update documents</p>
-          </div>
         </div>
       </template>
 
@@ -308,7 +289,7 @@ const isSellerRole = computed(() => {
           :class="[
             'flex-1 py-2 rounded-md font-medium transition-colors',
             isSaveDisabled 
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              ? 'bg-green-200 text-gray-500 cursor-not-allowed' 
               : 'bg-green-500 text-white hover:bg-green-600'
           ]"
         >

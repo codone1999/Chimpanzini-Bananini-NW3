@@ -1,8 +1,10 @@
+//PreviewProfile.vue
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
+import { getAccessToken, isAuthenticated } from '@/lib/authUtils'
 import { getProfileByIdAndToken } from '@/lib/fetchUtils'
+import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
 
@@ -18,6 +20,8 @@ const user = ref({
   nationalCardBack: null,
   role: 'BUYER'
 })
+
+const { userId } = useUser()
 
 const isLoading = ref(true)
 const errorMessage = ref('')
@@ -45,12 +49,8 @@ async function loadUserProfile() {
   isLoading.value = true
   errorMessage.value = ''
 
-  try {
-    // First, get basic data from JWT token for immediate display
-    const token = getAccessToken()
-    const tokenData = decodeJWT(token)
-    
-    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, tokenData.id, token)
+  try {    
+    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, userId.value, getAccessToken())
 
     if (data && data.id) {
       // Pre-populate with token data
@@ -58,12 +58,10 @@ async function loadUserProfile() {
       user.value.email = data.email || ''
       user.value.fullName = data.fullName || ''
       user.value.role = data.role || ''
-      user.value.mobile = data.phoneNumber || '',
-      user.value.bankAccountNo = data.bankAccount || '',
+      user.value.mobile = data.phoneNumber || ''
+      user.value.bankAccountNo = data.bankAccount || ''
       user.value.bankName = data.bankName || ''
     }
-
-
   } catch (error) {
     console.error('Failed to load profile:', error)
     errorMessage.value = 'Failed to load profile data. Please try again.'
@@ -95,7 +93,12 @@ const userInitial = computed(() => {
 
 // Navigation
 function goToEdit() {
-  router.push({ name: 'EditProfile' })
+  router.push({ 
+    name: 'EditProfile',
+    state: { 
+      userData: user.value
+    }
+  })
 }
 
 function retryLoad() {
@@ -182,64 +185,8 @@ function retryLoad() {
                 <span class="font-medium text-gray-700">Bank Name:</span>
                 <p class="text-gray-900">{{ user.bankName || 'Not provided' }}</p>
               </div>
-              <div class="sm:col-span-2">
-                <span class="font-medium text-gray-700">National Card No:</span>
-                <p class="text-gray-900 font-mono">{{ maskNumber(user.nationalCardNo) }}</p>
-              </div>
             </template>
           </div>
-        </div>
-
-        <!-- Card Images for Sellers -->
-        <div v-if="isSellerRole">
-          <h3 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Identity Verification</h3>
-          
-          <template v-if="user.nationalCardFront || user.nationalCardBack">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Front Card -->
-              <div class="text-center">
-                <p class="text-sm font-medium text-gray-500 mb-2">National Card - Front</p>
-                <div v-if="user.nationalCardFront" class="relative">
-                  <img 
-                    :src="user.nationalCardFront" 
-                    alt="National Card Front" 
-                    class="w-full h-40 object-cover rounded-lg border shadow-sm"
-                    @error="$event.target.style.display = 'none'"
-                  />
-                </div>
-                <div v-else class="w-full h-40 bg-gray-100 rounded-lg border flex items-center justify-center">
-                  <span class="text-gray-400">Image not available</span>
-                </div>
-              </div>
-
-              <!-- Back Card -->
-              <div class="text-center">
-                <p class="text-sm font-medium text-gray-500 mb-2">National Card - Back</p>
-                <div v-if="user.nationalCardBack" class="relative">
-                  <img 
-                    :src="user.nationalCardBack" 
-                    alt="National Card Back" 
-                    class="w-full h-40 object-cover rounded-lg border shadow-sm"
-                    @error="$event.target.style.display = 'none'"
-                  />
-                </div>
-                <div v-else class="w-full h-40 bg-gray-100 rounded-lg border flex items-center justify-center">
-                  <span class="text-gray-400">Image not available</span>
-                </div>
-              </div>
-            </div>
-          </template>
-          
-          <template v-else>
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div class="flex items-center">
-                <svg class="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <p class="text-yellow-800">Identity documents not uploaded or pending verification.</p>
-              </div>
-            </div>
-          </template>
         </div>
       </div>
 

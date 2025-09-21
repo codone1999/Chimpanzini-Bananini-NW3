@@ -1,39 +1,45 @@
+//Navbar.vue
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
+import { getAccessToken, isAuthenticated } from '@/lib/authUtils'
+import { getProfileByIdAndToken } from '@/lib/fetchUtils'
+import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
+const userNickname = ref('')
+const userRole = ref('')
+
+const { userId } = useUser()
 
 const mobileMenuOpen = ref(false)
-// Reactive token state
-const accessToken = ref(null)
 
+async function LoadProfile() {
+   try {    
+    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, userId.value, getAccessToken())
+
+    if (data && data.id) {
+      // Pre-populate with token data
+      userNickname.value = data.nickname || ''
+      userRole.value = data.role || ''
+    }
+  } catch (error) {
+    console.error('Failed to load profile:', error)
+  } 
+}
 // Initialize token on component mount
 onMounted(() => {
-  accessToken.value = getAccessToken()
+  LoadProfile()
 })
 
 // if user logs in/out in another tab or component
 watch(() => router.currentRoute.value, () => {
-  accessToken.value = getAccessToken()
-})
-
-// Get user info from token
-const userInfo = computed(() => {
-  if (!accessToken.value) return null
-  return decodeJWT(accessToken.value)
-})
-
-// Get nickname from user info
-const userNickname = computed(() => {
-  if (!userInfo.value) return null
-  return userInfo.value.nickname || 'User_Nickname'
+  LoadProfile()
 })
 
 // Check if user is logged in using AuthUtils
 const isLoggedIn = computed(() => {
-  return isAuthenticated() && accessToken.value !== null
+  return isAuthenticated()
 })
 
 function goToProfile() {
@@ -55,7 +61,7 @@ function goToProfile() {
       <div class="hidden md:flex space-x-8 items-center text-sm font-medium">
         <router-link to="/" class="hover:text-purple-400 transition">Home</router-link>
         <router-link :to="{ name: 'ListGallery'}" class="hover:text-purple-400 transition">Shop</router-link>
-        <router-link :to="{ name: 'ListSaleItems'}" class="hover:text-purple-400 transition">Categories</router-link>
+        <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" class="hover:text-purple-400 transition">Categories</router-link>
         <router-link to="/contact" class="hover:text-purple-400 transition">Contact</router-link>
 
         <!-- Auth Buttons - Dynamic based on login status -->
