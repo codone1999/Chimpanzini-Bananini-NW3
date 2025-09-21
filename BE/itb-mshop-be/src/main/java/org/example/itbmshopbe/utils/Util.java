@@ -1,5 +1,9 @@
 package org.example.itbmshopbe.utils;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 public class Util {
 
     public static String trimFirstAndLastSentence(String input) {
@@ -22,5 +26,37 @@ public class Util {
             input = base + tld;
         }
         return input;
+    }
+    public static Integer validateAndGetUserId(HttpServletRequest request, Integer pathId) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+        }
+        String token = authHeader.substring(7);
+        Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
+        if (!pathId.equals(tokenUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request user id not matched with id in access token");
+        }
+        return tokenUserId;
+    }
+    public static Integer validateAndGetSellerUserId(HttpServletRequest request, Integer pathId) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+        }
+        String token = authHeader.substring(7);
+
+        Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
+        String tokenUserRole = JwtTokenUtil.getRoleFromToken(token);
+
+        if (!"SELLER".equalsIgnoreCase(tokenUserRole)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only sellers can access this resource");
+        }
+
+        if (!pathId.equals(tokenUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request seller id not matched with id in access token");
+        }
+
+        return tokenUserId;
     }
 }

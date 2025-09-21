@@ -11,6 +11,7 @@ import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.services.SaleItemPictureService;
 import org.example.itbmshopbe.services.SaleItemService;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
+import org.example.itbmshopbe.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,22 +44,7 @@ public class SellerController {
             @RequestParam(required = false, defaultValue = "false") Boolean filterNullStorage,
             HttpServletRequest request
     ) throws NoSuchFieldException {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
-        }
-        String token = authHeader.substring(7);
-
-        Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
-        String tokenUserRole = JwtTokenUtil.getRoleFromToken(token);
-
-        if (!"SELLER".equalsIgnoreCase(tokenUserRole)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only sellers can access sale items");
-        }
-        if (!id.equals(tokenUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request seller id not matched with id in access token");
-        }
-
+        Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
                 filterBrands, filterStorages, filterPriceLower, filterPriceUpper,
                 page, size, sortField, sortDirection, filterNullStorage, searchKeyword
@@ -72,21 +58,7 @@ public class SellerController {
             @RequestParam(required = false) List<MultipartFile> images,
             HttpServletRequest request
     ) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
-        }
-        String token = authHeader.substring(7);
-
-        Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
-        String tokenUserRole = JwtTokenUtil.getRoleFromToken(token);
-
-        if (!"SELLER".equalsIgnoreCase(tokenUserRole)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only sellers can add sale items");
-        }
-        if (!id.equals(tokenUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request seller id not matched with id in access token");
-        }
+        Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
 
         SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(tokenUserId, saleItemDto);
 

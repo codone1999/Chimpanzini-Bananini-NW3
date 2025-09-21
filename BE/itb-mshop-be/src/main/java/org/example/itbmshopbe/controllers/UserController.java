@@ -2,10 +2,13 @@ package org.example.itbmshopbe.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.example.itbmshopbe.dtos.AccountDTO.UserProfileEditDto;
 import org.example.itbmshopbe.dtos.AccountDTO.UserProfileResponseDto;
+import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
 import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.services.AccountService;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
+import org.example.itbmshopbe.utils.Util;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,20 +25,19 @@ public class UserController {
             @PathVariable Integer id,
             HttpServletRequest request
     ) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
-        }
-        String token = authHeader.substring(7);
-        try{
-            Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
-            if(!id.equals(tokenUserId)){
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request user id not matched with id in access token");
-            }
-            UserProfileResponseDto userProfile =  accountService.getUserProfile(id);
-            return ResponseEntity.ok(userProfile);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        Integer tokenUserId = Util.validateAndGetUserId(request,id);
+        UserProfileResponseDto userProfileResponseDto = accountService.getUserProfile(tokenUserId);
+        return ResponseEntity.ok(userProfileResponseDto);
+    }
+
+    @PostMapping("/{id}")
+    public ResponseEntity<UserResponseDto> editUserProfile(
+            @PathVariable Integer id,
+            @RequestBody UserProfileEditDto  userProfileEditDto,
+            HttpServletRequest request
+    ){
+        Integer tokenUserId = Util.validateAndGetUserId(request, id);
+        UserResponseDto userResponseDto = accountService.editAccount(tokenUserId, userProfileEditDto);
+        return ResponseEntity.ok(userResponseDto);
     }
 }

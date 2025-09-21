@@ -11,6 +11,7 @@ import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.EmailVerificationTokenRepository;
 import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
+import org.example.itbmshopbe.utils.Util;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -88,6 +89,15 @@ public class AccountService {
         }
 
         return mapToUserResponseDto(savedAccount);
+    }
+    public UserResponseDto editAccount(Integer UserId,UserProfileEditDto userProfileEditDto) {
+        Account existAccount = accountRepository.findById(UserId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found for id :: " + UserId)
+        );
+        existAccount.setFullname(userProfileEditDto.getFullName());
+        existAccount.setNickname(userProfileEditDto.getNickName());
+        Account updatedAccount = accountRepository.save(existAccount);
+        return mapToUserResponseDto(updatedAccount);
     }
 
     public UserResponseDto verifyEmail(String token) {
@@ -200,4 +210,6 @@ public class AccountService {
         }
         return responseDto;
     }
+
+
 }
