@@ -1,52 +1,27 @@
 //Navbar.vue
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAccessToken, isAuthenticated } from '@/lib/authUtils'
-import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
-const userNickname = ref('')
-const userRole = ref('')
 
-const { userId } = useUser()
+// Get user data from the composable - no need to fetch separately
+const { 
+  userRole, 
+  userNickname, 
+  isLoggedIn, 
+  isLoading 
+} = useUser()
 
 const mobileMenuOpen = ref(false)
-
-async function LoadProfile() {
-   try {    
-    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, userId.value, getAccessToken())
-
-    if (data && data.id) {
-      // Pre-populate with token data
-      userNickname.value = data.nickname || ''
-      userRole.value = data.role || ''
-    }
-  } catch (error) {
-    console.error('Failed to load profile:', error)
-  } 
-}
-// Initialize token on component mount
-onMounted(() => {
-  LoadProfile()
-})
-
-// if user logs in/out in another tab or component
-watch(() => router.currentRoute.value, () => {
-  LoadProfile()
-})
-
-// Check if user is logged in using AuthUtils
-const isLoggedIn = computed(() => {
-  return isAuthenticated()
-})
 
 function goToProfile() {
   router.push({ name: 'Profile'})
   // Close mobile menu if open
   mobileMenuOpen.value = false
 }
+
 </script>
 
 <template>
@@ -66,7 +41,12 @@ function goToProfile() {
 
         <!-- Auth Buttons - Dynamic based on login status -->
         <div class="space-x-3">
-          <template v-if="!isLoggedIn">
+          <!-- Show loading state while data is being fetched -->
+          <template v-if="isLoading">
+            <div class="px-4 py-2 text-gray-400">Loading...</div>
+          </template>
+          
+          <template v-else-if="!isLoggedIn">
             <!-- Not logged in - show login/register -->
             <router-link :to="{ name: 'Login'}" 
               class="px-4 py-2 rounded-md text-gray-200 border border-gray-500 hover:bg-gray-800 transition">
@@ -79,15 +59,15 @@ function goToProfile() {
           </template>
           
           <template v-else>
-            <!-- Logged in - show user info and logout -->
+            <!-- Logged in - show user info -->
             <div class="flex items-center space-x-3">
               <!-- User Profile Button -->
               <button @click="goToProfile()" class="flex items-center space-x-2 focus:outline-none hover:bg-gray-800 px-2 py-1 rounded-md transition">
                 <!-- Circle avatar with first letter of nickname -->
                 <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
-                  {{ userNickname?.charAt(0).toUpperCase() }}
+                  {{ userNickname?.charAt(0).toUpperCase() || 'U' }}
                 </div>
-                <span class="text-sm text-gray-300">{{ userNickname }}</span>
+                <span class="text-sm text-gray-300">{{ userNickname || 'User' }}</span>
               </button>
             </div>
           </template>
@@ -106,12 +86,17 @@ function goToProfile() {
     <div v-if="mobileMenuOpen" class="md:hidden px-4 py-3 bg-gray-900 shadow text-center space-y-2 border-t border-gray-700">
       <router-link to="/" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Home</router-link>
       <router-link :to="{ name: 'ListGallery'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Shop</router-link>
-      <router-link :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Categories</router-link>
+      <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Categories</router-link>
       <router-link to="/contact" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Contact</router-link>
 
       <!-- Auth buttons for mobile - Dynamic -->
       <div class="pt-2 border-t border-gray-700 space-y-2">
-        <template v-if="!isLoggedIn">
+        <!-- Loading state -->
+        <template v-if="isLoading">
+          <div class="py-2 text-gray-400">Loading...</div>
+        </template>
+        
+        <template v-else-if="!isLoggedIn">
           <router-link :to="{ name: 'Login'}" 
             @click="mobileMenuOpen = false"
             class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800">
@@ -125,14 +110,14 @@ function goToProfile() {
         </template>
         
         <template v-else>
-          <!-- Logged in - show user info and logout -->
+          <!-- Logged in - show user info -->
           <div class="space-y-2">
             <!-- User Profile -->
             <button @click="goToProfile()" class="flex items-center justify-center space-x-2 w-full py-2 hover:bg-gray-800 rounded-md transition">
               <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                {{ userNickname?.charAt(0).toUpperCase()}}
+                {{ userNickname?.charAt(0).toUpperCase() || 'U' }}
               </div>
-              <span class="text-sm text-gray-300">{{ userNickname }}</span>
+              <span class="text-sm text-gray-300">{{ userNickname || 'User' }}</span>
             </button>
           </div>
         </template>

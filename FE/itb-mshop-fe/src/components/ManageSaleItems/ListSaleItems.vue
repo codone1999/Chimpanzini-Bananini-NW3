@@ -9,7 +9,12 @@ import Pagination from "./Gallery/Pagination.vue";
 import Search from "./Gallery/Search.vue";
 import { getAccessToken } from "@/lib/authUtils";
 
-const { userId } = useUser();
+// Get user data from composable
+const { 
+  userId, 
+  isLoading: userIsLoading, 
+  hasCompleteUserData, 
+} = useUser();
 
 // Session Keys for Sale Items
 const SESSION_KEYS = {
@@ -25,6 +30,7 @@ const SESSION_KEYS = {
 // Refs for data
 const allProducts = ref([]);
 const products = ref([]);
+const isLoadingData = ref(false);
 
 // Filter refs
 const brands = ref([]);
@@ -58,6 +64,19 @@ const selectedProductId = ref(null);
 // Message refs
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
+
+// Computed properties
+const isLoading = computed(() => {
+  return userIsLoading.value || isLoadingData.value;
+});
+
+const canLoadData = computed(() => {
+  return hasCompleteUserData.value && userId.value;
+});
+
+const showContent = computed(() => {
+  return canLoadData.value && !isLoading.value;
+});
 
 // Visible Pages for pagination
 const visiblePages = computed(() => {
@@ -121,7 +140,15 @@ function saveSession() {
 
 // ------------------- Data Fetching ------------------//
 async function fetchFilteredSaleItems() {
+  // Don't fetch if user data isn't available yet
+  if (!canLoadData.value) {
+    console.log('User data not available yet, skipping fetch');
+    return;
+  }
+
   if (currentPage.value < 1) currentPage.value = 1;
+
+  isLoadingData.value = true;
 
   let url = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item?`;
   const query = [];
@@ -224,6 +251,24 @@ async function fetchFilteredSaleItems() {
   } catch (error) {
     console.error("Fetch error:", error);
     products.value = [];
+  } finally {
+    isLoadingData.value = false;
+  }
+}
+
+// Load brands for filtering
+async function fetchBrands() {
+  try {
+    const item = await getItems(`${import.meta.env.VITE_APP_URL}/brands`);
+    if (typeof item === "number") {
+      console.error("Failed to fetch brands");
+      return;
+    }
+    brands.value = item.sort((a, b) =>
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    );
+  } catch (error) {
+    console.error("Failed to fetch brands:", error);
   }
 }
 
@@ -285,10 +330,10 @@ function confirmDelete(id) {
 }
 
 async function handleDelete() {
-  if (!selectedProductId.value) return;
+  if (!selectedProductId.value || !userId.value) return;
 
   try {
-    const baseUrl = `${import.meta.env.VITE_APP_URL2}/seller/${userId}/sale-item`;
+    const baseUrl = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item`;
     const item = await deleteItemById(baseUrl, selectedProductId.value);
     
     if (typeof item === 'number') {
@@ -301,18 +346,27 @@ async function handleDelete() {
   }
 
   showModal.value = false;
-  handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.', products, `${import.meta.env.VITE_APP_URL2}/seller/${userId}/sale-item`);
+  handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.', products, `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item`);
   
   // Refresh the filtered results
   await fetchFilteredSaleItems();
 }
 
 //  ------------- Watchers ------------------ //
+// Watch for user data to become available
+watch(canLoadData, (canLoad) => {
+  if (canLoad) {
+    fetchFilteredSaleItems();
+  }
+}, { immediate: true });
+
 watch(
   [filterBrands, filterPrices, filterStorageSizes, sortMode, pageSize, currentPage],
   () => {
-    saveSession();
-    fetchFilteredSaleItems();
+    if (canLoadData.value) {
+      saveSession();
+      fetchFilteredSaleItems();
+    }
   },
   { deep: true }
 );
@@ -348,21 +402,10 @@ onMounted(async () => {
     successMessage
   );
 
-  await fetchFilteredSaleItems();
+  // Load brands (this doesn't require user data)
+  await fetchBrands();
 
-  // Load brands for filtering
-  try {
-    const item = await getItems(`${import.meta.env.VITE_APP_URL}/brands`);
-    if (typeof item === "number") {
-      alert("Failed to fetch brands");
-      return;
-    }
-    brands.value = item.sort((a, b) =>
-      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    );
-  } catch (error) {
-    console.error("Failed to fetch brands:", error);
-  }
+  // fetchFilteredSaleItems will be called by the watcher when user data is available
 });
 </script>
 
@@ -372,127 +415,137 @@ onMounted(async () => {
       My Sale Items
     </h2>
 
-    <!-- Search Box -->
-    <div class="mb-6 max-w-xl mx-auto">
-      <Search
-        v-model="search"
-        @search="handleSearch"
-      />
+    <!-- Loading State -->
+    <div v-if="isLoading" class="text-center py-20">
+      <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+      <p class="text-gray-400">Loading your sale items...</p>
     </div>
 
-    <!-- Success Message -->
-    <transition name="fade">
-      <div 
-        v-if="showSuccessMessage" 
-        class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm text-sm font-medium"
-      >
-        {{ successMessage }}
+    <!-- Main Content -->
+    <template v-else-if="showContent">
+      <!-- Search Box -->
+      <div class="mb-6 max-w-xl mx-auto">
+        <Search
+          v-model="search"
+          @search="handleSearch"
+        />
       </div>
-    </transition>
 
-    <!-- Filter and Sort Component -->
-    <FilterAndSort
-      v-model:page-size="pageSize"
-      :brands="brands"
-      :filter-brands="filterBrands"
-      :show-brand-list="showBrandList"
-      :toggle-brand-list="() => showBrandList = !showBrandList"
-      :on-toggle-brand="toggleBrand"
-      :on-clear-brands="clearAllFilters"
-      :sale-items="products"
-      :filter-prices="filterPrices"
-      :show-price-list="showPriceList"
-      :toggle-price-list="() => showPriceList = !showPriceList"
-      :on-toggle-price="togglePrice"
-      :filter-storage-sizes="filterStorageSizes"
-      :show-storage-size-list="showStorageSizeList"
-      :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
-      :on-toggle-storage-size="toggleStorageSize"
-      :on-change-sort="changeSort"
-      :sort-mode="sortMode"
-      :page-size="pageSize"
-    />
+      <!-- Success Message -->
+      <transition name="fade">
+        <div 
+          v-if="showSuccessMessage" 
+          class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm text-sm font-medium"
+        >
+          {{ successMessage }}
+        </div>
+      </transition>
 
-    <!-- Action Buttons -->
-    <div class="flex justify-between items-center mb-8">
-      <router-link
-        :to="{ name: 'AddItem', query: { from: 'SaleItem' } }"
-        class="itbms-sale-item-add flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white pl-3 pr-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
-      >
-        <span class="material-icons">add</span>
-        Add Sale Item
-      </router-link>
+      <!-- Filter and Sort Component -->
+      <FilterAndSort
+        v-model:page-size="pageSize"
+        :brands="brands"
+        :filter-brands="filterBrands"
+        :show-brand-list="showBrandList"
+        :toggle-brand-list="() => showBrandList = !showBrandList"
+        :on-toggle-brand="toggleBrand"
+        :on-clear-brands="clearAllFilters"
+        :sale-items="products"
+        :filter-prices="filterPrices"
+        :show-price-list="showPriceList"
+        :toggle-price-list="() => showPriceList = !showPriceList"
+        :on-toggle-price="togglePrice"
+        :filter-storage-sizes="filterStorageSizes"
+        :show-storage-size-list="showStorageSizeList"
+        :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
+        :on-toggle-storage-size="toggleStorageSize"
+        :on-change-sort="changeSort"
+        :sort-mode="sortMode"
+        :page-size="pageSize"
+      />
 
-      <router-link
-        :to="{ name: 'ListBrands' }"
-        class="itbms-manage-brand flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
-      >
-        <span class="material-icons">build</span> 
-        Manage Brand
-      </router-link>
-    </div>
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center mb-8">
+        <router-link
+          :to="{ name: 'AddItem', query: { from: 'SaleItem' } }"
+          class="itbms-sale-item-add flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white pl-3 pr-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        >
+          <span class="material-icons">add</span>
+          Add Sale Item
+        </router-link>
 
-    <!-- No Items -->
-    <div v-if="products.length === 0" class="text-center text-gray-400 text-lg py-10">
-      No sale items found.
-    </div>
+        <router-link
+          :to="{ name: 'ListBrands' }"
+          class="itbms-manage-brand flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-3 rounded-xl text-base font-semibold shadow-lg transition duration-300"
+        >
+          <span class="material-icons">build</span> 
+          Manage Brand
+        </router-link>
+      </div>
 
-    <!-- Product Table -->
-    <div v-else class="overflow-x-auto shadow-2xl rounded-2xl border border-gray-700 mb-8">
-      <table class="min-w-full bg-gray-800 text-sm text-center table-auto rounded-2xl overflow-hidden">
-        <thead class="bg-gray-700 text-gray-300 font-semibold uppercase tracking-wide">
-          <tr>
-            <th class="px-4 py-4 border-b border-gray-600">ID</th>
-            <th class="px-4 py-4 border-b border-gray-600">Brand</th>
-            <th class="px-4 py-4 border-b border-gray-600">Model</th>
-            <th class="px-4 py-4 border-b border-gray-600">RAM</th>
-            <th class="px-4 py-4 border-b border-gray-600">Storage</th>
-            <th class="px-4 py-4 border-b border-gray-600">Color</th>
-            <th class="px-4 py-4 border-b border-gray-600">Price</th>
-            <th class="px-4 py-4 border-b border-gray-600">Action</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-700">
-          <tr
-            v-for="product in products"
-            :key="product.id"
-            class="itbms-row hover:bg-gray-700/50 transition duration-200"
-          >
-            <td class="itbms-id px-4 py-3">{{ product.id }}</td>
-            <td class="itbms-brand px-4 py-3">{{ product.brandName }}</td>
-            <td class="itbms-model px-4 py-3 text-left">{{ product.model }}</td>
-            <td class="itbms-ramGb px-4 py-3">{{ product.ramGb ?? "-" }}</td>
-            <td class="itbms-storageGb px-4 py-3">{{ product.storageGb ?? "-" }}</td>
-            <td class="itbms-color px-4 py-3">{{ product.color ?? "-" }}</td>
-            <td class="itbms-price px-4 py-3">{{ product.price.toLocaleString() }}</td>
-            <td class="px-4 py-3">
-              <div class="flex justify-center gap-2">
-                <router-link 
-                  :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'SaleItem' } }" 
-                  class="itbms-edit-button bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white p-2 rounded-lg shadow transition duration-300"
-                >
-                  <span class="material-icons">edit</span>
-                </router-link>
-                <button
-                  @click="confirmDelete(product.id)"
-                  class="itbms-delete-button bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow transition duration-300"
-                >
-                  <span class="material-icons">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- No Items -->
+      <div v-if="products.length === 0 && !isLoadingData" class="text-center text-gray-400 text-lg py-10">
+        No sale items found.
+      </div>
 
-    <!-- Pagination -->
-    <Pagination
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      :visible-pages="visiblePages"
-      :go-to-page="goToPage"
-    />
+      <!-- Product Table -->
+      <div v-else-if="products.length > 0" class="overflow-x-auto shadow-2xl rounded-2xl border border-gray-700 mb-8">
+        <table class="min-w-full bg-gray-800 text-sm text-center table-auto rounded-2xl overflow-hidden">
+          <thead class="bg-gray-700 text-gray-300 font-semibold uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-4 border-b border-gray-600">ID</th>
+              <th class="px-4 py-4 border-b border-gray-600">Brand</th>
+              <th class="px-4 py-4 border-b border-gray-600">Model</th>
+              <th class="px-4 py-4 border-b border-gray-600">RAM</th>
+              <th class="px-4 py-4 border-b border-gray-600">Storage</th>
+              <th class="px-4 py-4 border-b border-gray-600">Color</th>
+              <th class="px-4 py-4 border-b border-gray-600">Price</th>
+              <th class="px-4 py-4 border-b border-gray-600">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            <tr
+              v-for="product in products"
+              :key="product.id"
+              class="itbms-row hover:bg-gray-700/50 transition duration-200"
+            >
+              <td class="itbms-id px-4 py-3">{{ product.id }}</td>
+              <td class="itbms-brand px-4 py-3">{{ product.brandName }}</td>
+              <td class="itbms-model px-4 py-3 text-left">{{ product.model }}</td>
+              <td class="itbms-ramGb px-4 py-3">{{ product.ramGb ?? "-" }}</td>
+              <td class="itbms-storageGb px-4 py-3">{{ product.storageGb ?? "-" }}</td>
+              <td class="itbms-color px-4 py-3">{{ product.color ?? "-" }}</td>
+              <td class="itbms-price px-4 py-3">{{ product.price.toLocaleString() }}</td>
+              <td class="px-4 py-3">
+                <div class="flex justify-center gap-2">
+                  <router-link 
+                    :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'SaleItem' } }" 
+                    class="itbms-edit-button bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white p-2 rounded-lg shadow transition duration-300"
+                  >
+                    <span class="material-icons">edit</span>
+                  </router-link>
+                  <button
+                    @click="confirmDelete(product.id)"
+                    class="itbms-delete-button bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow transition duration-300"
+                  >
+                    <span class="material-icons">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <Pagination
+        v-if="products.length > 0"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :go-to-page="goToPage"
+      />
+    </template>
 
     <!-- Delete Confirmation Modal -->
     <div
