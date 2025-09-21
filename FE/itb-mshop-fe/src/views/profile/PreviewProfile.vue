@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
+import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 
 const router = useRouter()
 
@@ -15,7 +16,7 @@ const user = ref({
   nationalCardNo: '',
   nationalCardFront: null,
   nationalCardBack: null,
-  role: 'buyer'
+  role: 'BUYER'
 })
 
 const isLoading = ref(true)
@@ -49,13 +50,19 @@ async function loadUserProfile() {
     const token = getAccessToken()
     const tokenData = decodeJWT(token)
     
-    if (tokenData) {
+    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, tokenData.id, token)
+
+    if (data && data.id) {
       // Pre-populate with token data
-      user.value.nickName = tokenData.nickname || tokenData.sub || ''
-      user.value.email = tokenData.email || ''
-      user.value.fullName = tokenData.fullName || tokenData.name || ''
-      user.value.role = tokenData.role || 'buyer'
+      user.value.nickName = data.nickname || ''
+      user.value.email = data.email || ''
+      user.value.fullName = data.fullName || ''
+      user.value.role = data.role || ''
+      user.value.mobile = data.phoneNumber || '',
+      user.value.bankAccountNo = data.bankAccount || '',
+      user.value.bankName = data.bankName || ''
     }
+
 
   } catch (error) {
     console.error('Failed to load profile:', error)
@@ -77,17 +84,13 @@ onMounted(() => {
 
 // Computed properties
 const isSellerRole = computed(() => {
-  return user.value.role === 'seller'
+  return user.value.role === 'SELLER'
 })
 
 const userInitial = computed(() => {
   return user.value.nickName?.charAt(0)?.toUpperCase() || 
          user.value.fullName?.charAt(0)?.toUpperCase() || 
          'U'
-})
-
-const displayName = computed(() => {
-  return user.value.fullName || user.value.nickName || 'User'
 })
 
 // Navigation
@@ -135,16 +138,16 @@ function retryLoad() {
           {{ userInitial }}
         </div>
         <div class="flex-1">
-          <h2 class="text-2xl font-bold text-white">{{ displayName }}</h2>
-          <p class="text-purple-100 text-sm">@{{ user.nickName || 'user' }}</p>
+          <h2 class="text-2xl font-bold text-white">{{ user.nickName }}</h2>
+          <p class="text-purple-100 text-sm">@{{ user.fullName }}</p>
           <div class="flex items-center mt-1">
             <span :class="[
               'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-              user.role === 'seller' 
+              user.role === 'SELLER' 
                 ? 'bg-yellow-100 text-yellow-800' 
                 : 'bg-blue-100 text-blue-800'
             ]">
-              {{ user.role === 'seller' ? 'Seller Account' : 'Buyer Account' }}
+              {{ user.role === 'SELLER' ? 'Seller Account' : 'Buyer Account' }}
             </span>
           </div>
         </div>

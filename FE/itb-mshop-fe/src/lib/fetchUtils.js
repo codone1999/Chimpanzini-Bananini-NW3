@@ -254,4 +254,20 @@ async function registerAccount(url, formData, role) {
   }
 }
 
-export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount }
+async function getProfileByIdAndToken(url, id, token) {
+  try {
+    const response = await fetch(`${url}/${id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    return await response.json()
+  } catch (error) {
+    // Re-throw the error so the caller can handle it
+    throw error
+  }
+}
+
+export { getItems, getItemById, deleteItemById, addItem, editItem, addItemAndImage, editItemAndImage, registerAccount, getProfileByIdAndToken }

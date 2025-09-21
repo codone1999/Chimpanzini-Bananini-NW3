@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { editItem } from '@/lib/fetchUtils'
-import { getAccessToken, getAuthHeaders, isAuthenticated, decodeJWT } from '@/lib/authUtils'
+import { getAccessToken, isAuthenticated, decodeJWT } from '@/lib/authUtils'
+import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 
 const router = useRouter()
 
@@ -15,7 +16,13 @@ const form = ref({
   bankAccountNo: '',
   bankName: '',
   nationalCardNo: '',
-  role: 'buyer'
+  role: 'BUYER'
+})
+
+// Store original data for comparison
+const originalData = ref({
+  nickName: '',
+  fullName: ''
 })
 
 const isLoading = ref(false)
@@ -36,32 +43,29 @@ async function loadUserData() {
     // First, try to get basic data from JWT token
     const token = getAccessToken()
     const tokenData = decodeJWT(token)
-    
-    if (tokenData) {
+
+    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, tokenData.id, token)
+    if (data) {
       // Map JWT token data to form (adjust property names based on your JWT structure)
-      form.value.nickName = tokenData.nickname || ''
-      form.value.email = tokenData.email || ''
-      form.value.fullName = tokenData.fullName || ''
-      form.value.role = tokenData.role || 'buyer'
-      
-      // You might have some data in the token, but sensitive data should come from API
-      console.log('Token data loaded:', tokenData)
+      form.value.nickName = data.nickname || ''
+      form.value.email = data.email || ''
+      form.value.fullName = data.fullName || ''
+      form.value.role = data.role || 'BUYER'
+      form.value.mobile = data.phoneNumber || ''
+      form.value.bankAccountNo = data.bankAccount || ''
+      form.value.bankName = data.bankName || ''
+
+      // Store original editable data for comparison
+      originalData.value = {
+        nickName: data.nickname || '',
+        fullName: data.fullName || ''
+      }
     }
 
   } catch (error) {
     console.error('Failed to load profile data:', error)
     errorMessage.value = 'Failed to load profile data. Please try again.'
     
-    // Fallback: if API fails but we have token data, use that
-    if (!form.value.email) {
-      const token = getAccessToken()
-      const tokenData = decodeJWT(token)
-      if (tokenData) {
-        form.value.email = tokenData.email || ''
-        form.value.nickName = tokenData.nickname || tokenData.sub || ''
-        form.value.role = tokenData.role || 'buyer'
-      }
-    }
   } finally {
     isLoading.value = false
     isDataLoaded.value = true
@@ -86,10 +90,43 @@ function maskNumber(num) {
   return firstTwo + middle + lastTwo
 }
 
+// Computed property to check if data has been changed
+const hasChanges = computed(() => {
+  if (!isDataLoaded.value) return false
+  
+  // Compare only editable fields with original data
+  const currentData = {
+    nickName: form.value.nickName?.trim() || '',
+    fullName: form.value.fullName?.trim() || ''
+  }
+  
+  const original = {
+    nickName: originalData.value.nickName?.trim() || '',
+    fullName: originalData.value.fullName?.trim() || ''
+  }
+  
+  return currentData.nickName !== original.nickName || 
+         currentData.fullName !== original.fullName
+})
+
+// Computed property to check if form is valid
+const isFormValid = computed(() => {
+  return form.value.nickName?.trim() && form.value.fullName?.trim()
+})
+
+// Computed property to determine if save button should be disabled
+const isSaveDisabled = computed(() => {
+  return isLoading.value || !hasChanges.value || !isFormValid.value
+})
+
 // Submit - only send editable fields
 async function handleSubmit() {
   if (!isAuthenticated()) {
     router.push({ name: 'Login' })
+    return
+  }
+
+  if (isSaveDisabled.value) {
     return
   }
 
@@ -99,8 +136,8 @@ async function handleSubmit() {
   try {
     // Only send fields that can be edited
     const updateData = {
-      nickName: form.value.nickName,
-      fullName: form.value.fullName
+      nickName: form.value.nickName?.trim(),
+      fullName: form.value.fullName?.trim()
       // Note: Don't send readonly fields like email, mobile, bank info
     }
 
@@ -130,9 +167,10 @@ function handleCancel() {
   router.push({ name: 'Profile' })
 }
 
+
 // Computed property to check if we should show seller fields
 const isSellerRole = computed(() => {
-  return form.value.role === 'seller'
+  return form.value.role === 'SELLER'
 })
 </script>
 
@@ -266,11 +304,17 @@ const isSellerRole = computed(() => {
       <div class="flex gap-2 pt-4">
         <button 
           type="submit" 
-          :disabled="isLoading" 
-          class="flex-1 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400"
+          :disabled="isSaveDisabled" 
+          :class="[
+            'flex-1 py-2 rounded-md font-medium transition-colors',
+            isSaveDisabled 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-green-500 text-white hover:bg-green-600'
+          ]"
         >
           {{ isLoading ? 'Saving...' : 'Save Changes' }}
-        </button>
+        </button>   
+        
         <button 
           type="button" 
           @click="handleCancel" 
@@ -280,6 +324,7 @@ const isSellerRole = computed(() => {
           Cancel
         </button>
       </div>
+
     </form>
   </div>
 </template>
