@@ -7,6 +7,7 @@ import { getItems } from "@/lib/fetchUtils";
 import { handleQueryAlerts } from "@/lib/alertMessage";
 import phoneImg from "../../../../public/phone.png";
 import Search from "./Search.vue";
+import { useUser } from "@/composables/useUser";
 
 // Session Keys
 const SESSION_KEYS = {
@@ -46,6 +47,8 @@ const totalPages = ref(1);
 
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
+
+const { userRole } = useUser()
 
 // Visible Pages
 const visiblePages = computed(() => {
@@ -368,7 +371,7 @@ onMounted(async () => {
     />
 
     <!-- Add Item Button -->
-    <div class="mb-10 text-center">
+    <div v-if="userRole === 'SELLER' "class="mb-10 text-center">
       <router-link
         :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
         class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
