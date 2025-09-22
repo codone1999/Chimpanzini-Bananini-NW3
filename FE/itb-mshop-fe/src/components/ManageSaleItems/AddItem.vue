@@ -2,9 +2,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getItems, addItemAndImage } from '@/lib/fetchUtils'
+import { getItems, addSellerItemAndImageByToken } from '@/lib/fetchUtils'
 import { validateInputSaleItem, isFormSaleItemValid } from '@/lib/validateInput'
 import { useImageUpload } from '@/composables/useImageUpload'
+import { getAccessToken } from '@/lib/authUtils'
+import { useUser } from '@/composables/useUser'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +30,10 @@ const {
   moveImageDown,
   checkAndClearOversized
 } = useImageUpload(false)
+
+const {
+  userId
+} = useUser()
 
 const newSaleItem = ref({
   sellerId: 1,
@@ -61,7 +67,12 @@ async function handleSubmit() {
   try {
     isSubmitting.value = true
 
-    const addedItem = await addItemAndImage(`${import.meta.env.VITE_APP_URL2}/sale-items`, newSaleItem.value, files.value)
+    const addedItem = await addSellerItemAndImageByToken(
+      `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item`, 
+      getAccessToken(), 
+      newSaleItem.value, 
+      files.value
+    )
     
     if (addedItem && addedItem.id) { // Check for successful response
       router.push({ 

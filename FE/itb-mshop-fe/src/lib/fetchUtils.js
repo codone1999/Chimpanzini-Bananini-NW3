@@ -323,6 +323,72 @@ async function getSellerItemsByToken(url, token) {
   }
 }
 
+async function addSellerItemAndImageByToken(url, token, addItem, files) {
+  try {
+    const formData = new FormData()
+    
+    // Handle each property for @ModelAttribute binding (same as your first function)
+    Object.keys(addItem).forEach(key => {
+      const value = addItem[key]
+      if (value !== null && value !== undefined) {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          // Handle nested objects using dot notation (e.g., brand.id, brand.name)
+          Object.keys(value).forEach(nestedKey => {
+            if (value[nestedKey] !== null && value[nestedKey] !== undefined) {
+              formData.append(`${key}.${nestedKey}`, value[nestedKey])
+            }
+          })
+        } else if (Array.isArray(value)) {
+          // Handle arrays using indexed notation (e.g., tags[0], tags[1])
+          value.forEach((item, index) => {
+            if (typeof item === 'object') {
+              Object.keys(item).forEach(itemKey => {
+                if (item[itemKey] !== null && item[itemKey] !== undefined) {
+                  formData.append(`${key}[${index}].${itemKey}`, item[itemKey])
+                }
+              })
+            } else {
+              formData.append(`${key}[${index}]`, item)
+            }
+          })
+        } else {
+          // Handle primitive values (string, number, boolean)
+          formData.append(key, value)
+        }
+      }
+    })
+    
+    // Add files with parameter name 'images' to match your @RequestParam
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        formData.append("images", file)
+      })
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Don't set Content-Type - let the browser set it automatically for FormData
+      },
+      body: formData
+    })
+    
+    // Check if response is successful
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}. ${errorText}`)
+    }
+    
+    const data = await response.json()
+    return data
+    
+  } catch (error) {
+    console.error('Add seller item API request failed:', error)
+    throw new Error(`Failed to add seller item: ${error.message}`)
+  }
+}
+
 export { 
   getItems, 
   getItemById, 
@@ -337,4 +403,5 @@ export {
   editProfileByIdAndToken,
 
   getSellerItemsByToken,
+  addSellerItemAndImageByToken,
  }
