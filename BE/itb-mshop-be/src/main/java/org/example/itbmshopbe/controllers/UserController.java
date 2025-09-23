@@ -30,7 +30,7 @@ public class UserController {
         return ResponseEntity.ok(userProfileResponseDto);
     }
 
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<UserResponseDto> editUserProfile(
             @PathVariable Integer id,
             @RequestBody UserProfileEditDto  userProfileEditDto,
