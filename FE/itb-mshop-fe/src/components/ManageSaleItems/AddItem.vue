@@ -36,7 +36,6 @@ const {
 } = useUser()
 
 const newSaleItem = ref({
-  sellerId: 1,
   brand: {
     id: null,
   },

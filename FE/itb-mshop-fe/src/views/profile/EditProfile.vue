@@ -104,15 +104,16 @@ onMounted(() => {
 
 // --- Mask helper function ---
 function maskNumber(num) {
-  if (!num) return ''
+  if (!num) return 'Not provided'
+
   const str = String(num)
-  if (str.length <= 4) return str // Don't mask very short numbers
-  
-  const firstTwo = str.substring(0, 2)
-  const lastTwo = str.substring(str.length - 2)
-  const middle = 'x'.repeat(str.length - 4)
-  
-  return firstTwo + middle + lastTwo
+  if (str.length <= 4) return str
+
+  const first = 'x'.repeat(str.length - 4)
+  const middleThree = str.slice(-4, -1) // last 4 digits, but drop the very last one
+  const last = 'x'
+
+  return first + middleThree + last
 }
 
 // Computed property to check if data has been changed
@@ -121,13 +122,13 @@ const hasChanges = computed(() => {
   
   // Compare only editable fields with original data
   const currentData = {
-    nickName: form.value.nickName?.trim() || '',
-    fullName: form.value.fullName?.trim() || ''
+    nickName: form.value.nickName || '',
+    fullName: form.value.fullName || ''
   }
   
   const original = {
-    nickName: originalData.value.nickName?.trim() || '',
-    fullName: originalData.value.fullName?.trim() || ''
+    nickName: originalData.value.nickName || '',
+    fullName: originalData.value.fullName || ''
   }
   
   return currentData.nickName !== original.nickName || 
@@ -174,7 +175,7 @@ async function handleSubmit() {
       form.value.fullName = response.fullName || updateData.fullName
     }
 
-    router.push({ name: 'Profile' })
+    router.push({ name: 'Profile' }).then(() => router.go(0))
   } catch (error) {
     console.error('Failed to update profile:', error)
     errorMessage.value = 'Failed to update profile. Please try again.'

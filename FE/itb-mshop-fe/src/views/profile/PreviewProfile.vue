@@ -24,14 +24,15 @@ const {
 // Mask sensitive data for display
 function maskNumber(num) {
   if (!num) return 'Not provided'
+
   const str = String(num)
   if (str.length <= 4) return str
-  
-  const firstTwo = str.substring(0, 2)
-  const lastTwo = str.substring(str.length - 2)
-  const middle = '•'.repeat(Math.max(str.length - 4, 3))
-  
-  return firstTwo + middle + lastTwo
+
+  const first = 'x'.repeat(str.length - 4)
+  const middleThree = str.slice(-4, -1) // last 4 digits, but drop the very last one
+  const last = 'x'
+
+  return first + middleThree + last
 }
 
 // Check authentication and redirect if needed

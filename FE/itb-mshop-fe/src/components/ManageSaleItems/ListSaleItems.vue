@@ -12,6 +12,7 @@ import { getAccessToken } from "@/lib/authUtils";
 // Get user data from composable
 const { 
   userId, 
+  userRole,
   isLoading: userIsLoading, 
   hasCompleteUserData, 
 } = useUser();
@@ -391,6 +392,11 @@ watch(storageSizeToAdd, (value) => {
 
 // ------------------- Initialization ------------------- //
 onMounted(async () => {
+  if(userRole.value !== 'SELLER'){
+    router.push({ name: 'ListGallery'})
+    return
+  }
+
   loadSession();
 
   handleQueryAlerts(
