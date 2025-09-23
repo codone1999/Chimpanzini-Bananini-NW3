@@ -282,7 +282,7 @@ async function getProfileByIdAndToken(url, id, token) {
 async function editProfileByIdAndToken(url, id, token, editItem) {
   try {
     const response = await fetch(`${url}/${id}`, {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
