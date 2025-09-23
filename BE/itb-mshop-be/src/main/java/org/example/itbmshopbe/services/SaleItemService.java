@@ -164,7 +164,7 @@ public class SaleItemService {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
 
-        Specification<SaleItem> spec = Specification //use saleitem specification instead of sql
+        Specification<SaleItem> spec = Specification
                 .where(SaleItemSpecifications.hasSeller(sellerId))
                 .and(SaleItemSpecifications.hasBrands(filterBrands))
                 .and(SaleItemSpecifications.minPrice(filterPriceLower))

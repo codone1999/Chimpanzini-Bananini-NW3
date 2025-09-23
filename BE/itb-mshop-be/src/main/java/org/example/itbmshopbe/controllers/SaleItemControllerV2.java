@@ -21,26 +21,26 @@ public class SaleItemControllerV2 {
 
     private final SaleItemService saleItemService;
     private final SaleItemPictureService saleItemPictureService;
-//
-    //@GetMapping
-    //public ResponseEntity<SaleItemPagedResponseDto> getAllSaleItems(
-    //        @RequestParam(required = false) List<String> filterBrands,
-    //        @RequestParam(required = false) List<Integer> filterStorages,
-    //        @RequestParam(required = false) Integer filterPriceLower,
-    //        @RequestParam(required = false) Integer filterPriceUpper,
-    //        @RequestParam @Valid Integer page,
-    //        @RequestParam(required = false) Integer size,
-    //        @RequestParam(required = false) String sortField,
-    //        @RequestParam(required = false) String sortDirection,
-    //        @RequestParam(required = false) String searchKeyword,
-    //        @RequestParam(required = false, defaultValue = "false") Boolean filterNullStorage
-    //) throws NoSuchFieldException {
-    //    SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
-    //           filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,
-    //            sortDirection,filterNullStorage,searchKeyword
-    //    );
-    //    return ResponseEntity.ok(responseDto);
-    //}
+
+    @GetMapping
+    public ResponseEntity<SaleItemPagedResponseDto> getAllSaleItems(
+            @RequestParam(required = false) List<String> filterBrands,
+            @RequestParam(required = false) List<Integer> filterStorages,
+            @RequestParam(required = false) Integer filterPriceLower,
+            @RequestParam(required = false) Integer filterPriceUpper,
+            @RequestParam @Valid Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortDirection,
+            @RequestParam(required = false) String searchKeyword,
+            @RequestParam(required = false, defaultValue = "false") Boolean filterNullStorage
+    ) throws NoSuchFieldException {
+        SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
+                null,filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,
+                sortDirection,filterNullStorage,searchKeyword
+        );
+        return ResponseEntity.ok(responseDto);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<SaleItemDetailWithImagesDto> getSaleItemById(@PathVariable Integer id){

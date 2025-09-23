@@ -7,12 +7,12 @@ import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemDetailWithImagesDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemPagedResponseDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemRequestDto;
-import org.example.itbmshopbe.entities.SaleItem;
+import org.example.itbmshopbe.entities.Account;
+import org.example.itbmshopbe.entities.Seller;
+import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.services.SaleItemPictureService;
 import org.example.itbmshopbe.services.SaleItemService;
-import org.example.itbmshopbe.utils.JwtTokenUtil;
 import org.example.itbmshopbe.utils.Util;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/v2/seller")
@@ -28,6 +29,7 @@ import java.util.List;
 public class SellerController {
     private final SaleItemService saleItemService;
     private final SaleItemPictureService saleItemPictureService;
+    private final SellerRepository sellerRepository;
 
     @GetMapping("/{id}/sale-item")
     public ResponseEntity<SaleItemPagedResponseDto> getSellerSaleItem(
@@ -36,7 +38,7 @@ public class SellerController {
             @RequestParam(required = false) List<Integer> filterStorages,
             @RequestParam(required = false) Integer filterPriceLower,
             @RequestParam(required = false) Integer filterPriceUpper,
-            @RequestParam @Valid Integer page,
+            @RequestParam(required = false)@Valid Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortDirection,
@@ -45,6 +47,14 @@ public class SellerController {
             HttpServletRequest request
     ) throws NoSuchFieldException {
         Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
+        Optional<Seller> seller = sellerRepository.findById(tokenUserId);
+        if (seller.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Seller not found");
+        }
+
+        if (seller.get().getAccount().getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
+        }
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
                 tokenUserId,filterBrands, filterStorages, filterPriceLower, filterPriceUpper,
                 page, size, sortField, sortDirection, filterNullStorage, searchKeyword
