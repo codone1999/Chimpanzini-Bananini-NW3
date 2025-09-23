@@ -46,7 +46,7 @@ public class SellerController {
     ) throws NoSuchFieldException {
         Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
-                filterBrands, filterStorages, filterPriceLower, filterPriceUpper,
+                tokenUserId,filterBrands, filterStorages, filterPriceLower, filterPriceUpper,
                 page, size, sortField, sortDirection, filterNullStorage, searchKeyword
         );
         return ResponseEntity.ok(responseDto);

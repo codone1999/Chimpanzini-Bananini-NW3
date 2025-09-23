@@ -135,6 +135,7 @@ public class SaleItemService {
        saleItemRepository.deleteById(id);
    }
     public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
+            Integer sellerId,
             List<String> filterBrands,
             List<Integer> filterStorages,
             Integer filterPriceLower,
@@ -164,7 +165,8 @@ public class SaleItemService {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(order));
 
         Specification<SaleItem> spec = Specification //use saleitem specification instead of sql
-                .where(SaleItemSpecifications.hasBrands(filterBrands))
+                .where(SaleItemSpecifications.hasSeller(sellerId))
+                .and(SaleItemSpecifications.hasBrands(filterBrands))
                 .and(SaleItemSpecifications.minPrice(filterPriceLower))
                 .and(SaleItemSpecifications.maxPrice(filterPriceUpper))
                 .and(SaleItemSpecifications.hasStorage(filterStorages, filterNullStorage))

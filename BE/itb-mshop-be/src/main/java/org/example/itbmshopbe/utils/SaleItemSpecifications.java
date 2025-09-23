@@ -49,4 +49,13 @@ public class SaleItemSpecifications {
             );
         };
     }
+
+    public static Specification<SaleItem> hasSeller(Integer sellerId) {
+        return (root, query, cb) -> {
+            if (sellerId == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("seller").get("id"), sellerId);
+        };
+    }
 }
