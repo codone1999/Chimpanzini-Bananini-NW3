@@ -6,15 +6,15 @@ const COOKIE_CONFIG = {
   ACCESS_TOKEN: {
     name: 'access_token',
     expires: 30 / (60 * 24), // 30 minutes (30 min / 60 min/hour / 24 hours/day)
-    secure: true,
-    sameSite: 'strict',
+    secure: false, // Allow HTTP for development
+    sameSite: 'lax', // Less restrictive
     httpOnly: false
   },
   REFRESH_TOKEN: {
     name: 'refresh_token', 
     expires: 1, // 1 day
-    secure: true,
-    sameSite: 'strict',
+    secure: false, // Allow HTTP for development
+    sameSite: 'lax', // Less restrictive
     httpOnly: false
   }
 }
@@ -129,10 +129,39 @@ export function getAuthHeaders() {
 /**
  * Logout user by clearing tokens
  */
-export function logout() {
-  clearAuthTokens()
-  // You can add additional logout logic here
-  // like redirecting to login page or clearing other user data
+export async function logoutFromServer() {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include', // Important: sends cookies including refresh_token
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      // Handle HTTP error responses
+      if (response.status === 400) {
+        throw new Error('Refresh token is missing or invalid')
+      } else if (response.status === 500) {
+        throw new Error('Server error during logout')
+      } else {
+        throw new Error(`Logout failed: ${response.status}`)
+      }
+    }
+
+    clearAuthTokens()
+  } catch (error) {
+    console.error('Logout error:', error)
+    
+    if (error.name === 'TypeError') {
+      // Network error (fetch throws TypeError for network issues)
+      throw new Error('Network error - please check your connection')
+    } else {
+      // Re-throw other errors (including our custom errors above)
+      throw error
+    }
+  }
 }
 
 /**

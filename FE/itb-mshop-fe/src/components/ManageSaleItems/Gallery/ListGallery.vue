@@ -1,13 +1,17 @@
 //ListGallery.vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { useRouter } from "vue-router";
 import FilterAndSort from "./FilterAndSort.vue";
 import Pagination from "./Pagination.vue";
-import { getItems } from "@/lib/fetchUtils";
+import { getItems, getSellerItemsByToken } from "@/lib/fetchUtils";
 import { handleQueryAlerts } from "@/lib/alertMessage";
 import phoneImg from "../../../../public/phone.png";
 import Search from "./Search.vue";
 import { useUser } from "@/composables/useUser";
+import { getAccessToken } from "@/lib/authUtils";
+
+const router = useRouter()
 
 // Session Keys
 const SESSION_KEYS = {
@@ -17,7 +21,7 @@ const SESSION_KEYS = {
   SORT_MODE: "session_sortMode",
   PAGE_SIZE: "session_pageSize",
   CURRENT_PAGE: "session_currentPage",
-  SEARCH_KEYWORD: "session_searchKeyword", // Add search to session
+  SEARCH_KEYWORD: "session_searchKeyword",
 };
 
 // Refs
@@ -48,7 +52,16 @@ const totalPages = ref(1);
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
 
-const { userRole } = useUser()
+const isLoadingData = ref(false);
+
+const { userId, userRole, isLoading } = useUser();
+
+// Computed property to determine when we can load data
+const canLoadData = computed(() => {
+  // For non-authenticated users, we can load data immediately
+  // For authenticated users, wait for user data to be loaded
+  return !isLoading.value || !getAccessToken();
+});
 
 // Visible Pages
 const visiblePages = computed(() => {
@@ -96,7 +109,6 @@ function loadSession() {
   const savedPage = sessionStorage.getItem(SESSION_KEYS.CURRENT_PAGE);
   if (savedPage) currentPage.value = parseInt(savedPage);
 
-  // Load search keyword from session
   const savedSearch = sessionStorage.getItem(SESSION_KEYS.SEARCH_KEYWORD);
   if (savedSearch) search.value = savedSearch;
 }
@@ -109,27 +121,50 @@ function saveSession() {
   sessionStorage.setItem(SESSION_KEYS.SORT_MODE, sortMode.value);
   sessionStorage.setItem(SESSION_KEYS.PAGE_SIZE, pageSize.value.toString());
   sessionStorage.setItem(SESSION_KEYS.CURRENT_PAGE, currentPage.value.toString());
-  
-  // Save search keyword to session
   sessionStorage.setItem(SESSION_KEYS.SEARCH_KEYWORD, search.value);
 }
 
 // ------------------- Data Fetching ------------------//
 async function fetchFilteredSaleItems() {
+  // Don't fetch if authenticated user data isn't available yet
+  if (isLoading.value) {
+    return;
+  }
+
   if (currentPage.value < 1) currentPage.value = 1;
 
-  let url = `${import.meta.env.VITE_APP_URL2}/sale-items?`;
+  isLoadingData.value = true;
+
+  let url = null;
+  
+  // Check if user is authenticated and is a seller
+  if (getAccessToken() && userRole.value === "SELLER") {
+    // Seller-specific endpoint - requires userId
+    if (!userId.value) {
+      console.warn("Seller user ID not available yet");
+      isLoadingData.value = false;
+      return;
+    }
+    url = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item?`;
+  } else {
+    // Public endpoint for everyone else (non-authenticated users and buyers)
+    url = `${import.meta.env.VITE_APP_URL2}/sale-items?`;
+  }
+
   const query = [];
 
+  // Add pagination (required parameter)
   query.push("page=" + (currentPage.value - 1));
+  if (pageSize.value) query.push("size=" + pageSize.value);
 
+  // Add brand filters (matches Spring's filterBrands parameter)
   if (filterBrands.value.length > 0) {
     for (const brand of filterBrands.value) {
-      query.push("filterBrands=" + brand);
+      query.push("filterBrands=" + encodeURIComponent(brand));
     }
   }
 
-  // Convert price ranges to filterPriceLower and filterPriceUpper
+  // Add price filters (matches Spring's filterPriceLower/filterPriceUpper)
   if (filterPrices.value.length > 0) {
     const allMinPrices = [];
     const allMaxPrices = [];
@@ -138,7 +173,6 @@ async function fetchFilteredSaleItems() {
       const parts = priceRange.split("-");
       if (parts.length === 2) {
         try {
-          // Remove commas and parse numbers
           const min = parseFloat(parts[0].replace(/,/g, ""));
           const max = parseFloat(parts[1].replace(/,/g, ""));
           allMinPrices.push(min);
@@ -157,30 +191,30 @@ async function fetchFilteredSaleItems() {
     }
   }
 
+  // Add storage filters (matches Spring's filterStorages parameter)
   if (filterStorageSizes.value.length > 0) {
-      const hasNotSpecify = filterStorageSizes.value.includes("Not Specify");
-      const specificStorages = filterStorageSizes.value.filter(storage => storage !== "Not Specify");
-      
-      // Add filterNullStorage parameter if "Not Specify" is selected
-      if (hasNotSpecify) {
-          query.push("filterNullStorage=true");
+    const hasNotSpecify = filterStorageSizes.value.includes("Not Specify");
+    const specificStorages = filterStorageSizes.value.filter(storage => storage !== "Not Specify");
+    
+    // Handle null storage filter (matches Spring's filterNullStorage)
+    if (hasNotSpecify) {
+      query.push("filterNullStorage=true");
+    }
+    
+    // Add specific storage values
+    if (specificStorages.length > 0) {
+      for (const storage of specificStorages) {
+        query.push("filterStorages=" + encodeURIComponent(storage));
       }
-      
-      // Add specific storage sizes if any are selected
-      if (specificStorages.length > 0) {
-          for (const storage of specificStorages) {
-              query.push("filterStorages=" + storage);
-          }
-      }
+    }
   }
 
-  // Add search keyword to query - only if it has value
+  // Add search keyword (matches Spring's searchKeyword parameter)
   if (search.value && search.value.trim() !== "") {
     query.push("searchKeyword=" + encodeURIComponent(search.value.trim()));
   }
 
-  if (pageSize.value) query.push("size=" + pageSize.value);
-
+  // Add sorting (matches Spring's sortField and sortDirection parameters)
   if (sortMode.value === "none") {
     query.push("sortField=createdOn");
     query.push("sortDirection=asc");
@@ -189,26 +223,61 @@ async function fetchFilteredSaleItems() {
     query.push("sortDirection=" + sortMode.value);
   }
 
-  url += query.join("&");
+  const finalUrl = url + query.join("&");
 
   try {
-    const data = await getItems(url);
-    if (typeof data === 'number'){
-      alert("Fail to Fetch Sale Items")
-      return
+    let data = null;
+    
+    // Use appropriate fetch method based on endpoint
+    if (getAccessToken() && userRole.value === "SELLER") {
+      data = await getSellerItemsByToken(finalUrl, getAccessToken());
+    } else {
+      data = await getItems(finalUrl);
     }
-    allProducts.value = data.content;
-    products.value = [...data.content];
-    totalPages.value = data.totalPages;
+
+    if (typeof data === 'number') {
+      alert("Failed To Fetch Sale Items");
+      return;
+    }
+
+    // Handle both paginated and non-paginated responses
+    if (data.content && Array.isArray(data.content)) {
+      // Paginated response
+      allProducts.value = data.content;
+      products.value = [...data.content];
+      totalPages.value = data.totalPages || 1;
+    } else if (Array.isArray(data)) {
+      // Non-paginated response - simulate pagination
+      allProducts.value = data;
+      products.value = [...data];
+      totalPages.value = 1;
+    }
 
     if (currentPage.value > totalPages.value) {
       currentPage.value = 1;
     }
   } catch (error) {
     console.error("Fetch error:", error);
+    products.value = [];
+  } finally {
+    isLoadingData.value = false;
   }
 }
-
+// Load brands for filtering
+async function fetchBrands() {
+  try {
+    const item = await getItems(`${import.meta.env.VITE_APP_URL}/brands`);
+    if (typeof item === "number") {
+      console.error("Failed to fetch brands");
+      return;
+    }
+    brands.value = item.sort((a, b) =>
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    );
+  } catch (error) {
+    console.error("Failed to fetch brands:", error);
+  }
+}
 
 // -------------- Actions ------------------- //
 function toggleBrand(brandName) {
@@ -242,7 +311,7 @@ function clearAllFilters() {
   filterBrands.value = [];
   filterPrices.value = [];
   filterStorageSizes.value = [];
-  search.value = ""; // Also clear search when clearing all filters
+  search.value = "";
 }
 
 function changeSort(mode) {
@@ -263,11 +332,22 @@ function handleSearch(searchKeyword) {
 }
 
 //  ------------- Watchers ------------------ //
+
+// Watch for user data availability and fetch when ready
+watch(canLoadData, (newValue) => {
+  if (newValue) {
+    if (userRole.value !== "SELLER") { router.push({name: "ListGallery"}); return; }
+    fetchFilteredSaleItems();
+  }
+});
+
 watch(
   [filterBrands, filterPrices, filterStorageSizes, sortMode, pageSize, currentPage],
   () => {
-    saveSession();
-    fetchFilteredSaleItems();
+    if (canLoadData.value) {
+      saveSession();
+      fetchFilteredSaleItems();
+    }
   },
   { deep: true }
 );
@@ -290,10 +370,11 @@ watch(storageSizeToAdd, (value) => {
   }
 });
 
-
 onMounted(async () => {
+  // Load session data first
   loadSession();
 
+  // Handle query alerts
   handleQueryAlerts(
     {
       added: "The sale item has been successfully added.",
@@ -304,20 +385,10 @@ onMounted(async () => {
     successMessage
   );
 
-  await fetchFilteredSaleItems();
+  // Load brands (this doesn't require user data)
+  await fetchBrands();
 
-  try {
-    const item = await getItems(`${import.meta.env.VITE_APP_URL}/brands`);
-    if (typeof item === "number") {
-      alert("Failed to fetch brands");
-      return;
-    }
-    brands.value = item.sort((a, b) =>
-      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    );
-  } catch (error) {
-    console.error("Failed to fetch product:", error);
-  }
+  fetchFilteredSaleItems();
 });
 
 </script>
@@ -344,107 +415,122 @@ onMounted(async () => {
       {{ successMessage }}
     </div>
 
-    <FilterAndSort
-      v-model:page-size="pageSize"
-      :brands="brands"
-      :filter-brands="filterBrands"
-      :show-brand-list="showBrandList"
-      :toggle-brand-list="() => showBrandList = !showBrandList"
-      :on-toggle-brand="toggleBrand"
-      :on-clear-brands="clearAllFilters"
-
-      :sale-items="products"
-
-      :filter-prices="filterPrices"
-      :show-price-list="showPriceList"
-      :toggle-price-list="() => showPriceList = !showPriceList"
-      :on-toggle-price="togglePrice"
-
-      :filter-storage-sizes="filterStorageSizes"
-      :show-storage-size-list="showStorageSizeList"
-      :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
-      :on-toggle-storage-size="toggleStorageSize"
-
-      :on-change-sort="changeSort"
-      :sort-mode="sortMode"
-      :page-size="pageSize"
-    />
-
-    <!-- Add Item Button -->
-    <div v-if="userRole === 'SELLER' "class="mb-10 text-center">
-      <router-link
-        :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
-        class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
-        hover:opacity-90 text-white px-5 py-3 rounded-xl text-base font-semibold shadow-lg 
-        transition duration-300"
-      >
-        <div class="flex justify-between gap-1">
-          <span class="material-icons">add</span>
-          Add Item
-        </div>
-      </router-link>
+    <!-- Loading indicator while user data is loading -->
+    <div v-if="isLoading || !canLoadData" class="text-center text-gray-400 py-10">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      <p class="mt-2">Loading user data...</p>
     </div>
 
-    <!-- No Products -->
-    <div
-      v-if="products.length === 0"
-      class="text-center text-gray-500 text-lg py-10"
-    >
-      no sale item
-    </div>
+    <!-- Main content - only show when user data is loaded -->
+    <template v-else>
+      <FilterAndSort
+        v-model:page-size="pageSize"
+        :brands="brands"
+        :filter-brands="filterBrands"
+        :show-brand-list="showBrandList"
+        :toggle-brand-list="() => showBrandList = !showBrandList"
+        :on-toggle-brand="toggleBrand"
+        :on-clear-brands="clearAllFilters"
 
-    <!-- Product Grid -->
-    <div
-      v-else
-      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
-    >
-      <div
-        v-for="product in products"
-        :key="product.id"
-        class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
-        hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
-        transition duration-300 flex flex-col cursor-pointer"
-      >
+        :sale-items="products"
+
+        :filter-prices="filterPrices"
+        :show-price-list="showPriceList"
+        :toggle-price-list="() => showPriceList = !showPriceList"
+        :on-toggle-price="togglePrice"
+
+        :filter-storage-sizes="filterStorageSizes"
+        :show-storage-size-list="showStorageSizeList"
+        :toggle-storage-size-list="() => showStorageSizeList = !showStorageSizeList"
+        :on-toggle-storage-size="toggleStorageSize"
+
+        :on-change-sort="changeSort"
+        :sort-mode="sortMode"
+        :page-size="pageSize"
+      />
+
+      <!-- Add Item Button -->
+      <div v-if="userRole === 'SELLER'" class="mb-10 text-center">
         <router-link
-          :to="{ name: 'ListDetails', params: { id: product.id } }"
-          class="block h-full flex flex-col"
+          :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
+          class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
+          hover:opacity-90 text-white px-5 py-3 rounded-xl text-base font-semibold shadow-lg 
+          transition duration-300"
         >
-          <img
-            :src="phoneImg"
-            :alt="product.model"
-            class="w-full h-56 object-contain bg-gray-800"
-          />
-
-          <div class="p-5 flex flex-col flex-grow text-center">
-            <h3 class="itbms-brand text-xs font-medium text-gray-400 uppercase tracking-wide">
-              {{ product.brandName }}
-            </h3>
-
-            <p class="text-[#7e5bef] font-semibold mt-2 mb-4 line-clamp-2">
-              <span class="itbms-model">{{ product.model }}</span> /
-              <span class="itbms-ramGb">{{ product.ramGb ?? '-' }}</span>
-              <span class="itbms-ramGb-unit">GB</span> /
-              <span class="itbms-storageGb">{{ product.storageGb ?? '-' }}</span>
-              <span class="itbms-storageGb-unit">GB</span>
-            </p>
-
-            <button
-              class="itbms-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
-              hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
-              shadow-inner shadow-purple-900/40 transition"
-            >
-              Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
-            </button>
+          <div class="flex justify-between gap-1">
+            <span class="material-icons">add</span>
+            Add Item
           </div>
         </router-link>
       </div>
-    </div>
 
-    <Pagination
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      :visible-pages="visiblePages"
-      :go-to-page="goToPage"
-    />
+      <!-- Loading indicator for data fetching -->
+      <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
+        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+        <p class="mt-2">Loading products...</p>
+      </div>
+
+      <!-- No Products -->
+      <div
+        v-else-if="products.length === 0"
+        class="text-center text-gray-500 text-lg py-10"
+      >
+        no sale item
+      </div>
+
+      <!-- Product Grid -->
+      <div
+        v-else
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+      >
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
+          hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
+          transition duration-300 flex flex-col cursor-pointer"
+        >
+          <router-link
+            :to="{ name: 'ListDetails', params: { id: product.id } }"
+            class="block h-full flex flex-col"
+          >
+            <img
+              :src="phoneImg"
+              :alt="product.model"
+              class="w-full h-56 object-contain bg-gray-800"
+            />
+
+            <div class="p-5 flex flex-col flex-grow text-center">
+              <h3 class="itbms-brand text-xs font-medium text-gray-400 uppercase tracking-wide">
+                {{ product.brandName }}
+              </h3>
+
+              <p class="text-[#7e5bef] font-semibold mt-2 mb-4 line-clamp-2">
+                <span class="itbms-model">{{ product.model }}</span> /
+                <span class="itbms-ramGb">{{ product.ramGb ?? '-' }}</span>
+                <span class="itbms-ramGb-unit">GB</span> /
+                <span class="itbms-storageGb">{{ product.storageGb ?? '-' }}</span>
+                <span class="itbms-storageGb-unit">GB</span>
+              </p>
+
+              <button
+                class="itbms-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
+                hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
+                shadow-inner shadow-purple-900/40 transition"
+              >
+                Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+              </button>
+            </div>
+          </router-link>
+        </div>
+      </div>
+
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :go-to-page="goToPage"
+      />
+    </template>
   </section>
 </template>

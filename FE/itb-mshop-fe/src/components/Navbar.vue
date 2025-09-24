@@ -11,15 +11,30 @@ const {
   userRole, 
   userNickname, 
   isLoggedIn, 
-  isLoading 
+  isLoading,
+  logout
 } = useUser()
 
 const mobileMenuOpen = ref(false)
+const isLoggingOut = ref(false)
 
 function goToProfile() {
   router.push({ name: 'Profile'})
   // Close mobile menu if open
   mobileMenuOpen.value = false
+}
+
+async function handleLogout() {
+  isLoggingOut.value = true
+  try {
+    await logout()
+    mobileMenuOpen.value = false
+    router.push('/')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 
 </script>
@@ -35,8 +50,21 @@ function goToProfile() {
       <!-- Desktop Links -->
       <div class="hidden md:flex space-x-8 items-center text-sm font-medium">
         <router-link to="/" class="hover:text-purple-400 transition">Home</router-link>
-        <router-link :to="{ name: 'ListGallery'}" class="hover:text-purple-400 transition">Shop</router-link>
-        <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" class="hover:text-purple-400 transition">Categories</router-link>
+        <router-link 
+          :to="{ name: 'ListGallery'}" 
+          @click="$router.push({ name: 'ListGallery' }).then(() => $router.go(0))" 
+          class="hover:text-purple-400 transition"
+        >
+          Shop
+        </router-link>
+        <router-link 
+          v-if="userRole === 'SELLER'" 
+          :to="{ name: 'ListSaleItems'}" 
+          @click="$router.push({ name: 'ListSaleItems' }).then(() => $router.go(0))"  
+          class="hover:text-purple-400 transition"
+        >
+          Categories
+        </router-link>
         <router-link to="/contact" class="hover:text-purple-400 transition">Contact</router-link>
 
         <!-- Auth Buttons - Dynamic based on login status -->
@@ -59,7 +87,7 @@ function goToProfile() {
           </template>
           
           <template v-else>
-            <!-- Logged in - show user info -->
+            <!-- Logged in - show user info and logout -->
             <div class="flex items-center space-x-3">
               <!-- User Profile Button -->
               <button @click="goToProfile()" class="flex items-center space-x-2 focus:outline-none hover:bg-gray-800 px-2 py-1 rounded-md transition">
@@ -68,6 +96,17 @@ function goToProfile() {
                   {{ userNickname?.charAt(0).toUpperCase() || 'U' }}
                 </div>
                 <span class="text-sm text-gray-300">{{ userNickname || 'User' }}</span>
+              </button>
+              
+              <!-- Logout Button -->
+              <button 
+                @click="handleLogout"
+                :disabled="isLoggingOut"
+                class="px-4 py-2 rounded-md text-gray-200 bg-red-500 hover:bg-red-700 transition
+                       disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="!isLoggingOut">Logout</span>
+                <span v-else>Logging out...</span>
               </button>
             </div>
           </template>
@@ -85,8 +124,8 @@ function goToProfile() {
     <!-- Mobile dropdown -->
     <div v-if="mobileMenuOpen" class="md:hidden px-4 py-3 bg-gray-900 shadow text-center space-y-2 border-t border-gray-700">
       <router-link to="/" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Home</router-link>
-      <router-link :to="{ name: 'ListGallery'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Shop</router-link>
-      <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Categories</router-link>
+      <router-link :to="{ name: 'ListGallery'}" @click="mobileMenuOpen = false; $router.go(0)" class="block py-2 hover:text-purple-400">Shop</router-link>
+      <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false; $router.go(0)" class="block py-2 hover:text-purple-400">Categories</router-link>
       <router-link to="/contact" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Contact</router-link>
 
       <!-- Auth buttons for mobile - Dynamic -->
@@ -110,7 +149,7 @@ function goToProfile() {
         </template>
         
         <template v-else>
-          <!-- Logged in - show user info -->
+          <!-- Logged in - show user info and logout -->
           <div class="space-y-2">
             <!-- User Profile -->
             <button @click="goToProfile()" class="flex items-center justify-center space-x-2 w-full py-2 hover:bg-gray-800 rounded-md transition">
@@ -118,6 +157,17 @@ function goToProfile() {
                 {{ userNickname?.charAt(0).toUpperCase() || 'U' }}
               </div>
               <span class="text-sm text-gray-300">{{ userNickname || 'User' }}</span>
+            </button>
+            
+            <!-- Mobile Logout Button -->
+            <button 
+              @click="handleLogout"
+              :disabled="isLoggingOut"
+              class="block w-full py-2 bg-red-500 rounded-md hover:bg-red-700 text-gray-200
+                     disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <span v-if="!isLoggingOut">Logout</span>
+              <span v-else>Logging out...</span>
             </button>
           </div>
         </template>

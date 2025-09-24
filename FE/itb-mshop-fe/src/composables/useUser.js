@@ -1,7 +1,6 @@
 // useUser.js
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { getAccessToken, decodeJWT, isAuthenticated, clearAuthTokens } from '@/lib/authUtils'
+import { getAccessToken, decodeJWT, isAuthenticated, logoutFromServer } from '@/lib/authUtils'
 import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 
 const currentUser = ref(null)
@@ -56,8 +55,6 @@ const initializeUser = async () => {
 export function useUser() {
   initializeUser()
 
-  const router = useRouter()
-
   // Enhanced computed properties that prefer API data over JWT token data
   const userId = computed(() => {
     return apiUserData.value?.id || null
@@ -105,13 +102,12 @@ export function useUser() {
     }
   }
 
-  const logout = () => {
-    clearAuthTokens()
+  const logout = async () => {
     currentUser.value = null
     apiUserData.value = null
-    router.push({ name: 'Login' })
+    
+    await logoutFromServer()
   }
-
 
   // Watch for forced updates (when profile is edited)
   watch(forceUpdate, async () => {
@@ -141,7 +137,6 @@ export function useUser() {
     // Methods
     loadCompleteUserData,
     refreshUser,
-    requireAuth,
     logout
   }
 }

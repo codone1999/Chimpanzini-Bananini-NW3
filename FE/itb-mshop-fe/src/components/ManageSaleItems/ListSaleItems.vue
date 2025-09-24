@@ -1,6 +1,7 @@
 //ListSaleItems.vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { useRouter } from 'vue-router'
 import { deleteItemById, getSellerItemsByToken, getItems } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
 import { useUser } from "@/composables/useUser";
@@ -8,6 +9,8 @@ import FilterAndSort from "./Gallery/FilterAndSort.vue";
 import Pagination from "./Gallery/Pagination.vue";
 import Search from "./Gallery/Search.vue";
 import { getAccessToken } from "@/lib/authUtils";
+
+const router = useRouter()
 
 // Get user data from composable
 const { 
@@ -66,17 +69,8 @@ const selectedProductId = ref(null);
 const showSuccessMessage = ref(false);
 const successMessage = ref("");
 
-// Computed properties
-const isLoading = computed(() => {
-  return userIsLoading.value || isLoadingData.value;
-});
-
 const canLoadData = computed(() => {
-  return hasCompleteUserData.value && userId.value;
-});
-
-const showContent = computed(() => {
-  return canLoadData.value && !isLoading.value;
+  return !userIsLoading.value;
 });
 
 // Visible Pages for pagination
@@ -143,8 +137,12 @@ function saveSession() {
 async function fetchFilteredSaleItems() {
   // Don't fetch if user data isn't available yet
   if (!canLoadData.value) {
-    console.log('User data not available yet, skipping fetch');
     return;
+  }
+
+  if (!userRole.value || userRole.value !== "SELLER" || !userId.value){
+    router.push({ name: "ListGallery"}).then( () => router.go(0))
+    return
   }
 
   if (currentPage.value < 1) currentPage.value = 1;
@@ -154,18 +152,18 @@ async function fetchFilteredSaleItems() {
   let url = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item?`;
   const query = [];
 
-  // Add pagination
+  // Add pagination (required parameter)
   query.push("page=" + (currentPage.value - 1));
   if (pageSize.value) query.push("size=" + pageSize.value);
 
-  // Add brand filters
+  // Add brand filters (matches Spring's filterBrands parameter)
   if (filterBrands.value.length > 0) {
     for (const brand of filterBrands.value) {
-      query.push("filterBrands=" + brand);
+      query.push("filterBrands=" + encodeURIComponent(brand));
     }
   }
 
-  // Add price filters
+  // Add price filters (matches Spring's filterPriceLower/filterPriceUpper)
   if (filterPrices.value.length > 0) {
     const allMinPrices = [];
     const allMaxPrices = [];
@@ -192,28 +190,30 @@ async function fetchFilteredSaleItems() {
     }
   }
 
-  // Add storage filters
+  // Add storage filters (matches Spring's filterStorages parameter)
   if (filterStorageSizes.value.length > 0) {
     const hasNotSpecify = filterStorageSizes.value.includes("Not Specify");
     const specificStorages = filterStorageSizes.value.filter(storage => storage !== "Not Specify");
     
+    // Handle null storage filter (matches Spring's filterNullStorage)
     if (hasNotSpecify) {
       query.push("filterNullStorage=true");
     }
     
+    // Add specific storage values
     if (specificStorages.length > 0) {
       for (const storage of specificStorages) {
-        query.push("filterStorages=" + storage);
+        query.push("filterStorages=" + encodeURIComponent(storage));
       }
     }
   }
 
-  // Add search keyword
+  // Add search keyword (matches Spring's searchKeyword parameter)
   if (search.value && search.value.trim() !== "") {
     query.push("searchKeyword=" + encodeURIComponent(search.value.trim()));
   }
 
-  // Add sorting
+  // Add sorting (matches Spring's sortField and sortDirection parameters)
   if (sortMode.value === "none") {
     query.push("sortField=createdOn");
     query.push("sortDirection=asc");
@@ -225,7 +225,7 @@ async function fetchFilteredSaleItems() {
   const finalUrl = url + query.join("&");
 
   try {
-    const token = getAccessToken()
+    const token = getAccessToken();
 
     const data = await getSellerItemsByToken(finalUrl, token);
     if (typeof data === 'number') {
@@ -355,11 +355,12 @@ async function handleDelete() {
 
 //  ------------- Watchers ------------------ //
 // Watch for user data to become available
-watch(canLoadData, (canLoad) => {
-  if (canLoad) {
+watch(canLoadData, (newValue) => {
+  if (newValue) {
+    if (userRole.value !== "SELLER") { router.push({name: "ListGallery"}); return; }
     fetchFilteredSaleItems();
   }
-}, { immediate: true });
+});
 
 watch(
   [filterBrands, filterPrices, filterStorageSizes, sortMode, pageSize, currentPage],
@@ -392,13 +393,10 @@ watch(storageSizeToAdd, (value) => {
 
 // ------------------- Initialization ------------------- //
 onMounted(async () => {
-  if(userRole.value !== 'SELLER'){
-    router.push({ name: 'ListGallery'})
-    return
-  }
-
+  // Load session data first
   loadSession();
 
+  // Handle query alerts
   handleQueryAlerts(
     {
       added: 'The sale item has been successfully added.',
@@ -411,7 +409,7 @@ onMounted(async () => {
   // Load brands (this doesn't require user data)
   await fetchBrands();
 
-  // fetchFilteredSaleItems will be called by the watcher when user data is available
+  fetchFilteredSaleItems()
 });
 </script>
 
@@ -421,14 +419,14 @@ onMounted(async () => {
       My Sale Items
     </h2>
 
-    <!-- Loading State -->
-    <div v-if="isLoading" class="text-center py-20">
-      <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-      <p class="text-gray-400">Loading your sale items...</p>
+    <!-- Loading indicator while user data is loading -->
+    <div v-if="userIsLoading || !canLoadData" class="text-center text-gray-400 py-10">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      <p class="mt-2">Loading user data...</p>
     </div>
 
-    <!-- Main Content -->
-    <template v-else-if="showContent">
+    <!-- Main content - only show when user data is loaded -->
+    <template v-else>
       <!-- Search Box -->
       <div class="mb-6 max-w-xl mx-auto">
         <Search
@@ -489,13 +487,19 @@ onMounted(async () => {
         </router-link>
       </div>
 
+      <!-- Loading indicator for data fetching -->
+      <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
+        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+        <p class="mt-2">Loading sale items...</p>
+      </div>
+
       <!-- No Items -->
-      <div v-if="products.length === 0 && !isLoadingData" class="text-center text-gray-400 text-lg py-10">
+      <div v-else-if="products.length === 0" class="text-center text-gray-400 text-lg py-10">
         No sale items found.
       </div>
 
       <!-- Product Table -->
-      <div v-else-if="products.length > 0" class="overflow-x-auto shadow-2xl rounded-2xl border border-gray-700 mb-8">
+      <div v-else class="overflow-x-auto shadow-2xl rounded-2xl border border-gray-700 mb-8">
         <table class="min-w-full bg-gray-800 text-sm text-center table-auto rounded-2xl overflow-hidden">
           <thead class="bg-gray-700 text-gray-300 font-semibold uppercase tracking-wide">
             <tr>
