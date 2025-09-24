@@ -63,7 +63,7 @@ function validateRegistrationPassword(password) {
   if (!password) return 'Password cannot be empty'
   if (password.length < 8) return 'Password must be at least 8 characters'
   if (password.length > 14) return 'Password must be less than or equal 14 characters'
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$/
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&/\\#]).+$/
   if (!passwordRegex.test(password)) {
     return 'Password must contain uppercase, lowercase, number, and special character (@$!%*?&)'
   }
@@ -81,9 +81,17 @@ function validateFullname(fullName) {
 function validateMobile(mobile) {
   const trimmed = mobile.trim()
   if (!trimmed) return 'Mobile cannot be empty'
-  if (trimmed.length < 10) return 'Mobile must be at least 10 digits'
-  if (trimmed.length > 15) return 'Mobile must not exceed 15 digits'
-  if (!/^\d+$/.test(trimmed)) return 'Mobile must contain only numbers'
+  
+  // Allow digits, hyphens, spaces, parentheses, and plus sign
+  if (!/^[\d\-\s\(\)\+]+$/.test(trimmed)) {
+    return 'Mobile must contain only numbers, hyphens, spaces, parentheses, and plus sign'
+  }
+  
+  // Extract only digits to check length
+  const digitsOnly = trimmed.replace(/[\D]/g, '')
+  if (digitsOnly.length < 10) return 'Mobile must be at least 10 digits'
+  if (digitsOnly.length > 15) return 'Mobile must not exceed 15 digits'
+  
   return null
 }
 

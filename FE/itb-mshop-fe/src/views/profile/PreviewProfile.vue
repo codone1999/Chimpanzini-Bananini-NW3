@@ -49,8 +49,7 @@ const isSellerRole = computed(() => {
 })
 
 const userInitial = computed(() => {
-  return userNickname.value?.charAt(0)?.toUpperCase() 
-         'U'
+  return userNickname.value?.charAt(0)?.toUpperCase() || 'U'
 })
 
 const showContent = computed(() => {
@@ -132,16 +131,16 @@ function retryLoad() {
           {{ userInitial }}
         </div>
         <div class="flex-1">
-          <h2 class="text-2xl font-bold text-white">{{ userNickname || 'User' }}</h2>
+          <h2 class="itbms-nickname text-2xl font-bold text-white">{{ userNickname || 'User' }}</h2>
           <p class="text-purple-100 text-sm">@{{ userFullName || 'No full name' }}</p>
           <div class="flex items-center mt-1">
             <span :class="[
-              'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+              'itbms-type inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
               userRole === 'SELLER' 
                 ? 'bg-yellow-100 text-yellow-800' 
                 : 'bg-blue-100 text-blue-800'
             ]">
-              {{ userRole === 'SELLER' ? 'Seller Account' : 'Buyer Account' }}
+              {{ userRole === 'SELLER' ? 'Seller' : 'Buyer' }}
             </span>
           </div>
         </div>
@@ -155,26 +154,26 @@ function retryLoad() {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-gray-600">
             <div>
               <span class="font-medium text-gray-700">Email:</span>
-              <p class="text-gray-900">{{ userEmail || 'Not provided' }}</p>
+              <p class="itbms-email text-gray-900">{{ userEmail || 'Not provided' }}</p>
             </div>
             <div>
               <span class="font-medium text-gray-700">Full Name:</span>
-              <p class="text-gray-900">{{ userFullName || 'Not provided' }}</p>
+              <p class="itbms-fullname text-gray-900">{{ userFullName || 'Not provided' }}</p>
             </div>
             
             <!-- Seller-specific fields -->
             <template v-if="isSellerRole">
               <div>
                 <span class="font-medium text-gray-700">Mobile:</span>
-                <p class="text-gray-900 font-mono">{{ maskNumber(userMobile) }}</p>
+                <p class="itbms-mobile text-gray-900 font-mono">{{ maskNumber(userMobile) }}</p>
               </div>
               <div>
                 <span class="font-medium text-gray-700">Bank Account:</span>
-                <p class="text-gray-900 font-mono">{{ maskNumber(userBankAccountNo) }}</p>
+                <p class="itbms-bankAccount text-gray-900 font-mono">{{ maskNumber(userBankAccountNo) }}</p>
               </div>
               <div class="sm:col-span-2">
                 <span class="font-medium text-gray-700">Bank Name:</span>
-                <p class="text-gray-900">{{ userBankName || 'Not provided' }}</p>
+                <p class="itbms-bankName text-gray-900">{{ userBankName || 'Not provided' }}</p>
               </div>
             </template>
           </div>
@@ -188,7 +187,7 @@ function retryLoad() {
         </p>
         <button
           @click="goToEdit"
-          class="px-6 py-2 bg-purple-600 text-white font-medium rounded-md shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-500"
+          class="itbms-profile-button px-6 py-2 bg-purple-600 text-white font-medium rounded-md shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           Edit Profile
         </button>

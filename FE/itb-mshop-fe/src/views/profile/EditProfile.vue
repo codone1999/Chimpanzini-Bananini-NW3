@@ -220,7 +220,7 @@ const isSellerRole = computed(() => {
           type="text" 
           required
           :disabled="isLoading"
-          class="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200 disabled:bg-gray-100" 
+          class="itbms-nickname w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200 disabled:bg-gray-100" 
         />
       </div>
 
@@ -231,7 +231,7 @@ const isSellerRole = computed(() => {
           v-model="form.email" 
           type="email" 
           readonly 
-          class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
+          class="itbms-email w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
         />
       </div>
 
@@ -243,7 +243,7 @@ const isSellerRole = computed(() => {
           type="text" 
           required
           :disabled="isLoading"
-          class="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200 disabled:bg-gray-100" 
+          class="itbms-fullname w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200 disabled:bg-gray-100" 
         />
       </div>
 
@@ -255,7 +255,7 @@ const isSellerRole = computed(() => {
           <input 
             :value="maskNumber(form.mobile)" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
+            class="itbms-mobile w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
           <p class="text-xs text-gray-500 mt-1">Contact support to change mobile number</p>
         </div>
@@ -266,7 +266,7 @@ const isSellerRole = computed(() => {
           <input 
             :value="maskNumber(form.bankAccountNo)" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
+            class="itbms-bankAccount w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
           <p class="text-xs text-gray-500 mt-1">Contact support to change bank details</p>
         </div>
@@ -277,7 +277,7 @@ const isSellerRole = computed(() => {
           <input 
             v-model="form.bankName" 
             readonly 
-            class="w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
+            class="itbms-bankName w-full border px-3 py-2 rounded-md bg-gray-100 text-gray-600 caret-transparent cursor-default" 
           />
         </div>
       </template>
@@ -288,7 +288,7 @@ const isSellerRole = computed(() => {
           type="submit" 
           :disabled="isSaveDisabled" 
           :class="[
-            'flex-1 py-2 rounded-md font-medium transition-colors',
+            'itbms-save-button flex-1 py-2 rounded-md font-medium transition-colors',
             isSaveDisabled 
               ? 'bg-green-200 text-gray-500 cursor-not-allowed' 
               : 'bg-green-500 text-white hover:bg-green-600'
@@ -301,7 +301,7 @@ const isSellerRole = computed(() => {
           type="button" 
           @click="handleCancel" 
           :disabled="isLoading"
-          class="flex-1 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
+          class="itbms-cancel-button flex-1 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 disabled:bg-gray-200"
         >
           Cancel
         </button>

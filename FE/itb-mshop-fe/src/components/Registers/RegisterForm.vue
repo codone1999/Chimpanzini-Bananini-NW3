@@ -312,7 +312,7 @@ function handleCancel() {
           type="password" 
           required
           minlength="8"
-          pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$"
+          pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&/\\#]).+$"
           :disabled="isLoading"
           @blur="handleFieldBlur('password')"
           @input="handleFieldInput('password')"
@@ -417,7 +417,7 @@ function handleCancel() {
           type="password"
           required
           minlength="8"
-          pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$"
+          pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&/\\#]).+$"
           :disabled="isLoading"
           @blur="handleFieldBlur('password')"
           @input="handleFieldInput('password')"
@@ -481,7 +481,7 @@ function handleCancel() {
           @blur="handleFieldBlur('bankAccountNo')"
           @input="handleFieldInput('bankAccountNo')"
           :class="[
-            'itbms-bank-account-no mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            'itbms-bankAccount mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
             fieldErrors.bankAccountNo ? 'border-red-500' : 'border-gray-300'
           ]"
         />
@@ -500,7 +500,7 @@ function handleCancel() {
           @blur="handleFieldBlur('bankName')"
           @input="handleFieldInput('bankName')"
           :class="[
-            'itbms-back-name mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            'itbms-bankName mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
             fieldErrors.bankName ? 'border-red-500' : 'border-gray-300'
           ]"
         />

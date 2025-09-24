@@ -4,8 +4,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
 import { setAuthTokens, isAuthenticated, clearAuthTokens } from '@/lib/authUtils'
+import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
+
+const { userRole, loadCompleteUserData } = useUser()
 
 // form state
 const form = ref({
@@ -116,13 +119,21 @@ async function handleSubmit() {
     // Store tokens using AuthUtils - much cleaner!
     setAuthTokens(result.access_token, result.refresh_token)
 
+    await loadCompleteUserData()
+
     successMessage.value = 'Login successful! Redirecting...'
     isRedirecting.value = true
 
-    setTimeout(() => {
-      resetForm()
-      router.push({name: 'ListGallery'}).then( () => router.go(0) )
-    }, 1500)
+    if (userRole.value === "SELLER"){
+      setTimeout(() => {
+        router.push({ name: 'ListSaleItems' })
+      }, 1500)
+    } else {
+      setTimeout(() => {
+        resetForm()
+        router.push({name: 'ListGallery'}).then( () => router.go(0) )
+      }, 1500)
+    }
 
   } catch (error) {
     console.error('Login failed:', error)
@@ -177,7 +188,7 @@ async function handleSubmit() {
           @blur="handleEmailBlur"
           @input="handleEmailInput"
           :class="[
-            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            'itbms-email mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
             fieldErrors.email ? 'border-red-500' : 'border-gray-300'
           ]"
           placeholder="Enter your email address"
@@ -198,7 +209,7 @@ async function handleSubmit() {
           @blur="handlePasswordBlur"
           @input="handlePasswordInput"
           :class="[
-            'mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
+            'itbms-password mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
             fieldErrors.password ? 'border-red-500' : 'border-gray-300'
           ]"
           placeholder="Enter your password 14 characters"
@@ -214,7 +225,7 @@ async function handleSubmit() {
           type="submit"
           :disabled="isButtonDisabled"
           :class="[
-            'w-full py-2 rounded-md transition-colors',
+            'itbms-signin-button w-full py-2 rounded-md transition-colors',
             isButtonDisabled
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
               : 'bg-green-500 text-white hover:bg-green-600'
