@@ -6,7 +6,8 @@ import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 const currentUser = ref(null)
 const isLoading = ref(false)
 const forceUpdate = ref(0)
-const apiUserData = ref(null) // Store full API user data
+const apiUserData = ref(null)
+const isInitialized = ref(false) // Track initialization
 
 const loadCompleteUserData = async () => {
   if (isLoading.value) return
@@ -15,17 +16,28 @@ const loadCompleteUserData = async () => {
   
   try {
     const token = getAccessToken()
-    const tokenData = decodeJWT(token)
+    // Check token first before decoding
     if (!token) {
+      currentUser.value = null
+      apiUserData.value = null
       return
     }
 
-    const data = await getProfileByIdAndToken(`${import.meta.env.VITE_APP_URL2}/users`, tokenData.id, token)
+    const tokenData = decodeJWT(token)
+    if (!tokenData?.id) {
+      console.warn('Invalid token data')
+      return
+    }
+
+    const data = await getProfileByIdAndToken(
+      `${import.meta.env.VITE_APP_URL2}/users`, 
+      tokenData.id, 
+      token
+    )
 
     if (data) {
-      currentUser.value = tokenData.id
+      currentUser.value = data.id // Store the actual user ID
 
-      // Store the complete API data
       apiUserData.value = {
         id: data.id,
         nickname: data.nickname || '',
@@ -41,75 +53,55 @@ const loadCompleteUserData = async () => {
     }
   } catch (error) {
     console.error('Failed to load complete user data:', error)
+    // Consider clearing user data on error
+    currentUser.value = null
+    apiUserData.value = null
   } finally {
     isLoading.value = false
   }
 }
 
 const initializeUser = async () => {
-    if (!currentUser.value && isAuthenticated()) {
-      await loadCompleteUserData()
-    }
+  // Only initialize once
+  if (isInitialized.value) return
+  
+  if (!currentUser.value && isAuthenticated()) {
+    await loadCompleteUserData()
   }
+  
+  isInitialized.value = true
+}
 
 export function useUser() {
-  initializeUser()
+  // Only initialize if not already done
+  if (!isInitialized.value) {
+    initializeUser()
+  }
 
-  // Enhanced computed properties that prefer API data over JWT token data
-  const userId = computed(() => {
-    return apiUserData.value?.id || null
-  })
-
-  const userRole = computed(() => {
-    return apiUserData.value?.role || null
-  })
-
-  const userEmail = computed(() => {
-    return apiUserData.value?.email || null
-  })
-
-  const userNickname = computed(() => {
-    return apiUserData.value?.nickname || null
-  })
-
-  const userFullName = computed(() => {
-    return apiUserData.value?.fullName || null
-  })
-
-  const userMobile = computed(() => {
-    return apiUserData.value?.phoneNumber || null
-  })
-
-  const userBankAccountNo = computed(() => {
-    return apiUserData.value?.bankAccount || null
-  })
-
-  const userBankName = computed(() => {
-    return apiUserData.value?.bankName || null
-  })
-
+  const userId = computed(() => apiUserData.value?.id || null)
+  const userRole = computed(() => apiUserData.value?.role || null)
+  const userEmail = computed(() => apiUserData.value?.email || null)
+  const userNickname = computed(() => apiUserData.value?.nickname || null)
+  const userFullName = computed(() => apiUserData.value?.fullName || null)
+  const userMobile = computed(() => apiUserData.value?.phoneNumber || null)
+  const userBankAccountNo = computed(() => apiUserData.value?.bankAccount || null)
+  const userBankName = computed(() => apiUserData.value?.bankName || null)
   const isLoggedIn = computed(() => !!currentUser.value && isAuthenticated())
-
-  // Check if we have complete user data (from API)
   const hasCompleteUserData = computed(() => !!apiUserData.value)
 
   const refreshUser = async () => {
     forceUpdate.value++
-    
-    // Also refresh API data if we have a user ID
-    if (userId.value) {
-      await loadCompleteUserData()
-    }
+    await loadCompleteUserData()
   }
 
   const logout = async () => {
     currentUser.value = null
     apiUserData.value = null
+    isInitialized.value = false // Reset initialization flag
     
     await logoutFromServer()
   }
 
-  // Watch for forced updates (when profile is edited)
   watch(forceUpdate, async () => {
     if (userId.value) {
       await loadCompleteUserData()
@@ -122,7 +114,7 @@ export function useUser() {
     apiUserData,
     isLoading,
     
-    // Enhanced computed properties
+    // computed properties
     userId,
     userRole,
     userEmail,

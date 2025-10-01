@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import MainMenu from "@/components/MainMenu.vue";
+import Home from "@/views/Home.vue";
 import ListGallery from "@/components/ManageSaleItems/Gallery/ListGallery.vue";
 import ListDetails from "@/components/ManageSaleItems/ListDetail.vue";
 import AddItem from "@/components/ManageSaleItems/AddItem.vue";
@@ -8,7 +8,7 @@ import ListSaleItems from "@/components/ManageSaleItems/ListSaleItems.vue";
 import ListBrands from "@/components/ManageBrands/ListBrands.vue";
 import AddBrand from "@/components/ManageBrands/AddBrand.vue";
 import EditBrand from "@/components/ManageBrands/EditBrand.vue";
-import PageNotFound from "@/components/PageNotFound.vue";
+import PageNotFound from "@/components/common/PageNotFound.vue";
 import RegisterForm from "@/components/Registers/RegisterForm.vue";
 import LogInForm from "@/components/Registers/LogInForm.vue";
 import ShowVerify from "@/components/Registers/VerifyEmail.vue";
@@ -19,7 +19,7 @@ const routes = [
     {
         path: '/',
         name: 'MainMenu',
-        component: MainMenu
+        component: Home
     },
     {
         path: '/sale-items',
