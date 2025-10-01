@@ -238,3 +238,22 @@ INSERT INTO sale_item (
 (83, 6, 'Find X5 Lite', 'Previous gen lite', 14850, 8, 6.43, 128, 'Starry Black', 8, '2023-03-06 10:07:00'),
 (84, 6, 'A77', 'Budget friendly', 8250, 6, 6.56, 128, 'Ocean Blue', 20, '2023-03-06 10:08:00'),
 (85, 6, 'Reno6 Pro', 'Classic premium', 16500, 12, 6.55, 256, 'Arctic Blue', 7, '2023-03-06 10:09:00');
+
+CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    status ENUM('PENDING','PAID','SHIPPED','CANCELLED') DEFAULT 'PENDING',
+	orderNote VARCHAR(255),
+    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES account(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    sale_item_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    price_each INT NOT NULL,
+    CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_items_item FOREIGN KEY (sale_item_id) REFERENCES sale_item(id) ON DELETE CASCADE
+);
