@@ -1,3 +1,4 @@
+//Search.vue
 <script setup>
 import { ref, watch } from "vue";
 
@@ -35,17 +36,15 @@ const clearSearch = () => {
 };
 </script>
 
-Search
-
 <template>
-    <div class="flex w-full max-w-md">
+  <div class="flex w-full">
     <!-- Input + Search -->
     <div class="flex flex-1 items-center">
       <input
         v-model="searchText"
         type="text"
         placeholder="Search..."
-        class="itbms-search-text w-full bg-neutral-900 text-gray-200 placeholder-gray-500 border border-neutral-700 rounded-l-xl px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+        class="itbms-search-text w-full bg-neutral-900 text-gray-200 placeholder-gray-500 border border-neutral-700 rounded-l-xl px-4 py-2 outline-none focus:ring-0.5 focus:ring-purple-500 focus:border-purple-500 transition"
         @keyup.enter="onSearch"
       />
 
@@ -69,6 +68,5 @@ Search
         Clear
       </button>
     </div>
-
   </div>
 </template>

@@ -1,19 +1,20 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "@/views/Home.vue";
-import ListGallery from "@/components/ManageSaleItems/Gallery/ListGallery.vue";
-import ListDetails from "@/components/ManageSaleItems/ListDetail.vue";
-import AddItem from "@/components/ManageSaleItems/AddItem.vue";
-import EditItem from "@/components/ManageSaleItems/EditItem.vue";
-import ListSaleItems from "@/components/ManageSaleItems/ListSaleItems.vue";
-import ListBrands from "@/components/ManageBrands/ListBrands.vue";
-import AddBrand from "@/components/ManageBrands/AddBrand.vue";
-import EditBrand from "@/components/ManageBrands/EditBrand.vue";
+import ListGallery from "@/components/sale-items/gallery/ListGallery.vue";
+import ListDetails from "@/components/sale-items/ListDetail.vue";
+import AddItem from "@/components/sale-items/AddItem.vue";
+import EditItem from "@/components/sale-items/EditItem.vue";
+import ListSaleItems from "@/components/sale-items/ListSaleItems.vue";
+import ListBrands from "@/components/brands/ListBrands.vue";
+import AddBrand from "@/components/brands/AddBrand.vue";
+import EditBrand from "@/components/brands/EditBrand.vue";
 import PageNotFound from "@/components/common/PageNotFound.vue";
-import RegisterForm from "@/components/Registers/RegisterForm.vue";
-import LogInForm from "@/components/Registers/LogInForm.vue";
-import ShowVerify from "@/components/Registers/VerifyEmail.vue";
+import RegisterForm from "@/components/auth/RegisterForm.vue";
+import LogInForm from "@/components/auth/LogInForm.vue";
+import ShowVerify from "@/components/auth/VerifyEmail.vue";
 import PreviewProfile from "@/views/profile/PreviewProfile.vue";
 import EditProfile from "@/views/profile/EditProfile.vue";
+import Cart from "@/views/Cart.vue";
 
 const routes = [
     {
@@ -85,6 +86,11 @@ const routes = [
         path: '/profile/edit',
         name: 'EditProfile',
         component: EditProfile
+    },
+    {
+        path: '/cart',
+        name: 'Cart',
+        component: Cart
     },
     {
         path: '/:NotFound(.*)',
