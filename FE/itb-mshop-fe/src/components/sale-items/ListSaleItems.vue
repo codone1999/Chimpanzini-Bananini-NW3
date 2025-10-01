@@ -5,10 +5,11 @@ import { useRouter } from 'vue-router'
 import { deleteItemById, getSellerItemsByToken, getItems } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
 import { useUser } from "@/composables/useUser";
-import FilterAndSort from "./Gallery/FilterAndSort.vue";
-import Pagination from "./Gallery/Pagination.vue";
-import Search from "./Gallery/Search.vue";
+import FilterAndSort from "./gallery/FilterAndSort.vue";
+import Pagination from "./gallery/Pagination.vue";
+import Search from "./gallery/Search.vue";
 import { getAccessToken } from "@/lib/authUtils";
+import ShoppingCart from "./gallery/ShoppingCart.vue";
 
 const router = useRouter()
 
@@ -70,7 +71,7 @@ const showSuccessMessage = ref(false);
 const successMessage = ref("");
 
 const canLoadData = computed(() => {
-  return !userIsLoading.value;
+  return !userIsLoading.value || !hasCompleteUserData
 });
 
 // Visible Pages for pagination
@@ -420,19 +421,22 @@ onMounted(async () => {
     </h2>
 
     <!-- Loading indicator while user data is loading -->
-    <div v-if="userIsLoading || !canLoadData" class="text-center text-gray-400 py-10">
+    <div v-if="!canLoadData" class="text-center text-gray-400 py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
       <p class="mt-2">Loading user data...</p>
     </div>
 
     <!-- Main content - only show when user data is loaded -->
     <template v-else>
-      <!-- Search Box -->
-      <div class="mb-6 max-w-xl mx-auto">
+      <!-- Search Box with Cart -->
+      <div class="flex mb-10 relative max-w-xl mx-auto">
         <Search
           v-model="search"
           @search="handleSearch"
         />
+        <div class="absolute -right-16">
+          <ShoppingCart />
+        </div>
       </div>
 
       <!-- Success Message -->

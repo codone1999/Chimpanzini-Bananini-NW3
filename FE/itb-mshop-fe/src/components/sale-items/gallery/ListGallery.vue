@@ -10,6 +10,7 @@ import phoneImg from "../../../../public/phone.png";
 import Search from "./Search.vue";
 import { useUser } from "@/composables/useUser";
 import { getAccessToken } from "@/lib/authUtils";
+import ShoppingCart from "./ShoppingCart.vue";
 
 const router = useRouter()
 
@@ -399,12 +400,15 @@ onMounted(async () => {
       Shop Our Products
     </h2>
 
-    <!-- Search Box -->
-    <div class="mb-6 max-w-xl mx-auto">
+    <!-- Search Box with Cart -->
+    <div class="flex mb-10 relative max-w-xl mx-auto">
       <Search
         v-model="search"
         @search="handleSearch"
       />
+      <div class="absolute -right-16">
+        <ShoppingCart />
+      </div>
     </div>
 
     <div
