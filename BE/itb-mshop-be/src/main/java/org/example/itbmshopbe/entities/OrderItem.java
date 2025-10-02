@@ -1,0 +1,42 @@
+package org.example.itbmshopbe.entities;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "order_items")
+public class OrderItem {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "sale_item_id", nullable = false)
+    private SaleItem saleItem;
+
+    @NotNull
+    @ColumnDefault("1")
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
+
+    @NotNull
+    @Column(name = "price_each", nullable = false)
+    private Integer priceEach;
+
+}
