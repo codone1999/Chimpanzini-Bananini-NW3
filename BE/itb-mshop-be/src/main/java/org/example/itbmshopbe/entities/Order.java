@@ -43,4 +43,9 @@ public class Order {
     @Column(name = "updatedOn")
     private Instant updatedOn;
 
+    @Size(max = 255)
+    @NotNull
+    @Column(name = "shippingAddress", nullable = false)
+    private String shippingAddress;
+
 }
