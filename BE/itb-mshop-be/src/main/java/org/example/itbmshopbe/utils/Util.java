@@ -31,11 +31,7 @@ public class Util {
     }
 
     public static Integer getUserIdFromToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
-        }
-        String token = authHeader.substring(7);
+        String token = extractToken(request);
         try {
             return JwtTokenUtil.getIdFromToken(token);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
@@ -43,39 +39,55 @@ public class Util {
         }
     }
 
-
     public static Integer validateAndGetUserId(HttpServletRequest request, Integer pathId) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+        String token = extractToken(request);
+        Integer tokenUserId = extractUserIdFromToken(token);
+
+        if (pathId != null && !pathId.equals(tokenUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Request user id not matched with id in access token");
         }
-        String token = authHeader.substring(7);
-        Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
-        if (!pathId.equals(tokenUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request user id not matched with id in access token");
-        }
+
         return tokenUserId;
     }
+
     public static Integer validateAndGetSellerUserId(HttpServletRequest request, Integer pathId) {
+        String token = extractToken(request);
+        Integer tokenUserId = extractUserIdFromToken(token);
+        String tokenUserRole = extractRoleFromToken(token);
+
+        if (!"SELLER".equalsIgnoreCase(tokenUserRole)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only sellers can access this resource");
+        }
+
+        if (pathId != null && !pathId.equals(tokenUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Request seller id not matched with id in access token");
+        }
+
+        return tokenUserId;
+    }
+
+    private static String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
         }
+        return authHeader.substring(7);
+    }
 
-        String token = authHeader.substring(7);
+    private static Integer extractUserIdFromToken(String token) {
         try {
-            Integer tokenUserId = JwtTokenUtil.getIdFromToken(token);
-            String tokenUserRole = JwtTokenUtil.getRoleFromToken(token);
+            return JwtTokenUtil.getIdFromToken(token);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
+        }
+    }
 
-            if (!"SELLER".equalsIgnoreCase(tokenUserRole)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only sellers can access this resource");
-            }
-
-            if (!pathId.equals(tokenUserId)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Request seller id not matched with id in access token");
-            }
-
-            return tokenUserId;
+    private static String extractRoleFromToken(String token) {
+        try {
+            return JwtTokenUtil.getRoleFromToken(token);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
         }
