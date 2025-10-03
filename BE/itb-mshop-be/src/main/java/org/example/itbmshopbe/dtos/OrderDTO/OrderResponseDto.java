@@ -6,10 +6,10 @@ import org.example.itbmshopbe.entities.Seller;
 import java.util.List;
 
 @Data
-public class OrderResponseDto {
-    private Integer Id;
+public class OrderResponseDto<T> {
+    private Integer id;
     private Integer buyerId;
-    private List<OrderSellerResponseDto> seller;
+    private List<T> seller;
     private String orderDate;
     private String shippingAddress;
     private String orderNote;

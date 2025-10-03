@@ -2,10 +2,7 @@ package org.example.itbmshopbe.services;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.itbmshopbe.dtos.OrderDTO.OrderItemRequestDto;
-import org.example.itbmshopbe.dtos.OrderDTO.OrderRequestDto;
-import org.example.itbmshopbe.dtos.OrderDTO.OrderResponseDto;
-import org.example.itbmshopbe.dtos.OrderDTO.OrderSellerResponseDto;
+import org.example.itbmshopbe.dtos.OrderDTO.*;
 import org.example.itbmshopbe.entities.*;
 
 import org.example.itbmshopbe.repositories.*;
@@ -29,14 +26,12 @@ public class OrderService {
     private final ModelMapper modelMapper;
 
     @Transactional
-    public OrderResponseDto createOrder(Integer buyerId,OrderRequestDto orderRequestDto) {
-        if (orderRequestDto.getBuyerId() == null ||
-                orderRequestDto.getSellerId() == null ||
+    public OrderResponseDto<OrderSellerResponseDto> createOrder(Integer buyerId, OrderRequestDto orderRequestDto) {
+        if (orderRequestDto.getSellerId() == null ||
                 orderRequestDto.getOrderItems() == null ||
                 orderRequestDto.getOrderItems().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or invalid request parameters");
         }
-
         Account buyer = accountRepository.findById(buyerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
         Seller seller = sellerRepository.findById(orderRequestDto.getSellerId())
@@ -50,32 +45,82 @@ public class OrderService {
         List<OrderItem> orderItems = new ArrayList<>();
         for (OrderItemRequestDto itemDto : orderRequestDto.getOrderItems()) {
             SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SaleItem not found" + itemDto.getSaleItemId()));
-            if(saleItem.getQuantity() < itemDto.getQuantity()) {
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "SaleItem not found: " + itemDto.getSaleItemId()));
+            if (saleItem.getQuantity() < itemDto.getQuantity()) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Quantity not enough for item " + saleItem.getId());
+                        "Insufficient quantity for item " + saleItem.getId());
             }
             saleItem.setQuantity(saleItem.getQuantity() - itemDto.getQuantity());
             saleItemRepository.save(saleItem);
+
             OrderItem orderItem = new OrderItem();
-            orderItem.setSaleItem(saleItem);
             orderItem.setOrder(savedOrder);
+            orderItem.setSaleItem(saleItem);
             orderItem.setQuantity(itemDto.getQuantity());
             orderItem.setPriceEach(itemDto.getPrice());
+            orderItem.setDescription(itemDto.getDescription());
             orderItems.add(orderItem);
         }
         orderItemRepository.saveAll(orderItems);
-        OrderResponseDto response = modelMapper.map(order, OrderResponseDto.class);
-        OrderSellerResponseDto sellerDto = new OrderSellerResponseDto();
-        sellerDto.setId(seller.getId());
-        sellerDto.setSellerName(seller.getAccount().getFullname());
-        response.setSeller(List.of(sellerDto));
-        response.setOrderDate(savedOrder.getCreatedOn().toString());
-        response.setBuyerId(buyer.getId());
-        List<OrderItemRequestDto> responseItems = orderItems.stream()
+        OrderSellerResponseDto sellerDto = mapToSellerBase(seller);
+        List<OrderItemRequestDto> responseItems = mapOrderItems(orderItems);
+        return mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems);
+    }
+
+    private <T> OrderResponseDto<T> mapOrderToResponse(Order order,
+                                                       List<T> sellerDtos,
+                                                       List<OrderItemRequestDto> orderItems) {
+        OrderResponseDto<T> response = modelMapper.map(order, OrderResponseDto.class);
+        response.setSeller(sellerDtos);
+        response.setOrderItems(orderItems);
+        response.setBuyerId(order.getCustomer().getId());
+        response.setOrderDate(order.getCreatedOn().toString());
+        return response;
+    }
+
+    private OrderSellerResponseDto mapToSellerBase(Seller seller) {
+        return modelMapper.map(seller, OrderSellerResponseDto.class);
+    }
+
+    private OrderSellerDetailDto mapToSellerDetail(Seller seller) {
+        Account account = seller.getAccount();
+        OrderSellerDetailDto dto = modelMapper.map(seller, OrderSellerDetailDto.class);
+        dto.setEmail(account.getEmail());
+        dto.setFullName(account.getFullname());
+        dto.setNickName(account.getNickname());
+        dto.setUserType(account.getRole());
+        return dto;
+    }
+
+    private List<OrderItemRequestDto> mapOrderItems(List<OrderItem> orderItems) {
+        return orderItems.stream()
                 .map(oi -> modelMapper.map(oi, OrderItemRequestDto.class))
                 .toList();
-        response.setOrderItems(responseItems);
-        return response;
+    }
+
+    @Transactional
+    public OrderResponseDto<OrderSellerDetailDto> getOrderDetails(Integer orderId, Integer currentUserId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        boolean isBuyer = order.getCustomer().getId().equals(currentUserId);
+        boolean isSeller = order.getOrderItems().stream()
+                .anyMatch(oi -> oi.getSaleItem().getSeller().getId().equals(currentUserId));
+
+        if (!isBuyer && !isSeller) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User id not an owner (seller/buyer) of the order");
+        }
+        List<Seller> sellersInOrder = order.getOrderItems().stream()
+                .map(oi -> oi.getSaleItem().getSeller())
+                .distinct()
+                .toList();
+
+        List<OrderSellerDetailDto> sellerDetails = sellersInOrder.stream()
+                .map(this::mapToSellerDetail)
+                .toList();
+
+        List<OrderItemRequestDto> orderItems = mapOrderItems(order.getOrderItems());
+
+        return mapOrderToResponse(order, sellerDetails, orderItems);
     }
 }

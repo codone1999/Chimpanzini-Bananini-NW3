@@ -2,6 +2,7 @@ package org.example.itbmshopbe.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -38,5 +39,9 @@ public class OrderItem {
     @NotNull
     @Column(name = "price_each", nullable = false)
     private Integer priceEach;
+
+    @Size(max = 255)
+    @Column(name = "description")
+    private String description;
 
 }

@@ -7,4 +7,5 @@ public class OrderItemRequestDto {
     private Integer saleItemId;
     private Integer price;
     private Integer quantity;
+    private String description;
 }

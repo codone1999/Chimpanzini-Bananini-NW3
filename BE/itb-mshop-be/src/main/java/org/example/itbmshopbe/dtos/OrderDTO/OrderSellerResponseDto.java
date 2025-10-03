@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class OrderSellerResponseDto {
-    private Integer Id;
+    private Integer id;
     private String sellerName;
 }

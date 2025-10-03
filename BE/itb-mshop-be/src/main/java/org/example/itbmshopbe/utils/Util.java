@@ -29,6 +29,21 @@ public class Util {
         }
         return input;
     }
+
+    public static Integer getUserIdFromToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
+        }
+        String token = authHeader.substring(7);
+        try {
+            return JwtTokenUtil.getIdFromToken(token);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
+        }
+    }
+
+
     public static Integer validateAndGetUserId(HttpServletRequest request, Integer pathId) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
