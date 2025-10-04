@@ -1,12 +1,15 @@
 package org.example.itbmshopbe.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.UserProfileEditDto;
 import org.example.itbmshopbe.dtos.AccountDTO.UserProfileResponseDto;
 import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
+import org.example.itbmshopbe.dtos.OrderDTO.*;
 import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.services.AccountService;
+import org.example.itbmshopbe.services.OrderService;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
 import org.example.itbmshopbe.utils.Util;
 import org.springframework.http.HttpStatus;
@@ -14,12 +17,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v2/users")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "${frontend.url}")
 public class UserController {
     private final AccountService accountService;
+    private final OrderService orderService;
     @GetMapping("/{id}")
     public ResponseEntity<UserProfileResponseDto> getUserProfile(
             @PathVariable Integer id,
@@ -39,5 +45,21 @@ public class UserController {
         Integer tokenUserId = Util.validateAndGetUserId(request, id);
         UserResponseDto userResponseDto = accountService.editAccount(tokenUserId, userProfileEditDto);
         return ResponseEntity.ok(userResponseDto);
+    }
+
+    @GetMapping("/{id}/orders")
+    public  ResponseEntity<OrderPagedResponseDto<OrderSellerResponseDto>> getAllOrders(
+            @PathVariable Integer id,
+            @RequestParam(required = false)@Valid Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortDirection,
+            HttpServletRequest request
+    ) {
+        Integer tokenUserId = Util.validateAndGetUserId(request,id);
+        OrderPagedResponseDto<OrderSellerResponseDto> response = orderService.getAllOrderPaginated(
+                tokenUserId, page, size, sortField, sortDirection
+        );
+        return ResponseEntity.ok(response);
     }
 }

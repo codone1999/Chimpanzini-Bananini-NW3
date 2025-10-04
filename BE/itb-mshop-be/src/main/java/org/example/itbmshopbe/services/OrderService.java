@@ -6,7 +6,13 @@ import org.example.itbmshopbe.dtos.OrderDTO.*;
 import org.example.itbmshopbe.entities.*;
 
 import org.example.itbmshopbe.repositories.*;
+import org.example.itbmshopbe.utils.OrderSpecifications;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -114,13 +120,56 @@ public class OrderService {
                 .map(oi -> oi.getSaleItem().getSeller())
                 .distinct()
                 .toList();
-
         List<OrderSellerDetailDto> sellerDetails = sellersInOrder.stream()
                 .map(this::mapToSellerDetail)
                 .toList();
-
         List<OrderItemRequestDto> orderItems = mapOrderItems(order.getOrderItems());
 
         return mapOrderToResponse(order, sellerDetails, orderItems);
+    }
+
+    @Transactional
+    public OrderPagedResponseDto<OrderSellerResponseDto> getAllOrderPaginated(
+            Integer currentUserId,
+            Integer page,
+            Integer size,
+            String sortField,
+            String sortDirection
+    ){
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
+        }
+        int pageSize = (size == null || size <= 0) ? 10 : size;
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
+        Specification<Order> spec = Specification
+                .where(OrderSpecifications.belongsToAccount(currentUserId));
+
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(direction, sortBy));
+        Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
+        List<OrderResponseDto<OrderSellerResponseDto>> orderResponse = ordersPage.getContent().stream()
+                .map(order -> {
+                    List<Seller> sellers = order.getOrderItems().stream()
+                            .map(oi -> oi.getSaleItem().getSeller())
+                            .distinct()
+                            .toList();
+                    List<OrderSellerResponseDto> sellerResponses = sellers.stream()
+                            .map(this::mapToSellerBase)
+                            .toList();
+                    List<OrderItemRequestDto> orderItems = mapOrderItems(order.getOrderItems());
+                    return mapOrderToResponse(order, sellerResponses, orderItems);
+                }).toList();
+        OrderPagedResponseDto<OrderSellerResponseDto> response = new OrderPagedResponseDto<>();
+        response.setContent(orderResponse);
+        response.setPage(ordersPage.getNumber());
+        response.setSize(ordersPage.getSize());
+        response.setTotalElements(ordersPage.getTotalElements());
+        response.setTotalPages(ordersPage.getTotalPages());
+        response.setFirst(ordersPage.isFirst());
+        response.setLast(ordersPage.isLast());
+        response.setSort(ordersPage.getSort().isSorted()
+                ? ordersPage.getSort().toString().replace(": ", ":")
+                : null);
+        return response;
     }
 }
