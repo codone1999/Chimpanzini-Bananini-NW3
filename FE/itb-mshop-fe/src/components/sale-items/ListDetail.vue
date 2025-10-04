@@ -1,11 +1,14 @@
-//ListDetails
+// ListDetails
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { getItemById, deleteItemById } from '@/lib/fetchUtils'
 import { handleQueryAlerts } from '@/lib/alertMessage'
 import phoneImg from '../../../public/phone.png';
 import DeleteSaleItem from './DeleteSaleItem.vue';
+import Search from './gallery/Search.vue';
+import ShoppingCart from './gallery/ShoppingCart.vue';
+import { useUser } from '@/composables/useUser';
 
 const url = `${import.meta.env.VITE_APP_URL}/sale-items`
 const url2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
@@ -14,13 +17,78 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
+const { userRole, userId, isLoading } = useUser();
+
 const showModal = ref(false)
-const product = ref()
-
-const images = ref([]) // pull image filename from v2 and then show image in v1
-
+const product = ref( {
+      "id": 1,
+      "model": "iPhone 14 Pro Max",
+      "brandName": "Apple",
+      "description": "ไอโฟนเรือธงรุ่นล่าสุด มาพร้อม Dynamic Island จอใหญ่สุดในตระกูล กล้องระดับโปร",
+      "price": 42900,
+      "ramGb": 6,
+      "screenSizeInch": 6.7,
+      "quantity": 6,
+      "storageGb": 512,
+      "color": "Space Black",
+      "createdOn": "2023-03-01T10:00:00Z",
+      "updatedOn": "2025-09-26T11:17:35Z"
+    })
+const images = ref([])
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
+
+// Cart functionality
+const cartQuantity = ref(1)
+
+// Check if current user is the owner of the item
+const isOwner = ref(false) // NOTE - TEST ONLY
+// const isOwner = computed(() => {
+//   if (!userId.value || !product.value) return false
+//   return product.value.sellerId === userId.value
+// })
+
+// Show cart buttons for buyers or sellers viewing other's items
+const showCartButtons = ref(true) // NOTE - TEST ONLY
+// const showCartButtons = computed(() => {
+//   if (!userRole.value) return false
+//   const role = userRole.value
+//   return (role === 'BUYER' || role === 'SELLER') && !isOwner.value
+// })
+
+
+// Show edit/delete buttons for owners only
+const showOwnerButtons = computed(() => {
+  return isOwner.value
+})
+
+function decreaseQuantity() {
+  if (cartQuantity.value > 1) {
+    cartQuantity.value--
+  }
+}
+
+function increaseQuantity() {
+  if (cartQuantity.value < product.value.quantity) {
+    cartQuantity.value++
+  }
+}
+
+async function addToCart() {
+  try {
+    // Implement your add to cart logic here
+    console.log(`Adding ${cartQuantity.value} items to cart`)
+    
+    successMessage.value = `Added ${cartQuantity.value} item(s) to cart`
+    showSuccessMessage.value = true
+    setTimeout(() => {
+      showSuccessMessage.value = false
+    }, 3000)
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    alert('Failed to add item to cart')
+  }
+}
 
 function confirmDelete() {
   showModal.value = true
@@ -43,24 +111,19 @@ async function handleDelete() {
 }
 
 async function loadImages() {
-  // Check if product and images array exist
   if (!product.value?.saleItemImages) {
     console.warn('No images found for this product');
     return;
   }
 
-  // Clear existing images
   images.value = [];
 
-  // Sort images by imageViewOrder to display in correct order
   const sortedImages = [...product.value.saleItemImages]
     .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0));
 
-  // Load each image with error handling
   for (let i = 0; i < sortedImages.length; i++) {
     try {
       if (sortedImages[i] && sortedImages[i].fileName) {
-        // Use the sorted order, not the original array index
         images.value.push(`${url}/picture/${sortedImages[i].fileName}`);
       }
     } catch (error) {
@@ -105,6 +168,21 @@ onMounted(async () => {
           {{ successMessage }}
         </div>
       </transition>
+
+      <h2 class="text-3xl font-extrabold mb-10 text-center bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">
+        Product Details
+      </h2>
+
+      <!-- Search Box with Cart -->
+      <div class="flex mb-10 relative max-w-xl mx-auto">
+        <Search
+          v-model="search"
+          @search="handleSearch"
+        />
+        <div class="absolute -right-16">
+          <ShoppingCart />
+        </div>
+      </div>
   
       <!-- Breadcrumb + Title -->
       <div class="mb-6 text-xl text-gray-500 flex items-center space-x-2">
@@ -200,8 +278,8 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Buttons -->
-          <div class="flex flex-wrap gap-4 pt-6">
+          <!-- Buttons - Owner View (Edit/Delete) -->
+          <div v-if="showOwnerButtons" class="flex flex-wrap gap-4 pt-6">
             <router-link
               :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'Gallery' } }"
               class="itbms-edit-button bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-medium transition shadow-md hover:shadow-lg"
@@ -214,6 +292,47 @@ onMounted(async () => {
             >
               Delete
             </button>
+          </div>
+
+          <!-- Buttons - Buyer/Non-Owner View (Quantity Controls + Add to Cart) -->
+          <div v-else-if="showCartButtons" class="flex justify-between space-x-4">
+            <!-- Quantity Controls -->
+            <div v-if="product.quantity > 0" class="flex items-center gap-4">
+              <span class="text-sm font-medium text-gray-300">Quantity:</span>
+              <div class="flex items-center gap-3 bg-gray-700 rounded-lg">
+                <button
+                  @click="decreaseQuantity"
+                  :disabled="cartQuantity <= 1"
+                  class="itbms-dec-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
+                >
+                  −
+                </button>
+                <span class="itbms-cart-quantity px-6 text-center font-semibold text-gray-100">
+                  {{ cartQuantity }}
+                </span>
+                <button
+                  @click="increaseQuantity"
+                  :disabled="cartQuantity >= product.quantity"
+                  class="itbms-inc-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <!-- Add to Cart Button -->
+            <button
+              @click="addToCart"
+              :disabled="product.quantity === 0"
+              class="itbms-add-to-cart-quantity px-5 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition shadow-md hover:shadow-lg"
+            >
+              {{ product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' }}
+            </button>
+          </div>
+
+          <!-- No buttons for non-authenticated users -->
+          <div v-else class="pt-6 text-sm text-gray-400">
+            Please log in to purchase this item
           </div>
         </div>
       </div>
@@ -228,3 +347,12 @@ onMounted(async () => {
     />
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -14,7 +14,9 @@ import LogInForm from "@/components/auth/LogInForm.vue";
 import ShowVerify from "@/components/auth/VerifyEmail.vue";
 import PreviewProfile from "@/views/profile/PreviewProfile.vue";
 import EditProfile from "@/views/profile/EditProfile.vue";
-import Cart from "@/views/Cart.vue";
+import Cart from "@/views/order/Cart.vue";
+import OrderHistory from "@/views/order/OrderHistory.vue";
+import OrderDetail from "@/views/order/OrderDetail.vue";
 
 const routes = [
     {
@@ -91,6 +93,16 @@ const routes = [
         path: '/cart',
         name: 'Cart',
         component: Cart
+    },
+    {
+        path: '/your-orders',
+        name: 'Orders',
+        component: OrderHistory
+    },
+    {
+        path: '/your-orders/:id',
+        name: 'OrderDetail',
+        component: OrderDetail
     },
     {
         path: '/:NotFound(.*)',

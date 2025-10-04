@@ -518,7 +518,7 @@ onMounted(async () => {
               </p>
 
               <button
-                class="itbms-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
+                class="itbms-add-to-cart-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
                 hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
                 shadow-inner shadow-purple-900/40 transition"
               >

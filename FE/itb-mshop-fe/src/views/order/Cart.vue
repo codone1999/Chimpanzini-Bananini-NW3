@@ -127,7 +127,7 @@ const createOrder = () => {
 
 <template>
   <div class="min-h-screen py-8 px-4">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <h1 class="text-3xl font-bold text-gray-800 mb-8">Shopping Cart</h1>
       
       <div class="grid lg:grid-cols-3 gap-8">
@@ -212,46 +212,81 @@ const createOrder = () => {
             </div>
           </div>
         </div>
-        
+          
         <!-- Summary -->
         <div class="lg:col-span-1">
           <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 sticky top-8 border border-blue-100">
+            
+            <!-- Header -->
             <div class="flex items-center gap-2 mb-6">
               <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
               </svg>
               <h2 class="text-2xl font-bold text-gray-800">Order Summary</h2>
             </div>
-            
+
+            <!-- Ship To -->
+            <div class="bg-white rounded-lg p-4 shadow-sm mb-4">
+              <label for="shipTo" class="block text-gray-700 font-semibold mb-2">
+                Ship To
+              </label>
+              <p class="text-gray-400 mb-2">
+                (Address, No, Street, Subdistrict, District, Province, Postal Code)
+              </p>
+              <textarea 
+                id="shipTo"
+                v-model="shippingAddress"
+                rows="5"
+                placeholder="Enter full shipping address"
+                class="itbms-shipping-address w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-700 placeholder-gray-400"
+              ></textarea>
+            </div>
+
+            <!-- Note -->
+            <div class="bg-white rounded-lg p-4 shadow-sm mb-6">
+              <label for="orderNote" class="block text-gray-700 font-semibold mb-2">
+                Note
+              </label>
+              <textarea 
+                id="orderNote"
+                v-model="shippingNote"
+                rows="4"
+                placeholder="Add a note for delivery (optional)"
+                class="itbms-order-note w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none text-gray-700 placeholder-gray-400"
+              ></textarea>
+            </div>
+
+            <!-- Totals -->
             <div class="space-y-4 mb-6">
-              <div class="bg-white rounded-lg p-4 shadow-sm">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                    </svg>
-                    <span class="text-gray-600 font-medium">Total Items</span>
-                  </div>
-                  <span class="text-xl font-bold text-blue-600">{{ totalItems }}</span>
+              <!-- Total Items -->
+              <div class="bg-white rounded-lg p-4 shadow-sm flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                  </svg>
+                  <span class="text-gray-600 font-medium">Total Items</span>
                 </div>
+                <span class="itbms-total-order-items text-xl font-bold text-blue-600">{{ totalItems }}</span>
               </div>
-              
-              <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-5 shadow-md">
-                <div class="flex justify-between items-center text-white">
-                  <div class="flex items-center gap-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="font-semibold text-lg">Total Price</span>
-                  </div>
-                  <span class="text-2xl font-bold">฿{{ total.toFixed(2) }}</span>
+
+              <!-- Total Price -->
+              <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-5 shadow-md flex justify-between items-center text-white">
+                <div class="flex items-center gap-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="font-semibold text-lg">Total Price</span>
                 </div>
+                <span class="itbms-total-order-price text-2xl font-bold">฿{{ total.toFixed(2) }}</span>
               </div>
             </div>
-            
-            <button @click="createOrder"
-                    :disabled="totalItems === 0"
-                    class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2">
+
+            <!-- Create Order Button -->
+            <button 
+              @click="createOrder"
+              :disabled="totalItems === 0 || !shippingAddress"
+              class="itbms-create-order w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
+            >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
@@ -259,6 +294,7 @@ const createOrder = () => {
             </button>
           </div>
         </div>
+
       </div>
     </div>
   </div>
