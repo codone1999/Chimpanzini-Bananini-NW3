@@ -3,6 +3,8 @@ package org.example.itbmshopbe.controllers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.itbmshopbe.dtos.OrderDTO.OrderSellerResponseDto;
+import org.example.itbmshopbe.dtos.OrderDTO.OrderSellerViewResponseDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemDetailDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemDetailWithImagesDto;
 import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemPagedResponseDto;
@@ -10,6 +12,7 @@ import org.example.itbmshopbe.dtos.SaleItemDTO.SaleItemRequestDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.Seller;
 import org.example.itbmshopbe.repositories.SellerRepository;
+import org.example.itbmshopbe.services.OrderService;
 import org.example.itbmshopbe.services.SaleItemPictureService;
 import org.example.itbmshopbe.services.SaleItemService;
 import org.example.itbmshopbe.utils.Util;
@@ -30,6 +33,7 @@ public class SellerController {
     private final SaleItemService saleItemService;
     private final SaleItemPictureService saleItemPictureService;
     private final SellerRepository sellerRepository;
+    private final OrderService orderService;
 
     @GetMapping("/{id}/sale-item")
     public ResponseEntity<SaleItemPagedResponseDto> getSellerSaleItem(
@@ -81,5 +85,20 @@ public class SellerController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(saleItemService.getSaleItemDetailWithImages(createdSaleItem.getId()));
+    }
+
+    @GetMapping("/{id}/orders")
+    public ResponseEntity<List<OrderSellerViewResponseDto>> getSellerOrders(
+            @PathVariable Integer id,
+            @RequestParam(required = false) @Valid Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortDirection,
+            HttpServletRequest request
+    ) {
+        Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
+        List<OrderSellerViewResponseDto> response = orderService.getAllOrdersForSeller(
+                tokenUserId,page,size,sortField,sortDirection);
+        return ResponseEntity.ok(response);
     }
 }

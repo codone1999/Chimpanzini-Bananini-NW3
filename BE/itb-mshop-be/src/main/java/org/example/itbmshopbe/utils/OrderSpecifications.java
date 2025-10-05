@@ -20,4 +20,14 @@ public class OrderSpecifications {
             return cb.or(customerPredicate, sellerPredicate);
         };
     }
+    public static Specification<Order> belongsToSeller(Integer sellerId) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            Join<Order, OrderItem> orderItems = root.join("orderItems", JoinType.LEFT);
+            Join<OrderItem, SaleItem> saleItem = orderItems.join("saleItem", JoinType.LEFT);
+            Join<SaleItem, Seller> seller = saleItem.join("seller", JoinType.LEFT);
+            return cb.equal(seller.get("id"), sellerId);
+        };
+    }
+
 }

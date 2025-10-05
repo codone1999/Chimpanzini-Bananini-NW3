@@ -174,4 +174,46 @@ public class OrderService {
                 : null);
         return response;
     }
+
+    @Transactional
+    public List<OrderSellerViewResponseDto> getAllOrdersForSeller(
+            Integer sellerId,
+            Integer page,
+            Integer size,
+            String sortField,
+            String sortDirection
+    ) {
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
+        }
+
+        int pageSize = (size == null || size <= 0) ? 10 : size;
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
+        Specification<Order> spec = Specification.where(OrderSpecifications.belongsToSeller(sellerId));
+
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(direction, sortBy));
+        Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
+        return ordersPage.getContent().stream().map(order -> {
+            OrderSellerViewResponseDto dto = new OrderSellerViewResponseDto();
+            dto.setId(order.getId());
+            dto.setSellerId(sellerId);
+            dto.setOrderDate(order.getCreatedOn());
+            dto.setPaymentDate(order.getPaymentDate());
+            dto.setShippingAddress(order.getShippingAddress());
+            dto.setOrderNote(order.getOrderNote());
+            dto.setOrderStatus(order.getStatus());
+            dto.setOrderItems(mapOrderItems(order.getOrderItems()));
+
+            BuyerInfoDto buyerInfo = new BuyerInfoDto();
+            buyerInfo.setId(order.getCustomer().getId());
+            buyerInfo.setUsername(order.getCustomer().getNickname());
+            dto.setBuyer(buyerInfo);
+
+            return dto;
+        }).toList();
+    }
+
+
 }
