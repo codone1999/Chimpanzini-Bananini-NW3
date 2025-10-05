@@ -37,14 +37,6 @@ public class Order {
     @Column(name = "orderNote")
     private String orderNote;
 
-    @CreationTimestamp
-    @Column(name = "createdOn")
-    private Instant createdOn;
-
-   @UpdateTimestamp
-    @Column(name = "updatedOn")
-    private Instant updatedOn;
-
     @Size(max = 255)
     @NotNull
     @Column(name = "shippingAddress", nullable = false)
@@ -52,4 +44,12 @@ public class Order {
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
+
+    @Column(name = "createdOn")
+    private Instant createdOn;
+
+    @CreationTimestamp
+    @Column(name = "PaymentDate")
+    private Instant paymentDate;
+
 }

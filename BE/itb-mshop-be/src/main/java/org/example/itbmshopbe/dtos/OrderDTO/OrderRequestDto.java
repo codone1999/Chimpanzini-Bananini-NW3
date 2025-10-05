@@ -2,12 +2,14 @@ package org.example.itbmshopbe.dtos.OrderDTO;
 
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.List;
 
 @Data
 public class OrderRequestDto {
     private Integer buyerId;
     private Integer sellerId;
+    private Instant orderDate;
     private String ShippingAddress;
     private String OrderNote;
     private String OrderStatus;

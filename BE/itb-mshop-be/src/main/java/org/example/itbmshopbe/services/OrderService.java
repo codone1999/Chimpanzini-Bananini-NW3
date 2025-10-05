@@ -47,6 +47,7 @@ public class OrderService {
         order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
         order.setOrderNote(orderRequestDto.getOrderNote());
         order.setShippingAddress(orderRequestDto.getShippingAddress());
+        order.setCreatedOn(orderRequestDto.getOrderDate());
         Order savedOrder = orderRepository.save(order);
         List<OrderItem> orderItems = new ArrayList<>();
         for (OrderItemRequestDto itemDto : orderRequestDto.getOrderItems()) {
@@ -81,7 +82,8 @@ public class OrderService {
         response.setSeller(sellerDtos);
         response.setOrderItems(orderItems);
         response.setBuyerId(order.getCustomer().getId());
-        response.setOrderDate(order.getCreatedOn().toString());
+        response.setOrderDate(order.getCreatedOn());
+        response.setPaymentDate(order.getPaymentDate());
         return response;
     }
 
