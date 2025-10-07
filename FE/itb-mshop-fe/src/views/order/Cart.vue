@@ -1,128 +1,155 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed } from 'vue'
+import { useCart } from '@/composables/useCart'
+import { useUser } from '@/composables/useUser'
+import { addItem } from '@/lib/fetchUtils'
 
-const cartItems = ref([
-  {
-    id: 1,
-    name: 'Wireless Headphones',
-    price: 79.99,
-    quantity: 2,
-    seller: 'TechStore',
-    selected: true,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=150&h=150&fit=crop'
-  },
-  {
-    id: 2,
-    name: 'Smart Watch',
-    price: 199.99,
-    quantity: 1,
-    seller: 'TechStore',
-    selected: true,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&h=150&fit=crop'
-  },
-  {
-    id: 3,
-    name: 'Laptop Stand',
-    price: 45.50,
-    quantity: 3,
-    seller: 'OfficeGear',
-    selected: true,
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=150&h=150&fit=crop'
-  },
-  {
-    id: 4,
-    name: 'USB-C Cable',
-    price: 12.99,
-    quantity: 2,
-    seller: 'OfficeGear',
-    selected: true,
-    image: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=150&h=150&fit=crop'
-  },
-  {
-    id: 5,
-    name: 'Mechanical Keyboard',
-    price: 129.99,
-    quantity: 1,
-    seller: 'GamingHub',
-    selected: true,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=150&h=150&fit=crop'
-  }
-]);
+const { 
+  cartItems, 
+  selectedTotalQuantity,
+  selectedTotalPrice,
+  updateQuantity: updateCartQuantity,
+  removeFromCart,
+  clearSelectedItems
+} = useCart()
+
+const { userId, isLoading: userLoading, loadCompleteUserData } = useUser()
+
+const shippingAddress = ref('')
+const shippingNote = ref('')
 
 // Group items by seller
 const groupedBySeller = computed(() => {
-  const groups = {};
+  const groups = {}
   cartItems.value.forEach(item => {
     if (!groups[item.seller]) {
-      groups[item.seller] = [];
+      groups[item.seller] = []
     }
-    groups[item.seller].push(item);
-  });
-  return groups;
-});
+    groups[item.seller].push(item)
+  })
+  return groups
+})
 
 // Check if all items are selected
 const allSelected = computed({
   get() {
-    return cartItems.value.length > 0 && cartItems.value.every(item => item.selected);
+    return cartItems.value.length > 0 && cartItems.value.every(item => item.selected)
   },
   set(value) {
     cartItems.value.forEach(item => {
-      item.selected = value;
-    });
+      item.selected = value
+    })
   }
-});
+})
 
 // Check if all items in a seller group are selected
 const isSellerSelected = (seller) => {
-  const sellerItems = groupedBySeller.value[seller];
-  return sellerItems.every(item => item.selected);
-};
+  const sellerItems = groupedBySeller.value[seller]
+  return sellerItems.every(item => item.selected)
+}
 
 // Toggle all items in a seller group
 const toggleSeller = (seller) => {
-  const sellerItems = groupedBySeller.value[seller];
-  const allChecked = isSellerSelected(seller);
+  const sellerItems = groupedBySeller.value[seller]
+  const allChecked = isSellerSelected(seller)
   sellerItems.forEach(item => {
-    item.selected = !allChecked;
-  });
-};
+    item.selected = !allChecked
+  })
+}
 
 // Calculate totals based on selected items only
 const totalItems = computed(() => {
   return cartItems.value
     .filter(item => item.selected)
-    .reduce((sum, item) => sum + item.quantity, 0);
-});
+    .reduce((sum, item) => sum + item.quantity, 0)
+})
 
 const total = computed(() => {
   return cartItems.value
     .filter(item => item.selected)
-    .reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
+    .reduce((sum, item) => sum + (item.price * item.quantity), 0)
+})
 
+// ✅ FIXED - Call the composable methods directly
 const updateQuantity = (itemId, change) => {
-  const item = cartItems.value.find(i => i.id === itemId);
+  const item = cartItems.value.find(i => i.id === itemId)
   if (item) {
-    item.quantity += change;
-    if (item.quantity < 1) {
-      removeItem(itemId);
-    }
+    const newQuantity = item.quantity + change
+    updateCartQuantity(itemId, newQuantity)
   }
-};
+}
 
+// ✅ FIXED - Call the composable method directly
 const removeItem = (itemId) => {
-  cartItems.value = cartItems.value.filter(i => i.id !== itemId);
-};
+  removeFromCart(itemId)
+}
 
-const createOrder = () => {
-  const selectedItems = cartItems.value.filter(item => item.selected);
+const createOrder = async () => {
+  // Validation
+  const selectedItems = cartItems.value.filter(item => item.selected)
   if (selectedItems.length === 0) {
-    alert('Please select at least one item to create an order');
-    return;
+    alert('Please select at least one item to create an order')
+    return
   }
-  alert(`Order created successfully!\nTotal: ฿${total.value.toFixed(2)}\nItems: ${totalItems.value}`);
-};
+  if (!shippingAddress.value.trim()) {
+    alert('Please enter a shipping address')
+    return
+  }
+
+  try {
+    // Group selected items by seller
+    const ordersBySeller = {}
+    
+    selectedItems.forEach(item => {
+      if (!ordersBySeller[item.seller]) {
+        ordersBySeller[item.seller] = []
+      }
+      ordersBySeller[item.seller].push(item)
+    })
+
+    // Create orders for each seller
+    const orderPromises = Object.entries(ordersBySeller).map(async ([seller, items]) => {
+      // Prepare order items array
+      const orderItems = items.map(item => ({
+        saleItemId: item.id,
+        price: item.price,
+        quantity: item.quantity,
+        description: `${item.name} - ${item.color || ''} ${item.storageGb ? item.storageGb + 'GB' : ''}`.trim()
+      }))
+
+      // Prepare order data
+      const orderData = {
+        buyerId: userId.value,
+        sellerId: items[0].sellerId || '',
+        orderDate: new Date().toISOString(),
+        shippingAddress: shippingAddress.value.trim(),
+        orderNote: shippingNote.value.trim() || '',
+        orderStatus: 'PENDING',
+        orderItems: orderItems
+      }
+
+      // Submit order to API
+      return await addItem(`${import.meta.env.VITE_APP_URL2}/order`, orderData)
+    })
+
+    // Wait for all orders to complete
+    const results = await Promise.all(orderPromises)
+    
+    // Clear selected items from cart after successful order
+    clearSelectedItems()
+    
+    // Reset form
+    shippingAddress.value = ''
+    shippingNote.value = ''
+    
+    // Success message
+    alert(`Order(s) created successfully!\n${results.length} order(s) placed\nTotal: ฿${total.value.toFixed(2)}`)
+    
+  } catch (error) {
+    console.error('Failed to create order:', error)
+    alert('Failed to create order. Please try again.')
+  }
+}
 </script>
 
 <template>
@@ -180,8 +207,11 @@ const createOrder = () => {
                 >
               </label>
 
-              <img :src="item.image" :alt="item.name" 
-                   class="w-24 h-24 object-cover rounded">
+              <img 
+                :src="item.image || 'https://via.placeholder.com/150'" 
+                :alt="item.name" 
+                class="w-24 h-24 object-cover rounded"
+              >
               
               <div class="flex-1">
                 <h3 class="font-semibold text-lg text-gray-800">{{ item.name }}</h3>
@@ -202,7 +232,7 @@ const createOrder = () => {
               
               <div class="text-right flex flex-col justify-between">
                 <p class="font-semibold text-lg text-gray-800">
-                  ${{ (item.price * item.quantity).toFixed(2) }}
+                  ฿{{ (item.price * item.quantity).toFixed(2) }}
                 </p>
                 <button @click="removeItem(item.id)"
                         class="ml-auto text-red-500 hover:text-red-700 text-sm font-medium">
@@ -284,13 +314,14 @@ const createOrder = () => {
             <!-- Create Order Button -->
             <button 
               @click="createOrder"
-              :disabled="totalItems === 0 || !shippingAddress"
+              :disabled="totalItems === 0 || !shippingAddress || userLoading || !userId"
               class="itbms-create-order w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="!userLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
-              Create Order
+              <span v-if="userLoading">Loading...</span>
+              <span v-else>Create Order</span>
             </button>
           </div>
         </div>

@@ -1,14 +1,15 @@
-// ListDetails
+// ListDetails.vue
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { getItemById, deleteItemById } from '@/lib/fetchUtils'
 import { handleQueryAlerts } from '@/lib/alertMessage'
-import phoneImg from '../../../public/phone.png';
-import DeleteSaleItem from './DeleteSaleItem.vue';
-import Search from './gallery/Search.vue';
-import ShoppingCart from './gallery/ShoppingCart.vue';
-import { useUser } from '@/composables/useUser';
+import phoneImg from '../../../public/phone.png'
+import DeleteSaleItem from './DeleteSaleItem.vue'
+import Search from './gallery/Search.vue'
+import ShoppingCart from './gallery/ShoppingCart.vue'
+import { useUser } from '@/composables/useUser'
+import { useCart } from '@/composables/useCart'
 
 const url = `${import.meta.env.VITE_APP_URL}/sale-items`
 const url2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
@@ -17,23 +18,11 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
-const { userRole, userId, isLoading } = useUser();
+const { userRole, userId, isLoading: userLoading, loadCompleteUserData } = useUser()
+const { addToCart: addItemToCart } = useCart()
 
 const showModal = ref(false)
-const product = ref( {
-      "id": 1,
-      "model": "iPhone 14 Pro Max",
-      "brandName": "Apple",
-      "description": "ไอโฟนเรือธงรุ่นล่าสุด มาพร้อม Dynamic Island จอใหญ่สุดในตระกูล กล้องระดับโปร",
-      "price": 42900,
-      "ramGb": 6,
-      "screenSizeInch": 6.7,
-      "quantity": 6,
-      "storageGb": 512,
-      "color": "Space Black",
-      "createdOn": "2023-03-01T10:00:00Z",
-      "updatedOn": "2025-09-26T11:17:35Z"
-    })
+const product = ref()
 const images = ref([])
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
@@ -42,24 +31,34 @@ const successMessage = ref('')
 const cartQuantity = ref(1)
 
 // Check if current user is the owner of the item
-const isOwner = ref(false) // NOTE - TEST ONLY
-// const isOwner = computed(() => {
-//   if (!userId.value || !product.value) return false
-//   return product.value.sellerId === userId.value
-// })
+const isOwner = computed(() => {
+  // Don't show owner buttons while user data is loading
+  if (userLoading.value) return false
+  if (!userId.value || !product.value) return false
+  return product.value.sellerId === userId.value
+})
 
 // Show cart buttons for buyers or sellers viewing other's items
-const showCartButtons = ref(true) // NOTE - TEST ONLY
-// const showCartButtons = computed(() => {
-//   if (!userRole.value) return false
-//   const role = userRole.value
-//   return (role === 'BUYER' || role === 'SELLER') && !isOwner.value
-// })
-
+const showCartButtons = computed(() => {
+  // Don't show cart buttons while user data is loading
+  if (userLoading.value) return false
+  if (!userRole.value) return false
+  const role = userRole.value
+  return (role === 'BUYER' || role === 'SELLER') && !isOwner.value
+})
 
 // Show edit/delete buttons for owners only
 const showOwnerButtons = computed(() => {
   return isOwner.value
+})
+
+// Watch for user data changes and re-check ownership
+watch([userId, userLoading], async ([newUserId, newLoading]) => {
+  // When user data finishes loading and we have a userId
+  if (!newLoading && newUserId && product.value) {
+    // Force re-computation of isOwner by triggering reactivity
+    // (This happens automatically with computed, but watch ensures timing)
+  }
 })
 
 function decreaseQuantity() {
@@ -76,11 +75,27 @@ function increaseQuantity() {
 
 async function addToCart() {
   try {
-    // Implement your add to cart logic here
-    console.log(`Adding ${cartQuantity.value} items to cart`)
+    // Wait for user data if still loading
+    if (userLoading.value) {
+      await loadCompleteUserData()
+    }
+
+    // Check if user is logged in
+    if (!userId.value) {
+      alert('Please log in to add items to cart')
+      return
+    }
+
+    // Add to cart using the store
+    addItemToCart(product.value, cartQuantity.value)
     
+    // Show success message
     successMessage.value = `Added ${cartQuantity.value} item(s) to cart`
     showSuccessMessage.value = true
+    
+    // Reset quantity to 1 after adding
+    cartQuantity.value = 1
+    
     setTimeout(() => {
       showSuccessMessage.value = false
     }, 3000)
@@ -103,7 +118,7 @@ async function handleDelete() {
       return
     }
   } catch (error) {
-    console.error('Failed to fetch product:', error);
+    console.error('Failed to fetch product:', error)
   }
 
   showModal.value = false
@@ -112,22 +127,22 @@ async function handleDelete() {
 
 async function loadImages() {
   if (!product.value?.saleItemImages) {
-    console.warn('No images found for this product');
-    return;
+    console.warn('No images found for this product')
+    return
   }
 
-  images.value = [];
+  images.value = []
 
   const sortedImages = [...product.value.saleItemImages]
-    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0));
+    .sort((a, b) => (a.imageViewOrder || 0) - (b.imageViewOrder || 0))
 
   for (let i = 0; i < sortedImages.length; i++) {
     try {
       if (sortedImages[i] && sortedImages[i].fileName) {
-        images.value.push(`${url}/picture/${sortedImages[i].fileName}`);
+        images.value.push(`${url}/picture/${sortedImages[i].fileName}`)
       }
     } catch (error) {
-      console.warn(`Failed to load image ${i}:`, error);
+      console.warn(`Failed to load image ${i}:`, error)
     }
   }
 }
@@ -140,18 +155,23 @@ onMounted(async () => {
   )
   
   try {
+    // Ensure user data is loaded first
+    if (userLoading.value) {
+      await loadCompleteUserData()
+    }
+
     const item = await getItemById(url2, id)
     if (typeof item === 'number') {
       router.push({name: 'ListGallery'})
       alert('The requested sale item does not exist.')
       return
     }
-    product.value = item;
+    product.value = item
 
-    await loadImages();
+    await loadImages()
 
   } catch (error) {
-    console.error('Failed to fetch product:', error);
+    console.error('Failed to fetch product:', error)
   }
 })
 </script>
@@ -278,8 +298,13 @@ onMounted(async () => {
             </div>
           </div>
 
+          <!-- Loading State -->
+          <div v-if="userLoading" class="flex justify-center items-center pt-6">
+            <div class="animate-pulse text-gray-400">Loading user data...</div>
+          </div>
+
           <!-- Buttons - Owner View (Edit/Delete) -->
-          <div v-if="showOwnerButtons" class="flex flex-wrap gap-4 pt-6">
+          <div v-else-if="showOwnerButtons" class="flex flex-wrap gap-4 pt-6">
             <router-link
               :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'Gallery' } }"
               class="itbms-edit-button bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-medium transition shadow-md hover:shadow-lg"
@@ -295,7 +320,7 @@ onMounted(async () => {
           </div>
 
           <!-- Buttons - Buyer/Non-Owner View (Quantity Controls + Add to Cart) -->
-          <div v-else-if="showCartButtons" class="flex justify-between space-x-4">
+          <div v-else-if="showCartButtons" class="flex justify-between space-x-4 pt-6">
             <!-- Quantity Controls -->
             <div v-if="product.quantity > 0" class="flex items-center gap-4">
               <span class="text-sm font-medium text-gray-300">Quantity:</span>
@@ -331,7 +356,7 @@ onMounted(async () => {
           </div>
 
           <!-- No buttons for non-authenticated users -->
-          <div v-else class="pt-6 text-sm text-gray-400">
+          <div v-else class="pt-6 text-center text-gray-400">
             Please log in to purchase this item
           </div>
         </div>

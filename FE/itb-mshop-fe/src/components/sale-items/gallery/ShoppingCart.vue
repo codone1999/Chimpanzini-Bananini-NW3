@@ -1,13 +1,14 @@
 //ShoppingCart.vue
 <script setup>
 import { useRouter } from 'vue-router';
+import { useCart } from '@/composables/useCart'; // Import cart composable
 
 const router = useRouter();
+const { totalQuantity } = useCart(); // Get totalQuantity from cart
 
 function goToCartPage(){
   router.push({ name: "Cart"})
 }
-
 </script>
 
 <template>
@@ -20,9 +21,12 @@ function goToCartPage(){
       shopping_cart
     </span>
     
-    <!-- Cart Badge (optional - shows item count) -->
-    <span class="itbms-cart-quantity absolute -top-2 -right-1.5 bg-red-500 text-white text-sm font-bold rounded-full w-5 h-5 flex items-center justify-center">
-      3
+    <!-- Cart Badge - now shows real cart count -->
+    <span 
+      v-if="totalQuantity > 0"
+      class="itbms-cart-quantity absolute -top-2 -right-1.5 bg-red-500 text-white text-sm font-bold rounded-full w-5 h-5 flex items-center justify-center"
+    >
+      {{ totalQuantity > 99 ? '99+' : totalQuantity }}
     </span>
   </button>
 </template>

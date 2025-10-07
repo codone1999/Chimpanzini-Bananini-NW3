@@ -332,7 +332,7 @@ function addCustomPriceRange() {
     <!-- Sort + Page Size (Right Side) -->
     <div class="flex md:flex-nowrap gap-2 items-center w-full md:w-auto">
       <div class="flex items-center gap-2 text-base">
-        <label for="pageSize" class="font-medium text-purple-400 text-shadow-white whitespace-nowrap">Show:</label>
+        <label class="font-medium text-purple-400 text-shadow-white whitespace-nowrap">Show:</label>
         <select
           :value="props.pageSize"
           @change="handlePageSizeChange"
