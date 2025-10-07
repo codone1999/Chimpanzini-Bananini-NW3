@@ -195,7 +195,7 @@ public class SaleItemService {
         SaleItemDetailWithImagesDto dto = modelMapper.map(saleItem, SaleItemDetailWithImagesDto.class);
         dto.setBrandName(saleItem.getBrand().getName());
         dto.setSellerId(saleItem.getSeller() != null ? saleItem.getSeller().getId() : null);
-
+        dto.setSellerName(saleItem.getSeller() != null ? saleItem.getSeller().getAccount().getNickname() : null);
         List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
         List<SaleItemImageDto> imageDtos = pictures.stream().map(pic -> {
             SaleItemImageDto imgDto = new SaleItemImageDto();
