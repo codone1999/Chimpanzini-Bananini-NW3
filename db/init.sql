@@ -253,7 +253,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
     sale_item_id INT NOT NULL,
-    description varchar(255),
     quantity INT NOT NULL DEFAULT 1,
     price_each INT NOT NULL,
     CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,

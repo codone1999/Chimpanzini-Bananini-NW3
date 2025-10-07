@@ -40,8 +40,4 @@ public class OrderItem {
     @Column(name = "price_each", nullable = false)
     private Integer priceEach;
 
-    @Size(max = 255)
-    @Column(name = "description")
-    private String description;
-
 }

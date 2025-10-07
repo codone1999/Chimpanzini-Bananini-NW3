@@ -66,7 +66,6 @@ public class OrderService {
             orderItem.setSaleItem(saleItem);
             orderItem.setQuantity(itemDto.getQuantity());
             orderItem.setPriceEach(itemDto.getPrice());
-            orderItem.setDescription(itemDto.getDescription());
             orderItems.add(orderItem);
         }
         orderItemRepository.saveAll(orderItems);
@@ -102,9 +101,20 @@ public class OrderService {
     }
 
     private List<OrderItemRequestDto> mapOrderItems(List<OrderItem> orderItems) {
-        return orderItems.stream()
-                .map(oi -> modelMapper.map(oi, OrderItemRequestDto.class))
-                .toList();
+        return orderItems.stream().map(
+                oi->{
+                    OrderItemRequestDto dto = modelMapper.map(oi, OrderItemRequestDto.class);
+                    SaleItem saleItem = oi.getSaleItem();
+                    String brandName = saleItem.getBrand().getName();
+                    String model =  saleItem.getModel();
+                    String storage = saleItem.getStorageGb() != null ? saleItem.getStorageGb() + "GB" : "-";
+                    String color = saleItem.getColor() != null ? saleItem.getColor() : "-";
+                    dto.setDescription(brandName + " " + model + " ("+ storage+" " + color+")");
+                    dto.setSaleItemId(saleItem.getId());
+                    dto.setPrice(saleItem.getPrice());
+                    return dto;
+                }
+        ).toList();
     }
 
     @Transactional
