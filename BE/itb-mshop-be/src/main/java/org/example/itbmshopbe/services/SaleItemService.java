@@ -2,6 +2,7 @@ package org.example.itbmshopbe.services;
 
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.SaleItemDTO.*;
+import org.example.itbmshopbe.entities.Brand;
 import org.example.itbmshopbe.entities.SaleItem;
 import org.example.itbmshopbe.entities.SaleItemPicture;
 import org.example.itbmshopbe.entities.Seller;
@@ -102,7 +103,7 @@ public class SaleItemService {
             String trimmedDescription = trimFirstAndLastSentence(dto.getDescription());
             String sanitizedColor = saleItemUtil.sanitizeColor(dto.getColor());
             int resolvedQuantity = saleItemUtil.resolveQuantity(dto.getQuantity());
-            var brand = saleItemUtil.resolveBrand(dto);
+            Brand brand = saleItemUtil.resolveBrand(dto);
             existingSaleItem.setModel(trimmedModel);
             existingSaleItem.setDescription(trimmedDescription);
             existingSaleItem.setColor(sanitizedColor);
@@ -193,6 +194,7 @@ public class SaleItemService {
         SaleItem saleItem = findSaleItemById(id);
         SaleItemDetailWithImagesDto dto = modelMapper.map(saleItem, SaleItemDetailWithImagesDto.class);
         dto.setBrandName(saleItem.getBrand().getName());
+        dto.setSellerId(saleItem.getSeller() != null ? saleItem.getSeller().getId() : null);
 
         List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
         List<SaleItemImageDto> imageDtos = pictures.stream().map(pic -> {
