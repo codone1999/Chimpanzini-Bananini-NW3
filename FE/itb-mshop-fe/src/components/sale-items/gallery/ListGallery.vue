@@ -9,6 +9,7 @@ import { handleQueryAlerts } from "@/lib/alertMessage";
 import phoneImg from "../../../../public/phone.png";
 import Search from "./Search.vue";
 import { useUser } from "@/composables/useUser";
+import { useCart } from "@/composables/useCart";
 import { getAccessToken } from "@/lib/authUtils";
 import ShoppingCart from "./ShoppingCart.vue";
 
@@ -56,6 +57,7 @@ const successMessage = ref("");
 const isLoadingData = ref(false);
 
 const { userId, userRole, isLoading } = useUser();
+const { addToCart: addItemToCart } = useCart()
 
 // Computed property to determine when we can load data
 const canLoadData = computed(() => {
@@ -137,20 +139,9 @@ async function fetchFilteredSaleItems() {
   isLoadingData.value = true;
 
   let url = null;
-  
-  // Check if user is authenticated and is a seller
-  if (getAccessToken() && userRole.value === "SELLER") {
-    // Seller-specific endpoint - requires userId
-    if (!userId.value) {
-      console.warn("Seller user ID not available yet");
-      isLoadingData.value = false;
-      return;
-    }
-    url = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item?`;
-  } else {
-    // Public endpoint for everyone else (non-authenticated users and buyers)
-    url = `${import.meta.env.VITE_APP_URL2}/sale-items?`;
-  }
+
+  // Public endpoint for everyone else (non-authenticated users and buyers)
+  url = `${import.meta.env.VITE_APP_URL2}/sale-items?`;
 
   const query = [];
 
@@ -330,6 +321,14 @@ function handleSearch(searchKeyword) {
   currentPage.value = 1; // Reset to first page when searching
   saveSession(); // Save the new search term
   fetchFilteredSaleItems(); // Fetch with new search term
+}
+function addToCart(product) {
+  // Check if user is logged in
+  if (!userId.value) {
+    router.push( { name: 'Login' })
+    return
+  }
+  addItemToCart(product, 1)
 }
 
 //  ------------- Watchers ------------------ //
@@ -517,15 +516,18 @@ onMounted(async () => {
                 <span class="itbms-storageGb-unit">GB</span>
               </p>
 
-              <button
-                class="itbms-add-to-cart-button mt-auto w-full bg-gradient-to-r from-purple-500 to-indigo-600 
-                hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
-                shadow-inner shadow-purple-900/40 transition"
-              >
-                Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
-              </button>
             </div>
           </router-link>
+          <div class="-mt-7">
+            <button
+              @click.stop="addToCart(product)"
+              class="itbms-add-to-cart-button w-full bg-gradient-to-r from-purple-500 to-indigo-600 
+              hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
+              shadow-inner shadow-purple-900/40 transition"
+            >
+              Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+            </button>
+          </div>
         </div>
       </div>
 

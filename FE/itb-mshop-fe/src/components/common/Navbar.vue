@@ -29,7 +29,7 @@ async function handleLogout() {
   try {
     await logout()
     mobileMenuOpen.value = false
-    router.push('/')
+    router.push( { name: 'ListGallery'})
   } catch (error) {
     console.error('Logout failed:', error)
   } finally {

@@ -108,6 +108,34 @@ async function addItemAndImage(url, newItem, files) {
   }
 }
 
+async function addItemWithToken(url, newItem) {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(newItem)
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error('HTTP error! status: ' + res.status + ', message: ' + errorText)
+    }
+
+    const addedItem = await res.json()
+    return addedItem
+  } catch (error) {
+    throw new Error('can not add your item: ' + error.message)
+  }
+}
+
 async function editItem(url, id, editItem) {
   try {
     const res = await fetch(`${url}/${id}`, {
@@ -398,10 +426,12 @@ export {
   addItemAndImage, 
   editItemAndImage, 
 
+  addItemWithToken,
+
   registerAccount, 
   getProfileByIdAndToken, 
   editProfileByIdAndToken,
 
   getSellerItemsByToken,
   addSellerItemAndImageByToken,
- }
+}

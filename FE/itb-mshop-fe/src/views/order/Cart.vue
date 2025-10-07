@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 import { useCart } from '@/composables/useCart'
 import { useUser } from '@/composables/useUser'
-import { addItem } from '@/lib/fetchUtils'
+import { addItemWithToken } from '@/lib/fetchUtils'
+import { getAccessToken } from '@/lib/authUtils'
 
 const { 
   cartItems, 
@@ -13,10 +14,14 @@ const {
   clearSelectedItems
 } = useCart()
 
-const { userId, isLoading: userLoading, loadCompleteUserData } = useUser()
+const { userId, isLoading: userLoading } = useUser()
 
 const shippingAddress = ref('')
 const shippingNote = ref('')
+
+// Popup state
+const showRemovePopup = ref(false)
+const itemToRemove = ref(null)
 
 // Group items by seller
 const groupedBySeller = computed(() => {
@@ -70,18 +75,36 @@ const total = computed(() => {
     .reduce((sum, item) => sum + (item.price * item.quantity), 0)
 })
 
-// ✅ FIXED - Call the composable methods directly
 const updateQuantity = (itemId, change) => {
   const item = cartItems.value.find(i => i.id === itemId)
   if (item) {
     const newQuantity = item.quantity + change
+    
+    // If decreasing to 0, show confirmation popup
+    if (newQuantity === 0 && change < 0) {
+      itemToRemove.value = item
+      showRemovePopup.value = true
+      return
+    }
+    
     updateCartQuantity(itemId, newQuantity)
   }
 }
 
-// ✅ FIXED - Call the composable method directly
-const removeItem = (itemId) => {
-  removeFromCart(itemId)
+const confirmRemove = () => {
+  if (itemToRemove.value) {
+    removeFromCart(itemToRemove.value.id)
+  }
+  closeRemovePopup()
+}
+
+const cancelRemove = () => {
+  closeRemovePopup()
+}
+
+const closeRemovePopup = () => {
+  showRemovePopup.value = false
+  itemToRemove.value = null
 }
 
 const createOrder = async () => {
@@ -97,25 +120,32 @@ const createOrder = async () => {
   }
 
   try {
-    // Group selected items by seller
+    // Group selected items by seller using plain object
     const ordersBySeller = {}
     
-    selectedItems.forEach(item => {
+    for (let i = 0; i < selectedItems.length; i++) {
+      const item = selectedItems[i]
       if (!ordersBySeller[item.seller]) {
         ordersBySeller[item.seller] = []
       }
       ordersBySeller[item.seller].push(item)
-    })
-
+    }
+    
     // Create orders for each seller
-    const orderPromises = Object.entries(ordersBySeller).map(async ([seller, items]) => {
+    for (const seller in ordersBySeller) {
+      const items = ordersBySeller[seller]
+      
       // Prepare order items array
-      const orderItems = items.map(item => ({
-        saleItemId: item.id,
-        price: item.price,
-        quantity: item.quantity,
-        description: `${item.name} - ${item.color || ''} ${item.storageGb ? item.storageGb + 'GB' : ''}`.trim()
-      }))
+      const orderItems = []
+      for (let j = 0; j < items.length; j++) {
+        const item = items[j]
+        
+        orderItems.push({
+          saleItemId: item.id,
+          price: item.price,
+          quantity: item.quantity
+        })
+      }
 
       // Prepare order data
       const orderData = {
@@ -129,11 +159,8 @@ const createOrder = async () => {
       }
 
       // Submit order to API
-      return await addItem(`${import.meta.env.VITE_APP_URL2}/order`, orderData)
-    })
-
-    // Wait for all orders to complete
-    const results = await Promise.all(orderPromises)
+      await addItemWithToken (`${import.meta.env.VITE_APP_URL2}/order`, orderData, getAccessToken())
+    }
     
     // Clear selected items from cart after successful order
     clearSelectedItems()
@@ -142,9 +169,7 @@ const createOrder = async () => {
     shippingAddress.value = ''
     shippingNote.value = ''
     
-    // Success message
-    alert(`Order(s) created successfully!\n${results.length} order(s) placed\nTotal: ฿${total.value.toFixed(2)}`)
-    
+    alert('Order created successfully!')
   } catch (error) {
     console.error('Failed to create order:', error)
     alert('Failed to create order. Please try again.')
@@ -234,7 +259,7 @@ const createOrder = async () => {
                 <p class="font-semibold text-lg text-gray-800">
                   ฿{{ (item.price * item.quantity).toFixed(2) }}
                 </p>
-                <button @click="removeItem(item.id)"
+                <button @click="() => {itemToRemove = item; showRemovePopup = true}"
                         class="ml-auto text-red-500 hover:text-red-700 text-sm font-medium">
                   Remove
                 </button>
@@ -321,11 +346,44 @@ const createOrder = async () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
               <span v-if="userLoading">Loading...</span>
-              <span v-else>Create Order</span>
+              <span v-else>Place Order</span>
             </button>
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Remove Confirmation Popup -->
+    <div v-if="showRemovePopup" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800">Remove Item</h3>
+        </div>
+        
+        <p class="text-gray-600 mb-6">
+          Do you want to remove the sale Item from the cart?
+        </p>
+        
+        <div class="flex gap-3">
+          <button
+            @click="cancelRemove"
+            class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmRemove"
+            class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition"
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
   </div>

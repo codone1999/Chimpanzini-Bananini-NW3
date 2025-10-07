@@ -1,4 +1,3 @@
-// ListDetails.vue
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, computed, watch } from 'vue'
@@ -38,13 +37,17 @@ const isOwner = computed(() => {
   return product.value.sellerId === userId.value
 })
 
-// Show cart buttons for buyers or sellers viewing other's items
+// Show cart buttons for non-logged-in users, buyers, or sellers viewing other's items
 const showCartButtons = computed(() => {
-  // Don't show cart buttons while user data is loading
-  if (userLoading.value) return false
-  if (!userRole.value) return false
-  const role = userRole.value
-  return (role === 'BUYER' || role === 'SELLER') && !isOwner.value
+  // Show cart buttons while loading
+  if (userLoading.value) return true
+  
+  // Show cart buttons if no user is logged in (not authenticated)
+  if (!userId.value) return true
+  
+  // Show cart buttons if user is logged in but not the owner
+  if (!product.value) return false
+  return !isOwner.value
 })
 
 // Show edit/delete buttons for owners only
@@ -80,25 +83,16 @@ async function addToCart() {
       await loadCompleteUserData()
     }
 
-    // Check if user is logged in
+    // Check if user is logged in - redirect to login if not
     if (!userId.value) {
-      alert('Please log in to add items to cart')
+      router.push({ name: 'Login' })
       return
     }
-
-    // Add to cart using the store
-    addItemToCart(product.value, cartQuantity.value)
     
-    // Show success message
-    successMessage.value = `Added ${cartQuantity.value} item(s) to cart`
-    showSuccessMessage.value = true
+    addItemToCart(product.value, cartQuantity.value)
     
     // Reset quantity to 1 after adding
     cartQuantity.value = 1
-    
-    setTimeout(() => {
-      showSuccessMessage.value = false
-    }, 3000)
   } catch (error) {
     console.error('Failed to add to cart:', error)
     alert('Failed to add item to cart')
@@ -298,13 +292,8 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Loading State -->
-          <div v-if="userLoading" class="flex justify-center items-center pt-6">
-            <div class="animate-pulse text-gray-400">Loading user data...</div>
-          </div>
-
           <!-- Buttons - Owner View (Edit/Delete) -->
-          <div v-else-if="showOwnerButtons" class="flex flex-wrap gap-4 pt-6">
+          <div v-if="showOwnerButtons" class="flex flex-wrap gap-4">
             <router-link
               :to="{ name: 'EditItem', params: { id: product.id }, query: { from: 'Gallery' } }"
               class="itbms-edit-button bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-medium transition shadow-md hover:shadow-lg"
@@ -319,8 +308,8 @@ onMounted(async () => {
             </button>
           </div>
 
-          <!-- Buttons - Buyer/Non-Owner View (Quantity Controls + Add to Cart) -->
-          <div v-else-if="showCartButtons" class="flex justify-between space-x-4 pt-6">
+          <!-- Buttons - Buyer/Non-Owner/Non-Logged-In View (Quantity Controls + Add to Cart) -->
+          <div v-else-if="showCartButtons" class="flex justify-between space-x-4">
             <!-- Quantity Controls -->
             <div v-if="product.quantity > 0" class="flex items-center gap-4">
               <span class="text-sm font-medium text-gray-300">Quantity:</span>
@@ -353,11 +342,6 @@ onMounted(async () => {
             >
               {{ product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' }}
             </button>
-          </div>
-
-          <!-- No buttons for non-authenticated users -->
-          <div v-else class="pt-6 text-center text-gray-400">
-            Please log in to purchase this item
           </div>
         </div>
       </div>
