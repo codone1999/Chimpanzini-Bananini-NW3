@@ -174,9 +174,14 @@ public class SaleItemService {
                 .and(SaleItemSpecifications.keyword(searchKeyword));
 
         Page<SaleItem> saleItemsPage = saleItemRepository.findAll(spec, pageable);
-
-        List<SaleItemDetailDto> content = listMapper.mapList(saleItemsPage.getContent(), SaleItemDetailDto.class, modelMapper);
-
+        List<SaleItemDetailDto> content = saleItemsPage.getContent().stream()
+                .map(saleItem -> {
+                    SaleItemDetailDto dto = modelMapper.map(saleItem, SaleItemDetailDto.class);
+                    dto.setSellerId(saleItem.getSeller() != null ? saleItem.getSeller().getId() : null);
+                    dto.setSellerName(saleItem.getSeller() != null ? saleItem.getSeller().getAccount().getNickname() : null);
+                    return dto;
+                })
+                .toList();
         SaleItemPagedResponseDto responseDto = new SaleItemPagedResponseDto();
         responseDto.setContent(content);
         responseDto.setLast(saleItemsPage.isLast());
@@ -186,6 +191,7 @@ public class SaleItemService {
         responseDto.setSize(saleItemsPage.getSize());
         responseDto.setPage(saleItemsPage.getNumber());
         responseDto.setSort(saleItemsPage.getSort().isSorted() ? saleItemsPage.getSort().toString().replace(": ", ":") : null);
+
 
         return responseDto;
     }

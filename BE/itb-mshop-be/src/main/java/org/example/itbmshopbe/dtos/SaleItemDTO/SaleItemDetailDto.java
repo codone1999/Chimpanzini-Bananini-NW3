@@ -22,4 +22,6 @@ public class SaleItemDetailDto {
     private String color;
     private Instant createdOn;
     private Instant updatedOn;
+    private Integer sellerId;
+    private String sellerName;
 }
