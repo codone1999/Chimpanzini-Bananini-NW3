@@ -42,6 +42,9 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
         Seller seller = sellerRepository.findById(orderRequestDto.getSellerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found"));
+        if (seller.getId().equals(buyerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot purchase your own items");
+        }
         Order order = new Order();
         order.setCustomer(buyer);
         order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
@@ -187,18 +190,18 @@ public class OrderService {
 
     @Transactional
     public List<OrderSellerViewResponseDto> getAllOrdersForSeller(
-            Integer sellerId,
-            Integer page,
-            Integer size,
-            String sortField,
-            String sortDirection
-    ) {
-        if (page == null || page < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
-        }
+                Integer sellerId,
+                Integer page,
+                Integer size,
+                String sortField,
+                String sortDirection
+        ) {
+            if (page == null || page < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
+            }
 
-        int pageSize = (size == null || size <= 0) ? 10 : size;
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
+            int pageSize = (size == null || size <= 0) ? 10 : size;
+            Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
         String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
         Specification<Order> spec = Specification.where(OrderSpecifications.belongsToSeller(sellerId));
