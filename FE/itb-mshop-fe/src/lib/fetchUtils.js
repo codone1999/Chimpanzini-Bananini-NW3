@@ -108,9 +108,9 @@ async function addItemAndImage(url, newItem, files) {
   }
 }
 
-async function addItemWithToken(url, newItem) {
+async function addItemWithToken(url, newItem, token) {
   try {
-    const token = localStorage.getItem('token')
+    // Use the token parameter instead of localStorage
     if (!token) {
       throw new Error('No authentication token found')
     }
@@ -119,7 +119,7 @@ async function addItemWithToken(url, newItem) {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token,
-        'content-type': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(newItem)
     })

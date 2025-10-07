@@ -27,10 +27,12 @@ const itemToRemove = ref(null)
 const groupedBySeller = computed(() => {
   const groups = {}
   cartItems.value.forEach(item => {
-    if (!groups[item.seller]) {
-      groups[item.seller] = []
+    // Use sellerName if available, otherwise use a fallback
+    const sellerKey = item.sellerName || 'Unknown Seller'
+    if (!groups[sellerKey]) {
+      groups[sellerKey] = []
     }
-    groups[item.seller].push(item)
+    groups[sellerKey].push(item)
   })
   return groups
 })
@@ -125,11 +127,16 @@ const createOrder = async () => {
     
     for (let i = 0; i < selectedItems.length; i++) {
       const item = selectedItems[i]
-      if (!ordersBySeller[item.seller]) {
-        ordersBySeller[item.seller] = []
+      // Use sellerName if available, otherwise use a fallback
+      const sellerKey = item.sellerName || item.seller || 'Unknown Seller'
+      if (!ordersBySeller[sellerKey]) {
+        ordersBySeller[sellerKey] = []
       }
-      ordersBySeller[item.seller].push(item)
+      ordersBySeller[sellerKey].push(item)
     }
+    
+    // Track global order item sequence
+    let globalOrderItemId = 1
     
     // Create orders for each seller
     for (const seller in ordersBySeller) {
@@ -141,6 +148,7 @@ const createOrder = async () => {
         const item = items[j]
         
         orderItems.push({
+          id: globalOrderItemId++,  // Sequential number across all orders
           saleItemId: item.id,
           price: item.price,
           quantity: item.quantity
@@ -148,18 +156,18 @@ const createOrder = async () => {
       }
 
       // Prepare order data
-      const orderData = {
-        buyerId: userId.value,
-        sellerId: items[0].sellerId || '',
-        orderDate: new Date().toISOString(),
-        shippingAddress: shippingAddress.value.trim(),
-        orderNote: shippingNote.value.trim() || '',
-        orderStatus: 'PENDING',
-        orderItems: orderItems
-      }
+        const orderData = {
+          buyerId: userId.value,
+          sellerId: items[0].sellerId || '',
+          orderDate: new Date().toISOString(),
+          shippingAddress: shippingAddress.value.trim(),
+          orderNote: shippingNote.value.trim() || '',
+          orderStatus: 'Completed',
+          orderItems: orderItems
+        }
 
       // Submit order to API
-      await addItemWithToken (`${import.meta.env.VITE_APP_URL2}/order`, orderData, getAccessToken())
+      await addItemWithToken(`${import.meta.env.VITE_APP_URL2}/orders`, orderData, getAccessToken())
     }
     
     // Clear selected items from cart after successful order
@@ -223,7 +231,7 @@ const createOrder = async () => {
 
             <!-- Items in this seller group -->
             <div v-for="item in items" :key="item.id" 
-                 class="bg-white rounded-lg shadow p-4 flex gap-4 ml-8">
+                class="bg-white rounded-lg shadow p-4 flex gap-4 ml-8">
               <label class="flex items-start cursor-pointer">
                 <input 
                   type="checkbox" 
@@ -233,13 +241,17 @@ const createOrder = async () => {
               </label>
 
               <img 
-                :src="item.image || 'https://via.placeholder.com/150'" 
-                :alt="item.name" 
+                :src="item.image" 
+                :alt="item.model" 
                 class="w-24 h-24 object-cover rounded"
               >
               
               <div class="flex-1">
-                <h3 class="font-semibold text-lg text-gray-800">{{ item.name }}</h3>
+                <h3 class="text-lg text-gray-800">
+                  <span><span class="font-semibold">{{ item.brandName }}</span>&nbsp;
+                  {{ item.model }}&nbsp;({{item.storageGb}}GB,&nbsp;{{ item.color }})
+                  </span>
+                </h3>
                 <p class="text-gray-600 mt-1">฿{{ item.price.toFixed(2) }}</p>
                 
                 <div class="flex items-center gap-3 mt-3">

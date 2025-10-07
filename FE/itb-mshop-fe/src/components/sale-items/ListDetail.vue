@@ -18,7 +18,7 @@ const router = useRouter()
 const id = route.params.id
 
 const { userRole, userId, isLoading: userLoading, loadCompleteUserData } = useUser()
-const { addToCart: addItemToCart } = useCart()
+const { addToCart: addItemToCart, cartItems } = useCart()
 
 const showModal = ref(false)
 const product = ref()
@@ -28,6 +28,19 @@ const successMessage = ref('')
 
 // Cart functionality
 const cartQuantity = ref(1)
+
+// Function to get current cart quantity for this product
+const currentCartQuantity = computed(() => {
+  if (!product.value) return 0
+  const cartItem = cartItems.value.find(item => item.id === product.value.id)
+  return cartItem ? cartItem.quantity : 0
+})
+
+// Maximum quantity that can be added (stock - already in cart)
+const maxAddableQuantity = computed(() => {
+  if (!product.value) return 0
+  return Math.max(0, product.value.quantity - currentCartQuantity.value)
+})
 
 // Check if current user is the owner of the item
 const isOwner = computed(() => {
@@ -64,6 +77,13 @@ watch([userId, userLoading], async ([newUserId, newLoading]) => {
   }
 })
 
+// Watch for changes in max addable quantity and adjust cartQuantity if needed
+watch(maxAddableQuantity, (newMax) => {
+  if (cartQuantity.value > newMax) {
+    cartQuantity.value = Math.max(1, newMax)
+  }
+})
+
 function decreaseQuantity() {
   if (cartQuantity.value > 1) {
     cartQuantity.value--
@@ -71,7 +91,8 @@ function decreaseQuantity() {
 }
 
 function increaseQuantity() {
-  if (cartQuantity.value < product.value.quantity) {
+  // Can't exceed stock or what's already available after cart items
+  if (cartQuantity.value < maxAddableQuantity.value) {
     cartQuantity.value++
   }
 }
@@ -89,7 +110,20 @@ async function addToCart() {
       return
     }
     
-    addItemToCart(product.value, cartQuantity.value)
+    // Check if there's enough stock available
+    if (maxAddableQuantity.value === 0) {
+      alert('Cannot add more items. You already have the maximum available quantity in your cart.')
+      return
+    }
+    
+    // Adjust quantity if it exceeds available
+    const quantityToAdd = Math.min(cartQuantity.value, maxAddableQuantity.value)
+    
+    if (quantityToAdd < cartQuantity.value) {
+      alert(`Only ${quantityToAdd} items can be added. You already have ${currentCartQuantity.value} in your cart.`)
+    }
+    
+    addItemToCart(product.value, quantityToAdd)
     
     // Reset quantity to 1 after adding
     cartQuantity.value = 1
@@ -309,39 +343,78 @@ onMounted(async () => {
           </div>
 
           <!-- Buttons - Buyer/Non-Owner/Non-Logged-In View (Quantity Controls + Add to Cart) -->
-          <div v-else-if="showCartButtons" class="flex justify-between space-x-4">
-            <!-- Quantity Controls -->
-            <div v-if="product.quantity > 0" class="flex items-center gap-4">
-              <span class="text-sm font-medium text-gray-300">Quantity:</span>
-              <div class="flex items-center gap-3 bg-gray-700 rounded-lg">
-                <button
-                  @click="decreaseQuantity"
-                  :disabled="cartQuantity <= 1"
-                  class="itbms-dec-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
-                >
-                  −
-                </button>
-                <span class="itbms-cart-quantity px-6 text-center font-semibold text-gray-100">
-                  {{ cartQuantity }}
+          <div v-else-if="showCartButtons" class="space-y-4">
+            <!-- Stock and Cart Info -->
+            <div v-if="currentCartQuantity > 0" class="text-sm bg-gray-700/50 px-4 py-2 rounded-lg border border-gray-600">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-300">
+                  <span class="text-purple-400 font-medium">{{ currentCartQuantity }}</span> 
+                  {{ currentCartQuantity === 1 ? 'item' : 'items' }} already in cart
                 </span>
-                <button
-                  @click="increaseQuantity"
-                  :disabled="cartQuantity >= product.quantity"
-                  class="itbms-inc-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
-                >
-                  +
-                </button>
+                <span v-if="maxAddableQuantity > 0" class="text-emerald-400 font-medium">
+                  +{{ maxAddableQuantity }} available
+                </span>
+                <span v-else class="text-amber-400 font-medium flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"/>
+                  </svg>
+                  Maximum reached
+                </span>
               </div>
             </div>
 
-            <!-- Add to Cart Button -->
-            <button
-              @click="addToCart"
-              :disabled="product.quantity === 0"
-              class="itbms-add-to-cart-quantity px-5 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition shadow-md hover:shadow-lg"
-            >
-              {{ product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' }}
-            </button>
+            <div class="flex justify-between space-x-4">
+              <!-- Quantity Controls -->
+              <div v-if="maxAddableQuantity > 0" class="flex items-center gap-4">
+                <span class="text-sm font-medium text-gray-300">Quantity:</span>
+                <div class="flex items-center gap-3 bg-gray-700 rounded-lg">
+                  <button
+                    @click="decreaseQuantity"
+                    :disabled="cartQuantity <= 1"
+                    class="itbms-dec-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
+                  >
+                    −
+                  </button>
+                  <span class="itbms-cart-quantity px-6 text-center font-semibold text-gray-100">
+                    {{ cartQuantity }}
+                  </span>
+                  <button
+                    @click="increaseQuantity"
+                    :disabled="cartQuantity >= maxAddableQuantity"
+                    class="itbms-inc-qty-button px-3 py-2 flex items-center justify-center rounded bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add to Cart Button -->
+              <button
+                @click="addToCart"
+                :disabled="maxAddableQuantity === 0"
+                :class="[
+                  'itbms-add-to-cart-quantity px-5 py-3 rounded-lg font-medium transition shadow-md',
+                  maxAddableQuantity === 0
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-500 text-white hover:shadow-lg'
+                ]"
+              >
+                <template v-if="product.quantity === 0">
+                  Out of Stock
+                </template>
+                <template v-else-if="maxAddableQuantity === 0">
+                  <span class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Maximum Reached
+                  </span>
+                </template>
+                <template v-else>
+                  Add to Cart
+                </template>
+              </button>
+            </div>
           </div>
         </div>
       </div>

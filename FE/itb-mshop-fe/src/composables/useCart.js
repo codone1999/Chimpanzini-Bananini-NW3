@@ -88,16 +88,34 @@ export function useCart() {
     const existingItem = cartItems.value.find(item => item.id === product.id)
     
     if (existingItem) {
-      // Update quantity if item already exists
-      existingItem.quantity += quantity
+      // Calculate new total quantity
+      const newQuantity = existingItem.quantity + quantity
+      
+      // Check if new quantity exceeds available stock
+      if (newQuantity > product.quantity) {
+        // Set to maximum available quantity instead
+        existingItem.quantity = product.quantity
+        alert(`Cannot add more items. Maximum available quantity is ${product.quantity}`)
+      } else {
+        existingItem.quantity = newQuantity
+      }
     } else {
+      // Check if requested quantity exceeds stock
+      const quantityToAdd = Math.min(quantity, product.quantity)
+      
+      if (quantity > product.quantity) {
+        alert(`Only ${product.quantity} items available in stock`)
+      }
+      
       // Add new item
       cartItems.value.push({
         id: product.id,
-        name: product.model,
+        model: product.model,
         price: product.price,
-        quantity: quantity,
-        seller: product.brandName,
+        quantity: quantityToAdd,
+        maxQuantity: product.quantity, // Store max available quantity
+        sellerId: product.sellerId,
+        sellerName: product.sellerName,
         selected: true,
         image: product.saleItemImages?.[0]?.fileName 
           ? `${import.meta.env.VITE_APP_URL}/sale-items/picture/${product.saleItemImages[0].fileName}`
@@ -130,6 +148,11 @@ export function useCart() {
     if (item) {
       if (newQuantity <= 0) {
         removeFromCart(itemId)
+      } else if (item.maxQuantity && newQuantity > item.maxQuantity) {
+        // Don't allow quantity to exceed max available
+        alert(`Cannot add more items. Maximum available quantity is ${item.maxQuantity}`)
+        item.quantity = item.maxQuantity
+        saveCart()
       } else {
         item.quantity = newQuantity
         saveCart()

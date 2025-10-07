@@ -57,7 +57,7 @@ const successMessage = ref("");
 const isLoadingData = ref(false);
 
 const { userId, userRole, isLoading } = useUser();
-const { addToCart: addItemToCart } = useCart()
+const { addToCart: addItemToCart, cartItems } = useCart()
 
 // Computed property to determine when we can load data
 const canLoadData = computed(() => {
@@ -65,6 +65,18 @@ const canLoadData = computed(() => {
   // For authenticated users, wait for user data to be loaded
   return !isLoading.value || !getAccessToken();
 });
+
+// Function to get current cart quantity for a product
+function getCartQuantity(productId) {
+  const cartItem = cartItems.value.find(item => item.id === productId)
+  return cartItem ? cartItem.quantity : 0
+}
+
+// Function to check if can add more to cart
+function canAddToCart(product) {
+  const currentCartQty = getCartQuantity(product.id)
+  return currentCartQty < product.quantity
+}
 
 // Visible Pages
 const visiblePages = computed(() => {
@@ -322,12 +334,33 @@ function handleSearch(searchKeyword) {
   saveSession(); // Save the new search term
   fetchFilteredSaleItems(); // Fetch with new search term
 }
+
 function addToCart(product) {
   // Check if user is logged in
   if (!userId.value) {
-    router.push( { name: 'Login' })
+    router.push({ name: 'Login' })
     return
   }
+  
+  // Check if user is the seller
+  if (userId.value === product.sellerId) {
+    alert("You cannot add your own items to cart")
+    return
+  }
+  
+  // Check if product is out of stock
+  if (product.quantity === 0) {
+    alert("This item is out of stock")
+    return
+  }
+  
+  // Check if already at maximum quantity in cart
+  const currentCartQty = getCartQuantity(product.id)
+  if (currentCartQty >= product.quantity) {
+    alert(`You already have the maximum available quantity (${product.quantity}) in your cart`)
+    return
+  }
+  
   addItemToCart(product, 1)
 }
 
@@ -521,11 +554,23 @@ onMounted(async () => {
           <div class="-mt-7">
             <button
               @click.stop="addToCart(product)"
-              class="itbms-add-to-cart-button w-full bg-gradient-to-r from-purple-500 to-indigo-600 
-              hover:from-purple-400 hover:to-indigo-500 text-white py-2 rounded-lg font-bold 
-              shadow-inner shadow-purple-900/40 transition"
+              :disabled="!canAddToCart(product) || userId === product.sellerId"
+              :class="[
+                'itbms-add-to-cart-button w-full py-2 rounded-lg font-bold shadow-inner transition',
+                (!canAddToCart(product) || userId === product.sellerId) 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
+              ]"
             >
-              Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+              <template v-if="product.quantity === 0">
+                Out of Stock
+              </template>
+              <template v-else-if="!canAddToCart(product)">
+                Max in Cart
+              </template>
+              <template v-else>
+                Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+              </template>
             </button>
           </div>
         </div>
