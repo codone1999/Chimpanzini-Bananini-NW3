@@ -1,3 +1,4 @@
+//Pagination.vue
 <script setup>
 
 const props = defineProps({

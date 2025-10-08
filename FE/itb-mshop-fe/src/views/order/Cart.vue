@@ -1,3 +1,4 @@
+//Cart.vue
 <script setup>
 import { ref, computed } from 'vue'
 import { useCart } from '@/composables/useCart'
@@ -156,18 +157,19 @@ const createOrder = async () => {
       }
 
       // Prepare order data
-        const orderData = {
-          buyerId: userId.value,
-          sellerId: items[0].sellerId || '',
-          orderDate: new Date().toISOString(),
-          shippingAddress: shippingAddress.value.trim(),
-          orderNote: shippingNote.value.trim() || '',
-          orderStatus: 'Completed',
-          orderItems: orderItems
-        }
+      const orderData = {
+        buyerId: userId.value,
+        sellerId: items[0].sellerId || '',
+        orderDate: new Date().toISOString(),
+        shippingAddress: shippingAddress.value.trim(),
+        orderNote: shippingNote.value.trim() || '',
+        orderStatus: 'COMPLETED',
+        orderItems: orderItems
+      }
 
       // Submit order to API
-      await addItemWithToken(`${import.meta.env.VITE_APP_URL2}/orders`, orderData, getAccessToken())
+      const response = await addItemWithToken(`${import.meta.env.VITE_APP_URL2}/orders`, orderData, getAccessToken())
+      // console.log(response)
     }
     
     // Clear selected items from cart after successful order

@@ -226,7 +226,7 @@ async function editItemAndImage(url, id, editItem) {
   }
 }
 
-// New function specifically for account registration
+// Account registration
 async function registerAccount(url, formData, role) {  
   try {
     // Create FormData for multipart/form-data submission
@@ -417,12 +417,69 @@ async function addSellerItemAndImageByToken(url, token, addItem, files) {
   }
 }
 
+// Orders & Order Details
+async function getOrdersByIdWithToken(url, token) {
+  try {
+    // Validate token
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    // URL already contains the full path with query parameters
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error('HTTP error! status: ' + res.status + ', message: ' + errorText)
+    }
+
+    const item = await res.json()
+    return item
+  } catch (error) {
+    throw new Error('Cannot get orders: ' + error.message)
+  }
+}
+
+async function getOrderDetailByIdWithToken(url, id, token) {
+  try {
+    // Use the token parameter instead of localStorage
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const res = await fetch(`${url}/${id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error('HTTP error! status: ' + res.status + ', message: ' + errorText)
+    }
+
+    const item = await res.json()
+    return item
+  } catch (error) {
+    throw new Error('Cannot get item: ' + error.message)
+  }
+}
+
 export { 
   getItems, 
   getItemById, 
   deleteItemById, 
   addItem, 
   editItem, 
+
   addItemAndImage, 
   editItemAndImage, 
 
@@ -434,4 +491,7 @@ export {
 
   getSellerItemsByToken,
   addSellerItemAndImageByToken,
+
+  getOrdersByIdWithToken,
+  getOrderDetailByIdWithToken,
 }

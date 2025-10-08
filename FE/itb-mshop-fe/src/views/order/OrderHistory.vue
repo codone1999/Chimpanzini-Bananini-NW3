@@ -1,107 +1,180 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUser } from '@/composables/useUser'
+import { getOrdersByIdWithToken } from '@/lib/fetchUtils'
+import { getAccessToken } from '@/lib/authUtils'
+import phoneImg from '../../../public/phone.png'
 
+const router = useRouter()
 const { userId, userNickname, hasCompleteUserData, isLoading: userIsLoading } = useUser()
 
-const activeTab = ref('completed')
+const activeTab = ref('COMPLETED')
 const isLoadingOrders = ref(false)
 
-// Sample order data - replace with actual API calls
-const orders = ref([
-  {
-    id: 123456,
-    nickname: 'Somsuan',
-    orderDate: 'October 1, 2025',
-    paymentDate: 'October 1, 2025',
-    total: 62700,
-    status: 'Completed',
-    shippingAddress: 'Somchai Jaidee, 123/45 Moo 6, T. Bangna, A. Bangna, Bangkok 10260',
-    note: '',
-    items: [
-      {
-        id: 1,
-        image: 'https://images.unsplash.com/photo-1592286927505-b0501739739a?w=100&h=100&fit=crop',
-        description: 'Apple iPhone 14 Pro Max (512GB, Space Black)',
-        quantity: 1,
-        price: 42900
-      },
-      {
-        id: 2,
-        image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=100&h=100&fit=crop',
-        description: 'Apple iPhone 13 mini (128GB, Green)',
-        quantity: 1,
-        price: 19800
-      }
-    ]
-  },
-  {
-    id: 123457,
-    nickname: 'Somchai',
-    orderDate: 'September 28, 2025',
-    paymentDate: 'September 28, 2025',
-    total: 35900,
-    status: 'Completed',
-    shippingAddress: 'Somchai Smith, 456/78 Moo 2, T. Sukhumvit, A. Watthana, Bangkok 10110',
-    note: 'Please deliver after 5 PM',
-    items: [
-      {
-        id: 1,
-        image: 'https://images.unsplash.com/photo-1611472173362-3f53dbd65d80?w=100&h=100&fit=crop',
-        description: 'Apple iPhone 12 Pro (256GB, Pacific Blue)',
-        quantity: 1,
-        price: 35900
-      }
-    ]
-  }
-])
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(10)
+const sortField = ref('createdOn')
+const sortDirection = ref('desc')
+const totalPages = ref(1)
+const totalElements = ref(0)
 
-const cancelledOrders = ref([
-  {
-    id: 123458,
-    nickname: 'Malee',
-    orderDate: 'September 25, 2025',
-    paymentDate: '-',
-    total: 28900,
-    status: 'Cancelled',
-    shippingAddress: 'Malee Brown, 789/12 Moo 4, T. Silom, A. Bangrak, Bangkok 10500',
-    note: 'Customer requested cancellation',
-    items: [
-      {
-        id: 1,
-        image: 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=100&h=100&fit=crop',
-        description: 'Apple iPhone 11 (128GB, Purple)',
-        quantity: 1,
-        price: 28900
-      }
-    ]
-  }
-])
+// Order data
+const orders = ref([])
+const cancelledOrders = ref([])
+
+// Computed property to determine when we can load data
+const canLoadData = computed(() => {
+  return !userIsLoading.value || !getAccessToken()
+})
 
 const displayOrders = computed(() => {
-  return activeTab.value === 'completed' ? orders.value : cancelledOrders.value
+  return activeTab.value === 'COMPLETED' ? orders.value : cancelledOrders.value
 })
 
 const isLoading = computed(() => {
   return userIsLoading.value || isLoadingOrders.value
 })
 
-// TODO: Replace with actual API call
+// Visible Pages for pagination
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const maxVisible = 10
+  const half = Math.floor(maxVisible / 2)
+
+  let start = Math.max(1, current - half)
+  let end = Math.min(total, current + half)
+
+  if (end - start + 1 < maxVisible) {
+    if (start === 1) {
+      end = Math.min(total, start + maxVisible - 1)
+    } else if (end === total) {
+      start = Math.max(1, total - maxVisible + 1)
+    }
+  }
+
+  const pages = []
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+
+  return pages
+})
+
 async function fetchOrders() {
-  if (!hasCompleteUserData.value) return
+  if (!hasCompleteUserData.value || userIsLoading.value) {
+    console.log('Waiting for user data...', { 
+      hasCompleteUserData: hasCompleteUserData.value, 
+      userIsLoading: userIsLoading.value 
+    })
+    return
+  }
+
+  if (currentPage.value < 1) currentPage.value = 1
   
   isLoadingOrders.value = true
+  
   try {
-    // const response = await fetch(`${import.meta.env.VITE_APP_URL2}/orders/${userId.value}`)
-    // const data = await response.json()
-    // orders.value = data.completed
-    // cancelledOrders.value = data.cancelled
+    let url = `${import.meta.env.VITE_APP_URL2}/users/${userId.value}/orders?`
+    
+    const query = []
+    query.push('page=' + (currentPage.value - 1))
+    if (pageSize.value) query.push('size=' + pageSize.value)
+    if (sortField.value) query.push('sortField=' + encodeURIComponent(sortField.value))
+    if (sortDirection.value) query.push('sortDirection=' + sortDirection.value)
+    
+    const finalUrl = url + query.join('&')
+    // console.log('Fetching orders from:', finalUrl)
+    
+    const response = await getOrdersByIdWithToken(finalUrl, getAccessToken())
+    // console.log('Orders response:', response)
+    
+    if (response && response.content && Array.isArray(response.content)) {
+      orders.value = response.content.filter(order => order.orderStatus === 'COMPLETED')
+      cancelledOrders.value = response.content.filter(order => order.orderStatus === 'CANCELLED')
+      totalPages.value = response.totalPages || 1
+      totalElements.value = response.totalElements || 0
+      
+      // console.log('Loaded orders:', { 
+      //   completed: orders.value.length, 
+      //   cancelled: cancelledOrders.value.length 
+      // })
+    } else if (Array.isArray(response)) {
+      orders.value = response.filter(order => order.orderStatus === 'COMPLETED')
+      cancelledOrders.value = response.filter(order => order.orderStatus === 'CANCELLED')
+      totalPages.value = 1
+      totalElements.value = response.length
+    }
+    
+    if (currentPage.value > totalPages.value && totalPages.value > 0) {
+      currentPage.value = totalPages.value
+    }
+    
   } catch (error) {
     console.error('Failed to fetch orders:', error)
+    orders.value = []
+    cancelledOrders.value = []
   } finally {
     isLoadingOrders.value = false
   }
 }
+
+function goToPage(page) {
+  currentPage.value = page
+  fetchOrders()
+}
+
+function changeSort(field) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'desc'
+  }
+  currentPage.value = 1
+  fetchOrders()
+}
+
+function handlePageSizeChange(event) {
+  const value = parseInt(event.target.value)
+  pageSize.value = value
+  currentPage.value = 1
+  fetchOrders()
+}
+
+function goToOrderDetails(orderId) {
+  router.push({ name: 'OrderDetail', params: { id: orderId } })
+}
+
+watch(canLoadData, (newValue) => {
+  if (newValue && hasCompleteUserData.value) {
+    fetchOrders()
+  }
+})
+
+watch(activeTab, () => {
+  // Could fetch different data based on tab if needed
+})
+
+function calculateOrderTotal(order) {
+  if (!order.orderItems || !Array.isArray(order.orderItems)) return 0
+  return order.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+}
+
+function getItemImage(item) {
+  if (item.saleItem?.saleItemImages?.[0]?.fileName) {
+    return `${import.meta.env.VITE_APP_URL}/sale-items/picture/${item.saleItem.saleItemImages[0].fileName}`
+  }
+  return phoneImg
+}
+
+onMounted(async () => {
+  if (canLoadData.value && hasCompleteUserData.value) {
+    await fetchOrders()
+  }
+})
 </script>
 
 <template>
@@ -109,20 +182,18 @@ async function fetchOrders() {
     <div class="max-w-6xl mx-auto">
       <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Orders</h1>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="text-center py-20">
+      <div v-if="isLoading || !canLoadData" class="text-center py-20">
         <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
         <p class="text-gray-600">Loading your orders...</p>
       </div>
 
       <template v-else>
-        <!-- Tabs -->
         <div class="flex gap-4 mb-6 border-b border-gray-300">
           <button
-            @click="activeTab = 'completed'"
+            @click="activeTab = 'COMPLETED'"
             :class="[
               'pb-3 px-4 font-medium transition-colors',
-              activeTab === 'completed'
+              activeTab === 'COMPLETED'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : 'text-gray-600 hover:text-gray-800'
             ]"
@@ -142,94 +213,224 @@ async function fetchOrders() {
           </button>
         </div>
 
-        <!-- Orders List -->
-        <div class="itbms-row space-y-6">
+        <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8 bg-gray-100 p-4 rounded-lg shadow-sm">
+          <div class="flex gap-2 items-center">
+            <label class="text-sm font-medium text-gray-700">Sort by:</label>
+            <select 
+              v-model="sortField" 
+              @change="changeSort(sortField)"
+              class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="createdOn">Created On</option>
+              <option value="paymentDate">Payment Date</option>
+            </select>
+            
+            <button
+              @click="sortDirection = 'asc'; fetchOrders()"
+              :class="[
+                'px-3 py-2 text-lg rounded-lg transition',
+                sortDirection === 'asc'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-purple-600 border border-purple-600 hover:bg-purple-50'
+              ]"
+              title="Sort Ascending"
+            >
+              <span class="material-icons">north</span>
+            </button>
+            
+            <button
+              @click="sortDirection = 'desc'; fetchOrders()"
+              :class="[
+                'px-3 py-2 text-lg rounded-lg transition',
+                sortDirection === 'desc'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-purple-600 border border-purple-600 hover:bg-purple-50'
+              ]"
+              title="Sort Descending"
+            >
+              <span class="material-icons">south</span>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700">Show:</label>
+            <select 
+              :value="pageSize"
+              @change="handlePageSizeChange"
+              class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option :value="5">5</option>
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="isLoadingOrders" class="text-center text-gray-600 py-10">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+          <p class="mt-2">Loading orders...</p>
+        </div>
+
+        <div v-else class="itbms-row space-y-6">
           <div 
             v-for="order in displayOrders" 
             :key="order.id" 
             class="Itbms-item-row bg-white rounded-lg shadow-md p-6 border border-gray-200"
           >
-            <!-- Order Header -->
             <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-200">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
-                  {{ order.nickname.charAt(0).toUpperCase() }}
+                  {{ (order.seller[0].sellerName || 'U').charAt(0).toUpperCase() }}
                 </div>
-                <span class="itbms-nickname font-semibold text-gray-800">{{ order.nickname }}</span>
+                <span class="itbms-nickname font-semibold text-gray-800">
+                  {{ order.seller[0].sellerName || 'Unknown' }}
+                </span>
               </div>
-              <!-- Order No -->
               <div>
                 <div class="text-gray-500 mb-1">Order No:</div>
                 <div class="itbms-order-id font-medium text-gray-800">{{ order.id }}</div>
               </div>
-              <!-- Order Date -->
               <div>
                 <div class="text-gray-500 mb-1">Order Date:</div>
-                <div class="itbms-order-date font-medium text-gray-800">{{ order.orderDate }}</div>
+                <div class="itbms-order-date font-medium text-gray-800">
+                  {{ order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '-' }}
+                </div>
               </div>
-              <!-- Payment Date -->
               <div>
                 <div class="text-gray-500 mb-1">Payment Date:</div>
-                <div class="itbms-payment-date font-medium text-gray-800">{{ order.paymentDate }}</div>
+                <div class="itbms-payment-date font-medium text-gray-800">
+                  {{ order.paymentDate ? new Date(order.paymentDate).toLocaleDateString() : '-' }}
+                </div>
               </div>
-              <!-- Total -->
               <div>
                 <div class="text-gray-500 mb-1">Total:</div>
-                <div class="tbms-total-order-price font-bold text-gray-800">{{ order.total.toLocaleString() }}</div>
+                <div class="tbms-total-order-price font-bold text-gray-800">
+                  ฿{{ calculateOrderTotal(order).toLocaleString() }}
+                </div>
               </div>
-              <!-- Status -->
-              <div class="col-start-4">
+              <div>
                 <div class="text-gray-500 mb-1">Status:</div>
                 <div :class="[
                   'itbms-order-status font-medium',
-                  order.status === 'Completed' ? 'text-green-600' : 'text-red-600'
+                  order.orderStatus === 'COMPLETED' ? 'text-green-600' : 'text-red-600'
                 ]">
-                  {{ order.status }}
+                  {{ order.orderStatus }}
                 </div>
               </div>
             </div>
 
-            <!-- Shipping Address -->
             <div class="mb-4 text-sm">
               <span class="font-medium text-gray-700">Ship To: </span>
-              <span class="Itbms-shipping-address text-gray-600">{{ order.shippingAddress }}</span>
+              <span class="Itbms-shipping-address text-gray-600">{{ order.shippingAddress || '-' }}</span>
             </div>
 
-            <!-- Note -->
-            <div v-if="order.note" class="mb-4 text-sm">
+            <div v-if="order.orderNote" class="mb-4 text-sm">
               <span class="font-medium text-gray-700">Note: </span>
-              <span class="Itbms-order-note text-gray-600">{{ order.note }}</span>
+              <span class="Itbms-order-note text-gray-600">{{ order.orderNote }}</span>
             </div>
 
-            <!-- Order Items -->
-            <div class=" space-y-3">
+            <div class="space-y-3">
               <div 
-                v-for="item in order.items" 
+                v-for="item in order.orderItems" 
                 :key="item.id" 
                 class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg"
               >
                 <img
-                  :src="item.image"
-                  :alt="item.description"
+                  :src="getItemImage(item)"
+                  :alt="item.saleItem?.model || 'Product'"
                   class="w-16 h-16 object-cover rounded"
                 />
                 <div class="flex-1">
-                  <div class="Itbms-item-description  font-medium text-gray-800">{{ item.description }}</div>
+                  <div class="Itbms-item-description font-medium text-gray-800">
+                    <span v-if="item.saleItem">
+                      {{ item.saleItem.brandName }} {{ item.saleItem.model }}
+                      ({{ item.saleItem.storageGb }}GB, {{ item.saleItem.color }})
+                    </span>
+                    <span v-else>Item details unavailable</span>
+                  </div>
                 </div>
                 <div class="text-sm text-gray-600">
                   Qty: <span class="Itbms-item-quantity font-medium">{{ item.quantity }}</span>
                 </div>
                 <div class="font-bold text-gray-800 min-w-[120px] text-right">
-                  Price: <span class="itbms-item-total-price">{{ item.price.toLocaleString() }}</span>
+                  Price: <span class="itbms-item-total-price">฿{{ (item.price * item.quantity).toLocaleString() }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- View Details Button -->
+            <div class="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+              <button
+                @click="goToOrderDetails(order.id)"
+                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200 font-medium"
+              >
+                View Details
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Empty State -->
         <div v-if="displayOrders.length === 0" class="text-center py-12 text-gray-500">
           <p class="text-lg">No {{ activeTab }} orders found.</p>
+        </div>
+
+        <div 
+          class="flex justify-center items-center mt-10 gap-2 flex-wrap"
+          :class="totalPages > 1 ? 'visible': 'invisible' "
+        >
+          <button 
+            class="itbms-page-first px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            @click="goToPage(1)" 
+            :disabled="currentPage === 1"
+          >
+            First
+          </button>
+
+          <button 
+            class="itbms-page-prev px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
+            disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            @click="goToPage(currentPage - 1)"
+            :disabled="currentPage === 1"
+          >
+            Prev
+          </button>
+
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="goToPage(page)"
+            class="px-5 py-2 text-lg rounded-lg border font-medium"
+            :class="[
+              `itbms-page-${page - 1}`,
+              {
+                'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md': page === currentPage,
+                'bg-white text-purple-600 border-purple-600 hover:bg-purple-50 hover:shadow-md': page !== currentPage
+              },
+              totalPages === 1 ? 'invisible' : 'visible'
+            ]"
+          >
+            {{ page }}
+          </button>
+
+          <button 
+            class="itbms-page-next px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            @click="goToPage(currentPage + 1)" 
+            :disabled="currentPage === totalPages"
+          >
+            Next
+          </button>
+
+          <button 
+            class="itbms-page-last px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            @click="goToPage(totalPages)"
+            :disabled="currentPage === totalPages"
+          >
+            Last
+          </button>
         </div>
       </template>
     </div>
