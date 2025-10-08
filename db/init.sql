@@ -258,4 +258,26 @@ CREATE TABLE IF NOT EXISTS order_items (
     CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_order_items_item FOREIGN KEY (sale_item_id) REFERENCES sale_item(id) ON DELETE CASCADE
 );
+-- Table: cart
+CREATE TABLE IF NOT EXISTS cart (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    sale_item_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    note VARCHAR(255),
+    created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cart_account
+        FOREIGN KEY (account_id) REFERENCES account(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_cart_sale_item
+        FOREIGN KEY (sale_item_id) REFERENCES sale_item(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT uq_cart_unique_item_per_user
+        UNIQUE (account_id, sale_item_id)
+);
+CREATE INDEX idx_cart_account ON cart(account_id);
+CREATE INDEX idx_cart_sale_item ON cart(sale_item_id);
+
+
 
