@@ -31,6 +31,7 @@ public class OrderService {
     private final SaleItemRepository saleItemRepository;
     private final SellerRepository sellerRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CartRepository cartRepository;
     private final ModelMapper modelMapper;
 
     @Transactional
@@ -44,6 +45,7 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
 
         Map<Integer, List<OrderItemRequestDto>> itemsBySeller = new HashMap<>();
+        List<Integer> orderedSaleItemIds = new ArrayList<>();
 
         for (OrderItemRequestDto itemDto : orderRequestDto.getOrderItems()) {
             SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
@@ -56,7 +58,9 @@ public class OrderService {
             }
 
             itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(itemDto);
+            orderedSaleItemIds.add(itemDto.getSaleItemId());
         }
+
         List<OrderResponseDto<OrderSellerResponseDto>> createdOrders = new ArrayList<>();
 
         for (Map.Entry<Integer, List<OrderItemRequestDto>> entry : itemsBySeller.entrySet()) {
@@ -96,8 +100,17 @@ public class OrderService {
 
             createdOrders.add(mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems));
         }
+
+        if (!orderedSaleItemIds.isEmpty()) {
+            List<Cart> cartItemsToRemove = cartRepository.findByAccountIdAndSaleItemIdIn(buyerId, orderedSaleItemIds);
+            if (!cartItemsToRemove.isEmpty()) {
+                cartRepository.deleteAll(cartItemsToRemove);
+            }
+        }
+
         return createdOrders;
     }
+
 
 
     private <T> OrderResponseDto<T> mapOrderToResponse(Order order,

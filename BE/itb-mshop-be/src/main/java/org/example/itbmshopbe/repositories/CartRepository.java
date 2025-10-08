@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<Cart, Integer> {
     List<Cart> findByAccountId(Integer accountId);
     Cart findByAccountIdAndSaleItemId(Integer accountId, Integer saleItemId);
+    List<Cart> findByAccountIdAndSaleItemIdIn(Integer accountId, List<Integer> saleItemIds);  // ADD THIS
 }
