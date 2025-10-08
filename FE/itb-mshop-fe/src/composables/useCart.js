@@ -116,7 +116,7 @@ export function useCart() {
         maxQuantity: product.quantity, // Store max available quantity
         sellerId: product.sellerId,
         sellerName: product.sellerName,
-        selected: true,
+        selected: false,
         image: product.saleItemImages?.[0]?.fileName 
           ? `${import.meta.env.VITE_APP_URL}/sale-items/picture/${product.saleItemImages[0].fileName}`
           : null,

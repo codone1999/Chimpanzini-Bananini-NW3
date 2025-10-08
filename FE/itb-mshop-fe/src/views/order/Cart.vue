@@ -254,7 +254,7 @@ const createOrder = async () => {
                   {{ item.model }}&nbsp;({{item.storageGb}}GB,&nbsp;{{ item.color }})
                   </span>
                 </h3>
-                <p class="text-gray-600 mt-1">฿{{ item.price.toFixed(2) }}</p>
+                <p class="text-gray-600 mt-1">฿{{ item.price.toLocaleString() }}</p>
                 
                 <div class="flex items-center gap-3 mt-3">
                   <button @click="updateQuantity(item.id, -1)"
@@ -271,7 +271,7 @@ const createOrder = async () => {
               
               <div class="text-right flex flex-col justify-between">
                 <p class="font-semibold text-lg text-gray-800">
-                  ฿{{ (item.price * item.quantity).toFixed(2) }}
+                  ฿{{ (item.price * item.quantity).toLocaleString() }}
                 </p>
                 <button @click="() => {itemToRemove = item; showRemovePopup = true}"
                         class="ml-auto text-red-500 hover:text-red-700 text-sm font-medium">
@@ -346,7 +346,7 @@ const createOrder = async () => {
                   </svg>
                   <span class="font-semibold text-lg">Total Price</span>
                 </div>
-                <span class="itbms-total-order-price text-2xl font-bold">฿{{ total.toFixed(2) }}</span>
+                <span class="itbms-total-order-price text-2xl font-bold">฿{{ total.toLocaleString() }}</span>
               </div>
             </div>
 
@@ -360,7 +360,11 @@ const createOrder = async () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
               <span v-if="userLoading">Loading...</span>
-              <span v-else>Place Order</span>
+              <span v-else>
+                <router-link :to="{ name: 'ListGallery'}">
+                  Place Order
+                </router-link> 
+              </span>
             </button>
           </div>
         </div>

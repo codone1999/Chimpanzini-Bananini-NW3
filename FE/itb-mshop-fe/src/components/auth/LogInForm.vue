@@ -78,7 +78,7 @@ async function handleSubmit() {
     successMessage.value = 'You are already logged in!'
     isRedirecting.value = true
     setTimeout(() => {
-      router.push({ name: 'ListGallery' })
+      router.push({ name: 'ListGallery' }).then( () => router.go(0))
     }, 1500)
     return
   }

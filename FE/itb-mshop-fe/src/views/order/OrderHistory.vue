@@ -188,6 +188,7 @@ onMounted(async () => {
       </div>
 
       <template v-else>
+        <!-- Tab Completed & Cancelled -->
         <div class="flex gap-4 mb-6 border-b border-gray-300">
           <button
             @click="activeTab = 'COMPLETED'"
@@ -201,10 +202,10 @@ onMounted(async () => {
             Completed
           </button>
           <button
-            @click="activeTab = 'cancelled'"
+            @click="activeTab = 'CANCELLED'"
             :class="[
               'pb-3 px-4 font-medium transition-colors',
-              activeTab === 'cancelled'
+              activeTab === 'CANCELLED'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : 'text-gray-600 hover:text-gray-800'
             ]"
@@ -213,6 +214,7 @@ onMounted(async () => {
           </button>
         </div>
 
+        <!-- Filter & Sort -->
         <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8 bg-gray-100 p-4 rounded-lg shadow-sm">
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">Sort by:</label>
@@ -221,7 +223,7 @@ onMounted(async () => {
               @change="changeSort(sortField)"
               class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="createdOn">Created On</option>
+              <option value="createdOn">Order Date</option>
               <option value="paymentDate">Payment Date</option>
             </select>
             
@@ -267,6 +269,7 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Loading  -->
         <div v-if="isLoadingOrders" class="text-center text-gray-600 py-10">
           <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
           <p class="mt-2">Loading orders...</p>
@@ -343,11 +346,7 @@ onMounted(async () => {
                 />
                 <div class="flex-1">
                   <div class="Itbms-item-description font-medium text-gray-800">
-                    <span v-if="item.saleItem">
-                      {{ item.saleItem.brandName }} {{ item.saleItem.model }}
-                      ({{ item.saleItem.storageGb }}GB, {{ item.saleItem.color }})
-                    </span>
-                    <span v-else>Item details unavailable</span>
+                    <span>{{ item.description }}</span>
                   </div>
                 </div>
                 <div class="text-sm text-gray-600">

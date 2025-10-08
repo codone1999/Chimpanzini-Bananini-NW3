@@ -15,6 +15,7 @@ function goToCartPage(){
   <button
     @click="goToCartPage()"
     class="relative pt-1.5 pb-1 px-2 bg-neutral-900 border border-neutral-700 rounded-xl hover:bg-neutral-800 hover:border-purple-500 transition group flex-shrink-0"
+    :disabled="totalQuantity === 0"
     title="Shopping Cart"
   >
     <span class="material-icons text-gray-200 group-hover:text-purple-400">

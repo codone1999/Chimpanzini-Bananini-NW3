@@ -205,13 +205,13 @@ onMounted(() => {
             >
               <img
                 :src="getItemImage(item)"
-                :alt="getItemDescription(item)"
+                :alt="item.description"
                 class="w-20 h-20 object-cover rounded"
               />
               
               <div class="flex-1">
                 <div class="Itbms-item-description font-medium text-gray-800 mb-1">
-                  {{ getItemDescription(item) }}
+                  {{ item.description }}
                 </div>
               </div>
               

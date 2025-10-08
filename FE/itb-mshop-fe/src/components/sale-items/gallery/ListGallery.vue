@@ -528,7 +528,7 @@ onMounted(async () => {
         >
           <router-link
             :to="{ name: 'ListDetails', params: { id: product.id } }"
-            class="block h-full flex flex-col"
+            class="block flex flex-col flex-grow"
           >
             <img
               :src="phoneImg"
@@ -548,16 +548,25 @@ onMounted(async () => {
                 <span class="itbms-storageGb">{{ product.storageGb ?? '-' }}</span>
                 <span class="itbms-storageGb-unit">GB</span>
               </p>
-
             </div>
           </router-link>
-          <div class="-mt-7">
+          
+          <!-- Bottom section with price and button -->
+          <div class="px-5 pb-3 -mt-5 flex items-center justify-between gap-3">
+            <!-- Price on the left -->
+            <div class="text-left">
+              <p class="text-white font-bold text-lg">
+                ฿<span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+              </p>
+            </div>
+            
+            <!-- Add to Cart button on the right -->
             <button
               @click.stop="addToCart(product)"
-              :disabled="!canAddToCart(product) || userId === product.sellerId"
+              :disabled="product.quantity === 0 || (userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
               :class="[
-                'itbms-add-to-cart-button w-full py-2 rounded-lg font-bold shadow-inner transition',
-                (!canAddToCart(product) || userId === product.sellerId) 
+                'itbms-add-to-cart-button px-4 py-2 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
+                (product.quantity === 0 || (userId && !canAddToCart(product)) || (userId && userId === product.sellerId))
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                   : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
               ]"
@@ -569,7 +578,7 @@ onMounted(async () => {
                 Max in Cart
               </template>
               <template v-else>
-                Baht <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+                Add to Cart
               </template>
             </button>
           </div>

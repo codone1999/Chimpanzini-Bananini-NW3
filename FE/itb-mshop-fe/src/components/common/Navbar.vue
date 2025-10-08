@@ -29,7 +29,7 @@ async function handleLogout() {
   try {
     await logout()
     mobileMenuOpen.value = false
-    router.push( { name: 'ListGallery'})
+    router.push( { name: 'ListGallery' }).then( () => router.go(0))
   } catch (error) {
     console.error('Logout failed:', error)
   } finally {
@@ -66,6 +66,9 @@ async function handleLogout() {
           Categories
         </router-link>
         <router-link to="/contact" class="hover:text-purple-400 transition">Contact</router-link>
+        <span v-if="isLoggedIn">
+          <router-link :to="{ name: 'Orders'}" class="hover:text-purple-400 transition">Your Order</router-link>
+        </span>
 
         <!-- Auth Buttons - Dynamic based on login status -->
         <div class="space-x-3">
@@ -127,6 +130,9 @@ async function handleLogout() {
       <router-link :to="{ name: 'ListGallery'}" @click="mobileMenuOpen = false; $router.go(0)" class="block py-2 hover:text-purple-400">Shop</router-link>
       <router-link v-if="userRole === 'SELLER'" :to="{ name: 'ListSaleItems'}" @click="mobileMenuOpen = false; $router.go(0)" class="block py-2 hover:text-purple-400">Categories</router-link>
       <router-link to="/contact" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Contact</router-link>
+      <span v-if="isLoggedIn">
+        <router-link :to="{ name: 'Orders'}" @click="mobileMenuOpen = false" class="block py-2 hover:text-purple-400">Your Order</router-link>
+      </span>
 
       <!-- Auth buttons for mobile - Dynamic -->
       <div class="pt-2 border-t border-gray-700 space-y-2">
