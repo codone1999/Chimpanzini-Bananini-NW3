@@ -8,8 +8,11 @@ import org.example.itbmshopbe.dtos.OrderDTO.OrderSellerDetailDto;
 import org.example.itbmshopbe.dtos.OrderDTO.OrderSellerResponseDto;
 import org.example.itbmshopbe.services.OrderService;
 import org.example.itbmshopbe.utils.Util;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v2/orders")
@@ -18,13 +21,13 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
     private final OrderService orderService;
     @PostMapping
-    public ResponseEntity<OrderResponseDto<OrderSellerResponseDto>> placeOrder(
+    public ResponseEntity<List<OrderResponseDto<OrderSellerResponseDto>>> placeOrder(
             @RequestBody OrderRequestDto orderRequestDto,
             HttpServletRequest request
     ){
-        Integer BuyerId = Util.validateAndGetUserId(request, orderRequestDto.getBuyerId());
-        OrderResponseDto<OrderSellerResponseDto> responseDto = orderService.createOrder(BuyerId, orderRequestDto);
-        return ResponseEntity.ok(responseDto);
+        Integer buyerId = Util.validateAndGetUserId(request, orderRequestDto.getBuyerId());
+        List<OrderResponseDto<OrderSellerResponseDto>> responseDto = orderService.createOrder(buyerId, orderRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @GetMapping("/{id}")

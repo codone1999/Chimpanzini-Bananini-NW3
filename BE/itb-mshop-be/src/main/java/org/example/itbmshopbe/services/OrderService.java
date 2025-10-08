@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -32,50 +34,71 @@ public class OrderService {
     private final ModelMapper modelMapper;
 
     @Transactional
-    public OrderResponseDto<OrderSellerResponseDto> createOrder(Integer buyerId, OrderRequestDto orderRequestDto) {
-        if (orderRequestDto.getSellerId() == null ||
-                orderRequestDto.getOrderItems() == null ||
-                orderRequestDto.getOrderItems().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or invalid request parameters");
+    public List<OrderResponseDto<OrderSellerResponseDto>> createOrder(Integer buyerId, OrderRequestDto orderRequestDto) {
+
+        if (orderRequestDto.getOrderItems() == null || orderRequestDto.getOrderItems().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or invalid order items");
         }
+
         Account buyer = accountRepository.findById(buyerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
-        Seller seller = sellerRepository.findById(orderRequestDto.getSellerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found"));
-        if (seller.getId().equals(buyerId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot purchase your own items");
-        }
-        Order order = new Order();
-        order.setCustomer(buyer);
-        order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
-        order.setOrderNote(orderRequestDto.getOrderNote());
-        order.setShippingAddress(orderRequestDto.getShippingAddress());
-        order.setCreatedOn(orderRequestDto.getOrderDate());
-        Order savedOrder = orderRepository.save(order);
-        List<OrderItem> orderItems = new ArrayList<>();
+
+        Map<Integer, List<OrderItemRequestDto>> itemsBySeller = new HashMap<>();
+
         for (OrderItemRequestDto itemDto : orderRequestDto.getOrderItems()) {
             SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "SaleItem not found: " + itemDto.getSaleItemId()));
-            if (saleItem.getQuantity() < itemDto.getQuantity()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Insufficient quantity for item " + saleItem.getId());
-            }
-            saleItem.setQuantity(saleItem.getQuantity() - itemDto.getQuantity());
-            saleItemRepository.save(saleItem);
 
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(savedOrder);
-            orderItem.setSaleItem(saleItem);
-            orderItem.setQuantity(itemDto.getQuantity());
-            orderItem.setPriceEach(itemDto.getPrice());
-            orderItems.add(orderItem);
+            Integer sellerId = saleItem.getSeller().getId();
+            if (sellerId.equals(buyerId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot purchase your own items");
+            }
+
+            itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(itemDto);
         }
-        orderItemRepository.saveAll(orderItems);
-        OrderSellerResponseDto sellerDto = mapToSellerBase(seller);
-        List<OrderItemRequestDto> responseItems = mapOrderItems(orderItems);
-        return mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems);
+        List<OrderResponseDto<OrderSellerResponseDto>> createdOrders = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<OrderItemRequestDto>> entry : itemsBySeller.entrySet()) {
+            Integer sellerId = entry.getKey();
+            List<OrderItemRequestDto> sellerItems = entry.getValue();
+
+            Seller seller = sellerRepository.findById(sellerId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found: " + sellerId));
+
+            Order order = new Order();
+            order.setCustomer(buyer);
+            order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
+            order.setOrderNote(orderRequestDto.getOrderNote());
+            order.setShippingAddress(orderRequestDto.getShippingAddress());
+            order.setCreatedOn(orderRequestDto.getOrderDate());
+
+            Order savedOrder = orderRepository.save(order);
+
+            List<OrderItem> orderItems = new ArrayList<>();
+            for (OrderItemRequestDto itemDto : sellerItems) {
+                SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "SaleItem not found: " + itemDto.getSaleItemId()));
+                saleItem.setQuantity(saleItem.getQuantity() - itemDto.getQuantity());
+                saleItemRepository.save(saleItem);
+
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrder(savedOrder);
+                orderItem.setSaleItem(saleItem);
+                orderItem.setQuantity(itemDto.getQuantity());
+                orderItem.setPriceEach(itemDto.getPrice());
+                orderItems.add(orderItem);
+            }
+            orderItemRepository.saveAll(orderItems);
+            OrderSellerResponseDto sellerDto = mapToSellerBase(seller);
+            List<OrderItemRequestDto> responseItems = mapOrderItems(orderItems);
+
+            createdOrders.add(mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems));
+        }
+        return createdOrders;
     }
+
 
     private <T> OrderResponseDto<T> mapOrderToResponse(Order order,
                                                        List<T> sellerDtos,
