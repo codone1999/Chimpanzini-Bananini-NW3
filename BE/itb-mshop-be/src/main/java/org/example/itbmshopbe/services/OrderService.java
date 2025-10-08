@@ -90,7 +90,9 @@ public class OrderService {
     }
 
     private OrderSellerResponseDto mapToSellerBase(Seller seller) {
-        return modelMapper.map(seller, OrderSellerResponseDto.class);
+        OrderSellerResponseDto response = modelMapper.map(seller, OrderSellerResponseDto.class);
+        response.setSellerName(seller.getAccount().getNickname());
+        return response;
     }
 
     private OrderSellerDetailDto mapToSellerDetail(Seller seller) {
