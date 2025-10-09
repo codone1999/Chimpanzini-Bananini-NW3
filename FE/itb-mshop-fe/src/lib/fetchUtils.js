@@ -473,6 +473,84 @@ async function getOrderDetailByIdWithToken(url, id, token) {
   }
 }
 
+// getItems with Token
+async function getItemsWithToken(url, token) {
+  try {
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const data = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!data.ok) {
+      throw new Error(`HTTP error! status: ${data.status}`)
+    }
+    
+    const items = await data.json()
+    return items
+  } catch (error) {
+    throw new Error('Cannot get your items: ' + error.message)
+  }
+}
+
+async function editItemWithToken(url, id, editItem, token) {
+  try {
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const res = await fetch(`${url}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(editItem)
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`)
+    }
+
+    const updatedItem = await res.json()
+    return updatedItem
+  } catch (error) {
+    throw new Error('Cannot edit your item: ' + error.message)
+  }
+}
+
+async function deleteItemWithToken(url, token) {
+  try {
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`)
+    }
+
+    return res.status
+  } catch (error) {
+    throw new Error('Cannot delete your item: ' + error.message)
+  }
+}
+
 export { 
   getItems, 
   getItemById, 
@@ -484,6 +562,8 @@ export {
   editItemAndImage, 
 
   addItemWithToken,
+  editItemWithToken, 
+  deleteItemWithToken, 
 
   registerAccount, 
   getProfileByIdAndToken, 
@@ -494,4 +574,6 @@ export {
 
   getOrdersByIdWithToken,
   getOrderDetailByIdWithToken,
+
+  getItemsWithToken,
 }

@@ -1,34 +1,51 @@
 //Cart.vue
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import { useUser } from '@/composables/useUser'
-import { addItemWithToken } from '@/lib/fetchUtils'
+import { getItemsWithToken, addItemWithToken, editItemWithToken, deleteItemWithToken } from '@/lib/fetchUtils'
 import { getAccessToken } from '@/lib/authUtils'
+import { useShippingAddress } from '@/composables/useShippingAddress'
 
+const router = useRouter()
+const { saveShippingAddress, getShippingAddress } = useShippingAddress()
 const { 
   cartItems, 
-  selectedTotalQuantity,
-  selectedTotalPrice,
   updateQuantity: updateCartQuantity,
-  removeFromCart,
+  removeFromCart: removeFromCartComposable,
   clearSelectedItems
 } = useCart()
-
 const { userId, isLoading: userLoading } = useUser()
 
-const shippingAddress = ref('')
 const shippingNote = ref('')
+const orderShippingAddress = ref(getShippingAddress())
 
 // Popup state
 const showRemovePopup = ref(false)
 const itemToRemove = ref(null)
 
+onMounted(async () => {
+  // Cart is already synced in useUser.js loadCompleteUserData()
+  // Just check if cart is empty and redirect
+  if (cartItems.value.length === 0) {
+    router.push({ name: 'ListGallery' })
+  }
+})
+
+// Watch for cart becoming empty during usage and redirect
+watch(() => cartItems.value.length, (newLength, oldLength) => {
+  if (newLength === 0 && oldLength > 0) {
+    setTimeout(() => {
+      router.push({ name: 'ListGallery' })
+    }, 500)
+  }
+})
+
 // Group items by seller
 const groupedBySeller = computed(() => {
   const groups = {}
   cartItems.value.forEach(item => {
-    // Use sellerName if available, otherwise use a fallback
     const sellerKey = item.sellerName || 'Unknown Seller'
     if (!groups[sellerKey]) {
       groups[sellerKey] = []
@@ -78,25 +95,44 @@ const total = computed(() => {
     .reduce((sum, item) => sum + (item.price * item.quantity), 0)
 })
 
-const updateQuantity = (itemId, change) => {
+const updateQuantity = async (itemId, change) => {
   const item = cartItems.value.find(i => i.id === itemId)
-  if (item) {
-    const newQuantity = item.quantity + change
-    
-    // If decreasing to 0, show confirmation popup
-    if (newQuantity === 0 && change < 0) {
-      itemToRemove.value = item
-      showRemovePopup.value = true
-      return
-    }
-    
-    updateCartQuantity(itemId, newQuantity)
+  if (!item) return
+  
+  const newQuantity = item.quantity + change
+  
+  if (newQuantity === 0 && change < 0) {
+    itemToRemove.value = item
+    showRemovePopup.value = true
+    return
+  }
+  
+  // Check if exceeds max quantity
+  if (newQuantity > item.maxQuantity) {
+    alert(`Cannot add more items. Maximum available quantity is ${item.maxQuantity}`)
+    return
+  }
+  
+  try {
+    await updateCartQuantity(itemId, newQuantity, userId.value)
+  } catch (error) {
+    console.error('Failed to update quantity:', error)
+    alert('Failed to update quantity. Please try again.')
   }
 }
 
-const confirmRemove = () => {
+const removeFromCart = async (itemId) => {
+  try {
+    await removeFromCartComposable(itemId, userId.value)
+  } catch (error) {
+    console.error('Failed to remove item:', error)
+    alert('Failed to remove item. Please try again.')
+  }
+}
+
+const confirmRemove = async () => {
   if (itemToRemove.value) {
-    removeFromCart(itemToRemove.value.id)
+    await removeFromCart(itemToRemove.value.id)
   }
   closeRemovePopup()
 }
@@ -111,24 +147,21 @@ const closeRemovePopup = () => {
 }
 
 const createOrder = async () => {
-  // Validation
   const selectedItems = cartItems.value.filter(item => item.selected)
   if (selectedItems.length === 0) {
     alert('Please select at least one item to create an order')
     return
   }
-  if (!shippingAddress.value.trim()) {
+  if (!orderShippingAddress.value.trim()) {
     alert('Please enter a shipping address')
     return
   }
 
   try {
-    // Group selected items by seller using plain object
     const ordersBySeller = {}
     
     for (let i = 0; i < selectedItems.length; i++) {
       const item = selectedItems[i]
-      // Use sellerName if available, otherwise use a fallback
       const sellerKey = item.sellerName || item.seller || 'Unknown Seller'
       if (!ordersBySeller[sellerKey]) {
         ordersBySeller[sellerKey] = []
@@ -136,47 +169,45 @@ const createOrder = async () => {
       ordersBySeller[sellerKey].push(item)
     }
     
-    // Track global order item sequence
     let globalOrderItemId = 1
     
-    // Create orders for each seller
     for (const seller in ordersBySeller) {
       const items = ordersBySeller[seller]
       
-      // Prepare order items array
       const orderItems = []
       for (let j = 0; j < items.length; j++) {
         const item = items[j]
         
         orderItems.push({
-          id: globalOrderItemId++,  // Sequential number across all orders
+          id: globalOrderItemId++,
           saleItemId: item.id,
           price: item.price,
           quantity: item.quantity
         })
       }
 
-      // Prepare order data
       const orderData = {
         buyerId: userId.value,
         sellerId: items[0].sellerId || '',
         orderDate: new Date().toISOString(),
-        shippingAddress: shippingAddress.value.trim(),
+        shippingAddress: orderShippingAddress.value.trim(),
         orderNote: shippingNote.value.trim() || '',
         orderStatus: 'COMPLETED',
         orderItems: orderItems
       }
 
-      // Submit order to API
-      const response = await addItemWithToken(`${import.meta.env.VITE_APP_URL2}/orders`, orderData, getAccessToken())
-      // console.log(response)
+      saveShippingAddress(orderData.shippingAddress)
+      
+      const response = await addItemWithToken(
+        `${import.meta.env.VITE_APP_URL2}/orders`, 
+        orderData, 
+        getAccessToken()
+      )
     }
     
-    // Clear selected items from cart after successful order
-    clearSelectedItems()
+    // Clear selected items from local cart
+    await clearSelectedItems(userId.value)
     
-    // Reset form
-    shippingAddress.value = ''
     shippingNote.value = ''
     
     alert('Order created successfully!')
@@ -184,6 +215,29 @@ const createOrder = async () => {
     console.error('Failed to create order:', error)
     alert('Failed to create order. Please try again.')
   }
+}
+
+// Helper function to get item display text
+const getItemDisplayText = (item) => {
+  const parts = []
+  
+  if (item.brandName) {
+    parts.push(item.brandName)
+  }
+  
+  if (item.model) {
+    parts.push(item.model)
+  }
+  
+  const specs = []
+  if (item.storageGb) specs.push(`${item.storageGb}GB`)
+  if (item.color) specs.push(item.color)
+  
+  if (specs.length > 0) {
+    parts.push(`(${specs.join(', ')})`)
+  }
+  
+  return parts.join(' ') || 'Product'
 }
 </script>
 
@@ -196,7 +250,11 @@ const createOrder = async () => {
         <!-- Cart Items -->
         <div class="lg:col-span-2 space-y-4">
           <div v-if="cartItems.length === 0" class="bg-white rounded-lg shadow p-8 text-center">
-            <p class="text-gray-500 text-lg">Your cart is empty</p>
+            <svg class="w-20 h-20 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            <p class="text-gray-500 text-lg mb-2">Your cart is empty</p>
+            <p class="text-gray-400 text-sm">Redirecting to gallery...</p>
           </div>
 
           <!-- Select All -->
@@ -243,27 +301,47 @@ const createOrder = async () => {
               </label>
 
               <img 
+                v-if="item.image"
                 :src="item.image" 
-                :alt="item.model" 
+                :alt="item.model || 'Product'" 
                 class="w-24 h-24 object-cover rounded"
               >
+              <div 
+                v-else
+                class="w-24 h-24 bg-gray-200 rounded flex items-center justify-center"
+              >
+                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
               
               <div class="flex-1">
                 <h3 class="text-lg text-gray-800">
-                  <span><span class="font-semibold">{{ item.brandName }}</span>&nbsp;
-                  {{ item.model }}&nbsp;({{item.storageGb}}GB,&nbsp;{{ item.color }})
-                  </span>
+                  {{ getItemDisplayText(item) }}
                 </h3>
                 <p class="text-gray-600 mt-1">฿{{ item.price.toLocaleString() }}</p>
+                <p v-if="item.maxQuantity" class="text-gray-400 text-sm mt-1">
+                  Available: {{ item.maxQuantity }}
+                </p>
                 
                 <div class="flex items-center gap-3 mt-3">
-                  <button @click="updateQuantity(item.id, -1)"
-                          class="w-8 h-8 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center">
+                  <button 
+                    @click="updateQuantity(item.id, -1)"
+                    class="w-8 h-8 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition"
+                  >
                     -
                   </button>
                   <span class="font-medium text-gray-700 w-8 text-center">{{ item.quantity }}</span>
-                  <button @click="updateQuantity(item.id, 1)"
-                          class="w-8 h-8 rounded bg-gray-200 hover:bg-gray-300 flex items-center justify-center">
+                  <button 
+                    @click="updateQuantity(item.id, 1)"
+                    :disabled="item.quantity >= item.maxQuantity"
+                    :class="[
+                      'w-8 h-8 rounded flex items-center justify-center transition',
+                      item.quantity >= item.maxQuantity 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gray-200 hover:bg-gray-300'
+                    ]"
+                  >
                     +
                   </button>
                 </div>
@@ -274,7 +352,7 @@ const createOrder = async () => {
                   ฿{{ (item.price * item.quantity).toLocaleString() }}
                 </p>
                 <button @click="() => {itemToRemove = item; showRemovePopup = true}"
-                        class="ml-auto text-red-500 hover:text-red-700 text-sm font-medium">
+                        class="ml-auto text-red-500 hover:text-red-700 text-sm font-medium transition">
                   Remove
                 </button>
               </div>
@@ -304,7 +382,7 @@ const createOrder = async () => {
               </p>
               <textarea 
                 id="shipTo"
-                v-model="shippingAddress"
+                v-model="orderShippingAddress"
                 rows="5"
                 placeholder="Enter full shipping address"
                 class="itbms-shipping-address w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-700 placeholder-gray-400"
@@ -353,18 +431,14 @@ const createOrder = async () => {
             <!-- Create Order Button -->
             <button 
               @click="createOrder"
-              :disabled="totalItems === 0 || !shippingAddress || userLoading || !userId"
+              :disabled="totalItems === 0 || !orderShippingAddress.trim() || userLoading || !userId"
               class="itbms-create-order w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
             >
               <svg v-if="!userLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
               <span v-if="userLoading">Loading...</span>
-              <span v-else>
-                <router-link :to="{ name: 'ListGallery'}">
-                  Place Order
-                </router-link> 
-              </span>
+              <span v-else>Place Order</span>
             </button>
           </div>
         </div>

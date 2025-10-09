@@ -1,13 +1,15 @@
-// useUser.js
+// composables/useUser.js
 import { ref, computed, watch } from 'vue'
 import { getAccessToken, decodeJWT, isAuthenticated, logoutFromServer } from '@/lib/authUtils'
 import { getProfileByIdAndToken } from '@/lib/fetchUtils'
+import { useShippingAddress } from './useShippingAddress'
+import { useCart } from './useCart'
 
 const currentUser = ref(null)
 const isLoading = ref(false)
 const forceUpdate = ref(0)
 const apiUserData = ref(null)
-const isInitialized = ref(false) // Track initialization
+const isInitialized = ref(false)
 
 const loadCompleteUserData = async () => {
   if (isLoading.value) return
@@ -16,7 +18,6 @@ const loadCompleteUserData = async () => {
   
   try {
     const token = getAccessToken()
-    // Check token first before decoding
     if (!token) {
       currentUser.value = null
       apiUserData.value = null
@@ -26,6 +27,8 @@ const loadCompleteUserData = async () => {
     const tokenData = decodeJWT(token)
     if (!tokenData?.id) {
       console.warn('Invalid token data')
+      currentUser.value = null
+      apiUserData.value = null
       return
     }
 
@@ -36,7 +39,7 @@ const loadCompleteUserData = async () => {
     )
 
     if (data) {
-      currentUser.value = data.id // Store the actual user ID
+      currentUser.value = data.id
 
       apiUserData.value = {
         id: data.id,
@@ -50,34 +53,41 @@ const loadCompleteUserData = async () => {
       }
     } else {
       console.warn('Invalid API response structure')
+      currentUser.value = null
+      apiUserData.value = null
     }
   } catch (error) {
     console.error('Failed to load complete user data:', error)
-    // Consider clearing user data on error
     currentUser.value = null
     apiUserData.value = null
   } finally {
     isLoading.value = false
+    isInitialized.value = true
   }
 }
 
+let initPromise = null
 const initializeUser = async () => {
-  // Only initialize once
   if (isInitialized.value) return
   
-  if (!currentUser.value && isAuthenticated()) {
-    await loadCompleteUserData()
-  }
+  if (initPromise) return initPromise
   
-  isInitialized.value = true
+  initPromise = (async () => {
+    if (isAuthenticated()) {
+      await loadCompleteUserData()
+    } else {
+      isInitialized.value = true
+    }
+  })()
+  
+  return initPromise
+}
+
+if (!isInitialized.value) {
+  initializeUser()
 }
 
 export function useUser() {
-  // Only initialize if not already done
-  if (!isInitialized.value) {
-    initializeUser()
-  }
-
   const userId = computed(() => apiUserData.value?.id || null)
   const userRole = computed(() => apiUserData.value?.role || null)
   const userEmail = computed(() => apiUserData.value?.email || null)
@@ -92,14 +102,37 @@ export function useUser() {
   const refreshUser = async () => {
     forceUpdate.value++
     await loadCompleteUserData()
+    
+    // Sync cart after refreshing user data
+    if (userId.value) {
+      const { syncWithBackend } = useCart()
+      await syncWithBackend(userId.value)
+    }
   }
 
   const logout = async () => {
+    // Clear cart from localStorage only - keep backend data
+    const { clearCart } = useCart()
+    clearCart() // Don't pass userId - this will only clear local storage
+    
+    // Clear user data
     currentUser.value = null
     apiUserData.value = null
-    isInitialized.value = false // Reset initialization flag
+    isInitialized.value = false
+    initPromise = null
     
+    // Clear shipping address from local storage
+    const { clearShippingAddress } = useShippingAddress()
+    clearShippingAddress()
+    
+    // Logout from server (clears tokens)
     await logoutFromServer()
+  }
+
+  const waitForInit = async () => {
+    if (initPromise) {
+      await initPromise
+    }
   }
 
   watch(forceUpdate, async () => {
@@ -109,12 +142,10 @@ export function useUser() {
   })
 
   return {
-    // State
     currentUser,
     apiUserData,
     isLoading,
-    
-    // computed properties
+    isInitialized,
     userId,
     userRole,
     userEmail,
@@ -125,10 +156,9 @@ export function useUser() {
     userBankName,
     isLoggedIn,
     hasCompleteUserData,
-    
-    // Methods
     loadCompleteUserData,
     refreshUser,
-    logout
+    logout,
+    waitForInit
   }
 }

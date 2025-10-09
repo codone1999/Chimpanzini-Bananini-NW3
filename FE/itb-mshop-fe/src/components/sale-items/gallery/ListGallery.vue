@@ -57,12 +57,10 @@ const successMessage = ref("");
 const isLoadingData = ref(false);
 
 const { userId, userRole, isLoading } = useUser();
-const { addToCart: addItemToCart, cartItems } = useCart()
+const { addToCart: addItemToCart, cartItems, syncWithBackend } = useCart()
 
 // Computed property to determine when we can load data
 const canLoadData = computed(() => {
-  // For non-authenticated users, we can load data immediately
-  // For authenticated users, wait for user data to be loaded
   return !isLoading.value || !getAccessToken();
 });
 
@@ -141,7 +139,6 @@ function saveSession() {
 
 // ------------------- Data Fetching ------------------//
 async function fetchFilteredSaleItems() {
-  // Don't fetch if authenticated user data isn't available yet
   if (isLoading.value) {
     return;
   }
@@ -152,23 +149,19 @@ async function fetchFilteredSaleItems() {
 
   let url = null;
 
-  // Public endpoint for everyone else (non-authenticated users and buyers)
   url = `${import.meta.env.VITE_APP_URL2}/sale-items?`;
 
   const query = [];
 
-  // Add pagination (required parameter)
   query.push("page=" + (currentPage.value - 1));
   if (pageSize.value) query.push("size=" + pageSize.value);
 
-  // Add brand filters (matches Spring's filterBrands parameter)
   if (filterBrands.value.length > 0) {
     for (const brand of filterBrands.value) {
       query.push("filterBrands=" + encodeURIComponent(brand));
     }
   }
 
-  // Add price filters (matches Spring's filterPriceLower/filterPriceUpper)
   if (filterPrices.value.length > 0) {
     const allMinPrices = [];
     const allMaxPrices = [];
@@ -195,17 +188,14 @@ async function fetchFilteredSaleItems() {
     }
   }
 
-  // Add storage filters (matches Spring's filterStorages parameter)
   if (filterStorageSizes.value.length > 0) {
     const hasNotSpecify = filterStorageSizes.value.includes("Not Specify");
     const specificStorages = filterStorageSizes.value.filter(storage => storage !== "Not Specify");
     
-    // Handle null storage filter (matches Spring's filterNullStorage)
     if (hasNotSpecify) {
       query.push("filterNullStorage=true");
     }
     
-    // Add specific storage values
     if (specificStorages.length > 0) {
       for (const storage of specificStorages) {
         query.push("filterStorages=" + encodeURIComponent(storage));
@@ -213,12 +203,10 @@ async function fetchFilteredSaleItems() {
     }
   }
 
-  // Add search keyword (matches Spring's searchKeyword parameter)
   if (search.value && search.value.trim() !== "") {
     query.push("searchKeyword=" + encodeURIComponent(search.value.trim()));
   }
 
-  // Add sorting (matches Spring's sortField and sortDirection parameters)
   if (sortMode.value === "none") {
     query.push("sortField=createdOn");
     query.push("sortDirection=asc");
@@ -232,7 +220,6 @@ async function fetchFilteredSaleItems() {
   try {
     let data = null;
     
-    // Use appropriate fetch method based on endpoint
     if (getAccessToken() && userRole.value === "SELLER") {
       data = await getSellerItemsByToken(finalUrl, getAccessToken());
     } else {
@@ -244,14 +231,11 @@ async function fetchFilteredSaleItems() {
       return;
     }
 
-    // Handle both paginated and non-paginated responses
     if (data.content && Array.isArray(data.content)) {
-      // Paginated response
       allProducts.value = data.content;
       products.value = [...data.content];
       totalPages.value = data.totalPages || 1;
     } else if (Array.isArray(data)) {
-      // Non-paginated response - simulate pagination
       allProducts.value = data;
       products.value = [...data];
       totalPages.value = 1;
@@ -267,7 +251,7 @@ async function fetchFilteredSaleItems() {
     isLoadingData.value = false;
   }
 }
-// Load brands for filtering
+
 async function fetchBrands() {
   try {
     const item = await getItems(`${import.meta.env.VITE_APP_URL}/brands`);
@@ -327,49 +311,51 @@ function goToPage(page) {
   fetchFilteredSaleItems();
 }
 
-// Handle search action from Search component
 function handleSearch(searchKeyword) {
   search.value = searchKeyword;
-  currentPage.value = 1; // Reset to first page when searching
-  saveSession(); // Save the new search term
-  fetchFilteredSaleItems(); // Fetch with new search term
+  currentPage.value = 1;
+  saveSession();
+  fetchFilteredSaleItems();
 }
 
-function addToCart(product) {
-  // Check if user is logged in
+async function addToCart(product) {
   if (!userId.value) {
     router.push({ name: 'Login' })
     return
   }
   
-  // Check if user is the seller
   if (userId.value === product.sellerId) {
     alert("You cannot add your own items to cart")
     return
   }
   
-  // Check if product is out of stock
   if (product.quantity === 0) {
     alert("This item is out of stock")
     return
   }
   
-  // Check if already at maximum quantity in cart
   const currentCartQty = getCartQuantity(product.id)
   if (currentCartQty >= product.quantity) {
     alert(`You already have the maximum available quantity (${product.quantity}) in your cart`)
     return
   }
   
-  addItemToCart(product, 1)
+  // Pass userId to sync with backend
+  await addItemToCart(product, 1, userId.value)
 }
 
 //  ------------- Watchers ------------------ //
 
-// Watch for user data availability and fetch when ready
-watch(canLoadData, (newValue) => {
+watch(canLoadData, async (newValue) => {
   if (newValue) {
-    if (userRole.value !== "SELLER") { router.push({name: "ListGallery"}); return; }
+    if (userRole.value !== "SELLER") { 
+      router.push({name: "ListGallery"}); 
+      return; 
+    }
+    
+    // Cart sync is now handled in useUser.js loadCompleteUserData()
+    // No need to sync here anymore
+    
     fetchFilteredSaleItems();
   }
 });
@@ -404,10 +390,8 @@ watch(storageSizeToAdd, (value) => {
 });
 
 onMounted(async () => {
-  // Load session data first
   loadSession();
 
-  // Handle query alerts
   handleQueryAlerts(
     {
       added: "The sale item has been successfully added.",
@@ -418,10 +402,11 @@ onMounted(async () => {
     successMessage
   );
 
-  // Load brands (this doesn't require user data)
   await fetchBrands();
 
   fetchFilteredSaleItems();
+
+  syncWithBackend(userId.value)
 });
 
 </script>
@@ -432,7 +417,6 @@ onMounted(async () => {
       Shop Our Products
     </h2>
 
-    <!-- Search Box with Cart -->
     <div class="flex mb-10 relative max-w-xl mx-auto">
       <Search
         v-model="search"
@@ -451,13 +435,11 @@ onMounted(async () => {
       {{ successMessage }}
     </div>
 
-    <!-- Loading indicator while user data is loading -->
     <div v-if="isLoading || !canLoadData" class="text-center text-gray-400 py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
       <p class="mt-2">Loading user data...</p>
     </div>
 
-    <!-- Main content - only show when user data is loaded -->
     <template v-else>
       <FilterAndSort
         v-model:page-size="pageSize"
@@ -485,7 +467,6 @@ onMounted(async () => {
         :page-size="pageSize"
       />
 
-      <!-- Add Item Button -->
       <div v-if="userRole === 'SELLER'" class="mb-10 text-center">
         <router-link
           :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
@@ -500,13 +481,11 @@ onMounted(async () => {
         </router-link>
       </div>
 
-      <!-- Loading indicator for data fetching -->
       <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
         <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
         <p class="mt-2">Loading products...</p>
       </div>
 
-      <!-- No Products -->
       <div
         v-else-if="products.length === 0"
         class="text-center text-gray-500 text-lg py-10"
@@ -514,7 +493,6 @@ onMounted(async () => {
         no sale item
       </div>
 
-      <!-- Product Grid -->
       <div
         v-else
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
@@ -551,16 +529,13 @@ onMounted(async () => {
             </div>
           </router-link>
           
-          <!-- Bottom section with price and button -->
           <div class="px-5 pb-3 -mt-5 flex items-center justify-between gap-3">
-            <!-- Price on the left -->
             <div class="text-left">
               <p class="text-white font-bold text-lg">
                 ฿<span class="itbms-price">{{ product.price.toLocaleString() }}</span>
               </p>
             </div>
             
-            <!-- Add to Cart button on the right -->
             <button
               @click.stop="addToCart(product)"
               :disabled="product.quantity === 0 || (userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"

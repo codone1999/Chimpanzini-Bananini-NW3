@@ -49,7 +49,7 @@ export function setAuthTokens(accessToken, refreshToken) {
  * @returns {string|undefined} Access token
  */
 export function getAccessToken() {
-  return Cookies.get(COOKIE_CONFIG.ACCESS_TOKEN.name)
+  return Cookies.get(COOKIE_CONFIG.ACCESS_TOKEN.name) ?? Cookies.get(COOKIE_CONFIG.REFRESH_TOKEN.name)
 }
 
 /**

@@ -7,7 +7,7 @@ import { getAccessToken } from '@/lib/authUtils'
 import phoneImg from '../../../public/phone.png'
 
 const router = useRouter()
-const { userId, userNickname, hasCompleteUserData, isLoading: userIsLoading } = useUser()
+const { userId, hasCompleteUserData, isLoading: userIsLoading } = useUser()
 
 const activeTab = ref('COMPLETED')
 const isLoadingOrders = ref(false)
@@ -65,10 +65,10 @@ const visiblePages = computed(() => {
 
 async function fetchOrders() {
   if (!hasCompleteUserData.value || userIsLoading.value) {
-    console.log('Waiting for user data...', { 
-      hasCompleteUserData: hasCompleteUserData.value, 
-      userIsLoading: userIsLoading.value 
-    })
+    // console.log('Waiting for user data...', { 
+    //   hasCompleteUserData: hasCompleteUserData.value, 
+    //   userIsLoading: userIsLoading.value 
+    // })
     return
   }
 
