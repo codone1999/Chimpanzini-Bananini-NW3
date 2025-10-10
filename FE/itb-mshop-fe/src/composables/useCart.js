@@ -345,13 +345,7 @@ export function useCart() {
   }
 
   async function clearSelectedItems(userId = null) {
-    // Delete selected items from backend if user is logged in
-    if (userId) {
-      const selectedToDelete = cartItems.value.filter(item => item.selected && item.cartId)
-      const deletePromises = selectedToDelete.map(item => deleteFromBackend(userId, item.cartId))
-      await Promise.all(deletePromises)
-    }
-
+    // Just remove selected items locally
     cartItems.value = cartItems.value.filter(item => !item.selected)
     saveCart()
   }

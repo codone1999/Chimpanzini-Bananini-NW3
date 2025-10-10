@@ -189,7 +189,6 @@ const createOrder = async () => {
       const orderData = {
         buyerId: userId.value,
         sellerId: items[0].sellerId || '',
-        orderDate: new Date().toISOString(),
         shippingAddress: orderShippingAddress.value.trim(),
         orderNote: shippingNote.value.trim() || '',
         orderStatus: 'COMPLETED',
