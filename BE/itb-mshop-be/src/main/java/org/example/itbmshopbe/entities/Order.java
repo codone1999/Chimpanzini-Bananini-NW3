@@ -45,6 +45,7 @@ public class Order {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();
 
+    @CreationTimestamp
     @Column(name = "createdOn")
     private Instant createdOn;
 

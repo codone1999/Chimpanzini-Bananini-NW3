@@ -75,7 +75,6 @@ public class OrderService {
             order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
             order.setOrderNote(orderRequestDto.getOrderNote());
             order.setShippingAddress(orderRequestDto.getShippingAddress());
-            order.setCreatedOn(orderRequestDto.getOrderDate());
 
             Order savedOrder = orderRepository.save(order);
 
