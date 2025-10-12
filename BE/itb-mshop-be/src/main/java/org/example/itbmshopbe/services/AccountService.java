@@ -62,7 +62,7 @@ public class AccountService {
     }
 
     private void validateRole(String role) {
-        if (!"SELLER".equalsIgnoreCase(role) && !"CUSTOMER".equalsIgnoreCase(role)) {
+        if (!"SELLER".equalsIgnoreCase(role) && !"BUYER".equalsIgnoreCase(role)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid user role. Must be 'SELLER' or 'CUSTOMER'"
