@@ -85,10 +85,29 @@ public class AccountService {
         tokenRepository.save(verificationToken);
 
         String verificationUrl = "https://intproj24.sit.kmutt.ac.th/nw3/verify-email?token=" + token;
+        String verificationHtml =
+                "<body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;'>" +
+                        "  <div style='max-width: 500px; margin: 40px auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(81, 0, 122, 0.1);'>" +
+                        "    <div style='background-color: #51007a; padding: 32px 24px; text-align: center;'>" +
+                        "      <h1 style='margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;'>Verify Your Account</h1>" +
+                        "    </div>" +
+                        "    <div style='padding: 32px 24px;'>" +
+                        "      <p style='margin: 0 0 24px; color: #333333; font-size: 15px; line-height: 1.6;'>Welcome to ITBMS-Shop! Click the button below to verify your account and get started.</p>" +
+                        "      <div style='text-align: center; margin: 32px 0;'>" +
+                        "        <a href='" + verificationUrl + "' style='display: inline-block; background-color: #51007a; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 4px; font-size: 15px; font-weight: 500;'>Verify Account</a>" +
+                        "      </div>" +
+                        "      <p style='margin: 24px 0 0; color: #666666; font-size: 13px; line-height: 1.6;'>If the button doesn't work, copy and paste this link:</p>" +
+                        "      <p style='margin: 8px 0 0; color: #51007a; font-size: 13px; word-break: break-all;'>" + verificationUrl + "</p>" +
+                        "    </div>" +
+                        "    <div style='background-color: #f9f9f9; padding: 16px 24px; border-top: 1px solid #eeeeee;'>" +
+                        "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>This link will expire in 1 hour</p>" +
+                        "    </div>" +
+                        "  </div>" +
+                        "</body>";
         try {
             emailService.sendEmail(savedAccount.getEmail(),
                     "Verify your account",
-                    verificationUrl);
+                    verificationHtml);
         } catch (Exception e) {
             System.out.println("Failed to send verification email: " + e.getMessage());
         }
@@ -225,11 +244,28 @@ public class AccountService {
         resetToken.setAccount(account);
         resetToken.setExpiryDate(Instant.now().plusSeconds(60 * 10)); // Token expires in 10 minutes
         passwordResetTokenRepository.save(resetToken);
-        String emailBody = String.format(
-                "Hello %s,\n\nYour password reset code is: %s\n\nThis code is valid for 10 minutes.",
-                account.getNickname(), code
-        );
-        emailService.sendEmail(account.getEmail(), "Your Password Reset Code", emailBody);
+        String resetPasswordHtml =
+                "<body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;'>" +
+                        "  <div style='max-width: 500px; margin: 40px auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(81, 0, 122, 0.1);'>" +
+                        "    <div style='background-color: #51007a; padding: 32px 24px; text-align: center;'>" +
+                        "      <h1 style='margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;'>Password Reset</h1>" +
+                        "    </div>" +
+                        "    <div style='padding: 32px 24px;'>" +
+                        "      <p style='margin: 0 0 8px; color: #333333; font-size: 15px;'>Hello " + account.getNickname() + ",</p>" +
+                        "      <p style='margin: 0 0 24px; color: #666666; font-size: 15px; line-height: 1.6;'>Use the code below to reset your password:</p>" +
+                        "      <div style='text-align: center; margin: 32px 0;'>" +
+                        "        <div style='display: inline-block; background-color: #51007a; padding: 20px 40px; border-radius: 4px;'>" +
+                        "          <p style='margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #ffffff;'>" + code + "</p>" +
+                        "        </div>" +
+                        "      </div>" +
+                        "      <p style='margin: 24px 0 0; color: #666666; font-size: 13px; line-height: 1.6; text-align: center;'>This code will expire in <strong style='color: #51007a;'>10 minutes</strong></p>" +
+                        "    </div>" +
+                        "    <div style='background-color: #f9f9f9; padding: 16px 24px; border-top: 1px solid #eeeeee;'>" +
+                        "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>If you didn't request this, please ignore this email</p>" +
+                        "    </div>" +
+                        "  </div>" +
+                        "</body>";
+        emailService.sendEmail(account.getEmail(), "Your Password Reset Code", resetPasswordHtml);
     }
 
     public void resetPassword(ResetPasswordRequestDto resetRequest) {

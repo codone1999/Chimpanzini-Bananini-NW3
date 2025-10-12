@@ -13,17 +13,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-   // @Bean
-   // public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-   //     http
-   //             .csrf(csrf -> csrf.disable())
-   //             .authorizeHttpRequests(auth -> auth
-   //                     .requestMatchers("/v2/account/register","/v1/sale-items").permitAll()
-   //                     .anyRequest().authenticated()
-   //             )
-   //             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // optional if you use JWT later
-   //     return http.build();
-   // }
    @Bean
    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
        http
