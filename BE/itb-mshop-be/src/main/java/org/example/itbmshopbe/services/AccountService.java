@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.*;
 import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ResetPasswordRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.VerifyResetCodeRequestDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.EmailVerificationToken;
 import org.example.itbmshopbe.entities.PasswordResetToken;
@@ -158,7 +159,7 @@ public class AccountService {
                 "  <div style='max-width: 500px; margin: 40px auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(81, 0, 122, 0.1);'>" +
                 "    <div style='background-color: #51007a; padding: 32px 24px; text-align: center;'>" +
                 "      <h1 style='margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;'>Verify Your Account</h1>" +
-                "    </div>" +
+                "    </div>" + verificationUrl +
                 "    <div style='padding: 32px 24px;'>" +
                 "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>If you didn't request this, please ignore this email</p>" +
                 "    </div>" +
@@ -320,16 +321,49 @@ public class AccountService {
         emailService.sendEmail(account.getEmail(), "Your Password Reset Code", resetPasswordHtml);
     }
 
+    public void verifyResetCode(VerifyResetCodeRequestDto verifyRequest) {
+        Account account = accountRepository.findByEmail(verifyRequest.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account with this email does not exist"
+                ));
+
+        PasswordResetToken token = passwordResetTokenRepository.findByAccount(account)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "No password reset request was found. Please request a new code"
+                ));
+
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(token);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Your reset code has expired. Please request a new one"
+            );
+        }
+
+        if (!token.getToken().equals(verifyRequest.getCode())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "The provided code is incorrect"
+            );
+        }
+
+        token.setVerified(true);
+        passwordResetTokenRepository.save(token);
+    }
+
     public void resetPassword(ResetPasswordRequestDto resetRequest) {
         Account account = accountRepository.findByEmail(resetRequest.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Account with this email does not exist"
                 ));
+
         PasswordResetToken token = passwordResetTokenRepository.findByAccount(account)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "No password reset request was found. Please request a new code"
+                        "No password reset request was found. Please verify your reset code first"
                 ));
         if (token.getExpiryDate().isBefore(Instant.now())) {
             passwordResetTokenRepository.delete(token);
@@ -338,10 +372,10 @@ public class AccountService {
                     "Your reset code has expired. Please request a new one"
             );
         }
-        if (!token.getToken().equals(resetRequest.getCode())) {
+        if (!token.getVerified()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "The provided code is incorrect"
+                    "Please verify your reset code first before changing your password"
             );
         }
         account.setPassword(passwordEncoder.encode(resetRequest.getNewPassword()));

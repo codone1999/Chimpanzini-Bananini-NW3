@@ -283,6 +283,7 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
     account_id INT NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     expiry_date DATETIME NOT NULL,
+    verified boolean,
     
     -- This links the token to a user account. 
     -- If an account is deleted, its reset tokens are automatically removed.

@@ -7,6 +7,7 @@ import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
 import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ForgotPasswordRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ResetPasswordRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.VerifyResetCodeRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.services.AccountService;
@@ -91,7 +92,15 @@ public class AccountController {
             @Valid @RequestBody ForgotPasswordRequestDto forgotPasswordDto
     ) {
         accountService.forgotPassword(forgotPasswordDto.getEmail());
-        return ResponseEntity.ok("a password reset code has been sent.");
+        return ResponseEntity.ok("A password reset code has been sent to your email.");
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<String> verifyResetCode(
+            @Valid @RequestBody VerifyResetCodeRequestDto verifyCodeDto
+    ) {
+        accountService.verifyResetCode(verifyCodeDto);
+        return ResponseEntity.ok("Reset code verified successfully. You can now reset your password.");
     }
 
     @PostMapping("/reset-password")

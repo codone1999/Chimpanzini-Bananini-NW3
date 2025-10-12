@@ -35,4 +35,7 @@ public class PasswordResetToken {
     @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
 
+    @Column(name = "verified")
+    private Boolean verified;
+
 }
