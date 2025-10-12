@@ -40,8 +40,37 @@ public class AccountService {
     public UserResponseDto registerAccount(RegisterRequestDto accountReq,
                                            MultipartFile frontPhoto,
                                            MultipartFile backPhoto) {
+        if (!"SELLER".equalsIgnoreCase(accountReq.getRole()) && !"CUSTOMER".equalsIgnoreCase(accountReq.getRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user role. Must be 'SELLER' or 'CUSTOMER'.");
+        }
         if (accountRepository.existsByEmail(accountReq.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use!");
+        }
+        if ("SELLER".equalsIgnoreCase(accountReq.getRole())) {
+            if (accountReq.getMobile() == null || accountReq.getMobile().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobile number is required for sellers.");
+            }
+            if (accountReq.getNationalCardNo() == null || accountReq.getNationalCardNo().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "National ID number is required for sellers.");
+            }
+            if (accountReq.getBankAccountNo() == null || accountReq.getBankAccountNo().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bank account number is required for sellers.");
+            }
+            if (!accountReq.getMobile().matches("0\\d{9}")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid mobile number format. Must be 10 digits starting with 0.");
+            }
+            if (!accountReq.getNationalCardNo().matches("\\d{13}")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid National ID format. Must be 13 digits.");
+            }
+            if (!accountReq.getBankAccountNo().matches("\\d{10,12}")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid bank account number format. Must be 10-12 digits.");
+            }
+            if (sellerRepository.existsByMobile(accountReq.getMobile())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "This mobile number is already in use.");
+            }
+            if (sellerRepository.existsByNationalCardNo(accountReq.getNationalCardNo())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "This National ID number is already in use.");
+            }
         }
 
         Account newAccount = new Account();
