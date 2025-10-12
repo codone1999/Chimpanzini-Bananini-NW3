@@ -4,11 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.*;
+import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ResetPasswordRequestDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.entities.EmailVerificationToken;
+import org.example.itbmshopbe.entities.PasswordResetToken;
 import org.example.itbmshopbe.entities.Seller;
 import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.EmailVerificationTokenRepository;
+import org.example.itbmshopbe.repositories.PasswordResetTokenRepository;
 import org.example.itbmshopbe.repositories.SellerRepository;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
 import org.example.itbmshopbe.utils.Util;
@@ -21,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +36,7 @@ public class AccountService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final ModelMapper modelMapper;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     public UserResponseDto registerAccount(RegisterRequestDto accountReq,
                                            MultipartFile frontPhoto,
                                            MultipartFile backPhoto) {
@@ -210,6 +215,40 @@ public class AccountService {
         }
         return responseDto;
     }
+    public void forgotPassword(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with this email does not exist."));
+        String code = String.format("%04d", new Random().nextInt(10000));
+        passwordResetTokenRepository.findByAccount(account).ifPresent(passwordResetTokenRepository::delete);
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(code);
+        resetToken.setAccount(account);
+        resetToken.setExpiryDate(Instant.now().plusSeconds(60 * 10)); // Token expires in 10 minutes
+        passwordResetTokenRepository.save(resetToken);
+        String emailBody = String.format(
+                "Hello %s,\n\nYour password reset code is: %s\n\nThis code is valid for 10 minutes.",
+                account.getNickname(), code
+        );
+        emailService.sendEmail(account.getEmail(), "Your Password Reset Code", emailBody);
+    }
 
+    public void resetPassword(ResetPasswordRequestDto resetRequest) {
+        Account account = accountRepository.findByEmail(resetRequest.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with this email does not exist."));
+
+        PasswordResetToken token = passwordResetTokenRepository.findByAccount(account)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No password reset request was found. Please request a new code."));
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(token);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Your reset code has expired. Please request a new one.");
+        }
+
+        if (!token.getToken().equals(resetRequest.getCode())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The provided code is incorrect.");
+        }
+        account.setPassword(passwordEncoder.encode(resetRequest.getNewPassword()));
+        accountRepository.save(account);
+        passwordResetTokenRepository.delete(token);
+    }
 
 }

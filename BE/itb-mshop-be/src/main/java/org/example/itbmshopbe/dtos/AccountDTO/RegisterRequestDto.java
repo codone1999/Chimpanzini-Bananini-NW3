@@ -29,6 +29,4 @@ public class RegisterRequestDto {
     private String bankAccountNo;
     private String bankName;
     private String nationalCardNo;
-    //private String nationalCardPhoto;
-
 }

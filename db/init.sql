@@ -276,6 +276,20 @@ CREATE TABLE IF NOT EXISTS cart (
     CONSTRAINT uq_cart_unique_item_per_user
         UNIQUE (account_id, sale_item_id)
 );
+-- Table: password_reset_token
+-- Stores temporary tokens (like the 4-digit code) for password reset requests.
+CREATE TABLE IF NOT EXISTS password_reset_token (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date DATETIME NOT NULL,
+    
+    -- This links the token to a user account. 
+    -- If an account is deleted, its reset tokens are automatically removed.
+    CONSTRAINT fk_password_reset_token_account 
+        FOREIGN KEY (account_id) REFERENCES account(id) 
+        ON DELETE CASCADE
+) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_cart_account ON cart(account_id);
 CREATE INDEX idx_cart_sale_item ON cart(sale_item_id);
 

@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.LoginResponseDto;
 import org.example.itbmshopbe.dtos.AccountDTO.RegisterRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ForgotPasswordRequestDto;
+import org.example.itbmshopbe.dtos.AccountDTO.ResetPassword.ResetPasswordRequestDto;
 import org.example.itbmshopbe.dtos.AccountDTO.UserResponseDto;
 import org.example.itbmshopbe.entities.Account;
 import org.example.itbmshopbe.services.AccountService;
@@ -83,5 +85,20 @@ public class AccountController {
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refresh failed", e);
         }
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDto forgotPasswordDto
+    ) {
+        accountService.forgotPassword(forgotPasswordDto.getEmail());
+        return ResponseEntity.ok("a password reset code has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDto resetPasswordDto
+    ) {
+        accountService.resetPassword(resetPasswordDto);
+        return ResponseEntity.ok("Your password has been successfully reset.");
     }
 }
