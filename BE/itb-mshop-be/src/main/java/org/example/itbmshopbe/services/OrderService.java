@@ -45,8 +45,6 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
 
         Map<Integer, List<OrderItemRequestDto>> itemsBySeller = new HashMap<>();
-        List<Integer> orderedSaleItemIds = new ArrayList<>();
-
         for (OrderItemRequestDto itemDto : orderRequestDto.getOrderItems()) {
             SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -56,35 +54,44 @@ public class OrderService {
             if (sellerId.equals(buyerId)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot purchase your own items");
             }
-
             itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(itemDto);
-            orderedSaleItemIds.add(itemDto.getSaleItemId());
         }
 
         List<OrderResponseDto<OrderSellerResponseDto>> createdOrders = new ArrayList<>();
+        List<Integer> successfulSaleItemIds = new ArrayList<>();
 
         for (Map.Entry<Integer, List<OrderItemRequestDto>> entry : itemsBySeller.entrySet()) {
             Integer sellerId = entry.getKey();
             List<OrderItemRequestDto> sellerItems = entry.getValue();
+
+            boolean isStockSufficient = true;
+            for (OrderItemRequestDto itemDto : sellerItems) {
+                SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId()).get();
+                if (saleItem.getQuantity() < itemDto.getQuantity()) {
+                    isStockSufficient = false;
+                    break;
+                }
+            }
 
             Seller seller = sellerRepository.findById(sellerId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found: " + sellerId));
 
             Order order = new Order();
             order.setCustomer(buyer);
-            order.setStatus(orderRequestDto.getOrderStatus() != null ? orderRequestDto.getOrderStatus() : "PENDING");
             order.setOrderNote(orderRequestDto.getOrderNote());
             order.setShippingAddress(orderRequestDto.getShippingAddress());
-
+            order.setStatus(isStockSufficient ? "PENDING" : "CANCELED");
             Order savedOrder = orderRepository.save(order);
 
             List<OrderItem> orderItems = new ArrayList<>();
             for (OrderItemRequestDto itemDto : sellerItems) {
-                SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "SaleItem not found: " + itemDto.getSaleItemId()));
-                saleItem.setQuantity(saleItem.getQuantity() - itemDto.getQuantity());
-                saleItemRepository.save(saleItem);
+                SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId()).get();
+
+                if (isStockSufficient) {
+                    saleItem.setQuantity(saleItem.getQuantity() - itemDto.getQuantity());
+                    saleItemRepository.save(saleItem);
+                    successfulSaleItemIds.add(saleItem.getId());
+                }
 
                 OrderItem orderItem = new OrderItem();
                 orderItem.setOrder(savedOrder);
@@ -93,15 +100,15 @@ public class OrderService {
                 orderItem.setPriceEach(itemDto.getPrice());
                 orderItems.add(orderItem);
             }
+
             orderItemRepository.saveAll(orderItems);
+
             OrderSellerResponseDto sellerDto = mapToSellerBase(seller);
             List<OrderItemRequestDto> responseItems = mapOrderItems(orderItems);
-
             createdOrders.add(mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems));
         }
-
-        if (!orderedSaleItemIds.isEmpty()) {
-            List<Cart> cartItemsToRemove = cartRepository.findByAccountIdAndSaleItemIdIn(buyerId, orderedSaleItemIds);
+        if (!successfulSaleItemIds.isEmpty()) {
+            List<Cart> cartItemsToRemove = cartRepository.findByAccountIdAndSaleItemIdIn(buyerId, successfulSaleItemIds);
             if (!cartItemsToRemove.isEmpty()) {
                 cartRepository.deleteAll(cartItemsToRemove);
             }
