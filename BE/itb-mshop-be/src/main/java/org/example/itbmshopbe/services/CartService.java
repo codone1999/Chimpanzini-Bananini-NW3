@@ -11,6 +11,7 @@ import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.CartRepository;
 import org.example.itbmshopbe.repositories.OrderItemRepository;
 import org.example.itbmshopbe.repositories.SaleItemRepository;
+import org.example.itbmshopbe.utils.RepositoryHelper;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,14 +29,12 @@ public class CartService {
     private final SaleItemRepository saleItemRepository;
     private final OrderItemRepository orderItemRepository;
     private final ModelMapper modelMapper;
+    private final RepositoryHelper repositoryHelper;
 
     @Transactional
     public CartResponseDto addToCart(Integer userId, CartRequestDto cartRequestDto) {
-        Account account = accountRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
-
-        SaleItem saleItem = saleItemRepository.findById(cartRequestDto.getSaleItemId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SaleItem not found"));
+        Account account = repositoryHelper.findByIdOrThrow(accountRepository, userId, "Account");
+        SaleItem saleItem = repositoryHelper.findByIdOrThrow(saleItemRepository, cartRequestDto.getSaleItemId(), "SaleItem");
 
         // Check if item belongs to the user (can't add own items to cart)
         if (saleItem.getSeller().getId().equals(userId)) {

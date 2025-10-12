@@ -7,6 +7,7 @@ import org.example.itbmshopbe.entities.*;
 
 import org.example.itbmshopbe.repositories.*;
 import org.example.itbmshopbe.utils.OrderSpecifications;
+import org.example.itbmshopbe.utils.PagingUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +34,7 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
     private final ModelMapper modelMapper;
+    private final PagingUtil pagingUtil;
 
     @Transactional
     public List<OrderResponseDto<OrderSellerResponseDto>> createOrder(Integer buyerId, OrderRequestDto orderRequestDto) {
@@ -198,13 +200,8 @@ public class OrderService {
         if (page == null || page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
         }
-        int pageSize = (size == null || size <= 0) ? 10 : size;
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
-        Specification<Order> spec = Specification
-                .where(OrderSpecifications.belongsToAccount(currentUserId));
-
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(direction, sortBy));
+        Pageable pageable = pagingUtil.createPageable(page, size, sortField, sortDirection, "createdOn");
+        Specification<Order> spec = Specification.where(OrderSpecifications.belongsToAccount(currentUserId));
         Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
         List<OrderResponseDto<OrderSellerResponseDto>> orderResponse = ordersPage.getContent().stream()
                 .map(order -> {
@@ -243,14 +240,8 @@ public class OrderService {
             if (page == null || page < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
             }
-
-            int pageSize = (size == null || size <= 0) ? 10 : size;
-            Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
-                ? Sort.Direction.DESC : Sort.Direction.ASC;
-        String sortBy = (sortField == null || sortField.isBlank()) ? "createdOn" : sortField;
-        Specification<Order> spec = Specification.where(OrderSpecifications.belongsToSeller(sellerId));
-
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(direction, sortBy));
+        Pageable pageable = pagingUtil.createPageable(page, size, sortField, sortDirection, "createdOn");
+        Specification<Order> spec = Specification.where(OrderSpecifications.belongsToAccount(sellerId));
         Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
         return ordersPage.getContent().stream().map(order -> {
             OrderSellerViewResponseDto dto = new OrderSellerViewResponseDto();
