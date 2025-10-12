@@ -155,16 +155,28 @@ public class AccountService {
     }
 
     private String buildVerificationEmailHtml(String verificationUrl) {
-        return "<body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;'>" +
-                "  <div style='max-width: 500px; margin: 40px auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(81, 0, 122, 0.1);'>" +
-                "    <div style='background-color: #51007a; padding: 32px 24px; text-align: center;'>" +
-                "      <h1 style='margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;'>Verify Your Account</h1>" +
-                "    </div>" + verificationUrl +
-                "    <div style='padding: 32px 24px;'>" +
-                "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>If you didn't request this, please ignore this email</p>" +
+        return "<!DOCTYPE html>" +
+                "<html lang='en'>" +
+                "<head>" +
+                "  <meta charset='UTF-8'>" +
+                "  <meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                "  <title>Verify Your Email Address</title>" +
+                "</head>" +
+                "<body style='margin: 0; padding: 0; width: 100%; background-color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Arial, sans-serif;'>" +
+                "  <div style='max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);'>" +
+                "    <div style='padding: 40px; text-align: center;'>" +
+                "      <h1 style='margin-top: 0; margin-bottom: 20px; color: #51007a; font-size: 24px; font-weight: 600;'>Verify Your Email Address</h1>" +
+                "      <p style='margin-bottom: 30px; color: #555555; font-size: 16px; line-height: 1.5;'>Please click the button below to confirm your email address and activate your account.</p>" +
+                "      <a href='" + verificationUrl + "' style='display: inline-block; padding: 12px 24px; background-color: #51007a; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 500; border-radius: 6px;'>Verify Account</a>" +
+                "      <p style='margin-top: 30px; font-size: 12px; color: #999999;'>If the button above doesn't work, copy and paste this link into your browser:</p>" +
+                "      <p style='margin-top: 10px; font-size: 12px; color: #777777; word-break: break-all;'>" + verificationUrl + "</p>" +
+                "    </div>" +
+                "    <div style='background-color: #fafafa; padding: 20px; border-top: 1px solid #eeeeee;'>" +
+                "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>If you did not request this email, you can safely ignore it.</p>" +
                 "    </div>" +
                 "  </div>" +
-                "</body>";
+                "</body>" +
+                "</html>";
     }
 
     public UserResponseDto editAccount(Integer UserId,UserProfileEditDto userProfileEditDto) {
