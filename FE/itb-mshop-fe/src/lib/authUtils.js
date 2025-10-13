@@ -21,8 +21,6 @@ const COOKIE_CONFIG = {
 
 /**
  * Set authentication tokens in cookies
- * @param {string} accessToken - JWT access token
- * @param {string} refreshToken - JWT refresh token
  */
 export function setAuthTokens(accessToken, refreshToken) {
   if (accessToken) {
@@ -49,23 +47,28 @@ export function setAuthTokens(accessToken, refreshToken) {
  * @returns {string|undefined} Access token
  */
 export function getAccessToken() {
-  return Cookies.get(COOKIE_CONFIG.ACCESS_TOKEN.name) ?? Cookies.get(COOKIE_CONFIG.REFRESH_TOKEN.name)
+  return Cookies.get(COOKIE_CONFIG.ACCESS_TOKEN.name)
 }
 
 /**
  * Get refresh token from cookies
- * @returns {string|undefined} Refresh token
  */
 export function getRefreshToken() {
   return Cookies.get(COOKIE_CONFIG.REFRESH_TOKEN.name)
 }
 
 /**
- * Check if user is authenticated
- * @returns {boolean} True if access token exists
+ * Check if user is authenticated (has valid access token)
  */
 export function isAuthenticated() {
   return !!getAccessToken()
+}
+
+/**
+ * Check if user has a refresh token (can potentially refresh session)
+ */
+export function hasRefreshToken() {
+  return !!getRefreshToken()
 }
 
 /**
@@ -78,8 +81,6 @@ export function clearAuthTokens() {
 
 /**
  * Refresh access token using refresh token
- * @param {string} apiUrl - Base API URL
- * @returns {Promise<boolean>} True if refresh successful
  */
 export async function refreshAccessToken(apiUrl) {
   const refreshToken = getRefreshToken()
@@ -105,10 +106,12 @@ export async function refreshAccessToken(apiUrl) {
     const result = await response.json()
     
     if (result.access_token) {
+      // Store new access token, keep existing refresh token
       setAuthTokens(result.access_token, refreshToken)
       return true
     }
     
+    clearAuthTokens()
     return false
   } catch (error) {
     console.error('Token refresh failed:', error)
@@ -118,8 +121,29 @@ export async function refreshAccessToken(apiUrl) {
 }
 
 /**
+ * Attempts to refresh access token if only refresh token exists
+ */
+export async function initializeAuth(apiUrl) {
+  const accessToken = getAccessToken()
+  const refreshToken = getRefreshToken()
+  
+  // If we have access token, we're good
+  if (accessToken) {
+    return true
+  }
+  
+  // If we have refresh token but no access token, try to refresh
+  if (refreshToken && !accessToken) {
+    console.log('Access token expired, attempting refresh...')
+    return await refreshAccessToken(apiUrl)
+  }
+  
+  // No tokens at all
+  return false
+}
+
+/**
  * Create authorization header for API requests
- * @returns {Object} Authorization header object
  */
 export function getAuthHeaders() {
   const token = getAccessToken()
@@ -140,7 +164,6 @@ export async function logoutFromServer() {
     })
     
     if (!response.ok) {
-      // Handle HTTP error responses
       if (response.status === 400) {
         throw new Error('Refresh token is missing or invalid')
       } else if (response.status === 500) {
@@ -155,10 +178,8 @@ export async function logoutFromServer() {
     console.error('Logout error:', error)
     
     if (error.name === 'TypeError') {
-      // Network error (fetch throws TypeError for network issues)
       throw new Error('Network error - please check your connection')
     } else {
-      // Re-throw other errors (including our custom errors above)
       throw error
     }
   }
@@ -166,8 +187,6 @@ export async function logoutFromServer() {
 
 /**
  * Decode JWT token to extract user information
- * @param {string} token - JWT token
- * @returns {Object|null} Decoded token payload or null if invalid
  */
 export function decodeJWT(token) {
   if (!token) return null
@@ -176,14 +195,12 @@ export function decodeJWT(token) {
     const parts = token.split('.')
     if (parts.length !== 3) return null
     
-    // Decode payload (middle part)
     const payload = parts[1]
     const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
     const parsed = JSON.parse(decoded)
     
     // Check if token is expired
     if (parsed.exp && parsed.exp < Math.floor(Date.now() / 1000)) {
-      clearAuthTokens() // Auto-clear expired tokens
       return null
     }
     

@@ -1,4 +1,4 @@
-//LoginForm.vue
+// LogInForm.vue
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -20,6 +20,7 @@ const form = ref({
 const errorMessage = ref('')
 const successMessage = ref('')
 const isRedirecting = ref(false)
+const showPassword = ref(false)
 
 // Individual field validation messages
 const fieldErrors = ref({
@@ -157,83 +158,149 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto bg-white shadow-md rounded-lg p-6 my-20">
-    <!-- Header -->
-    <div class="text-center mb-6">
-      <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-        Welcome To ITB-MShop
-      </h1>
-      <p class="text-gray-600 text-sm">Sign in to your account</p>
-    </div>
-    
-    <!-- Success Message -->
-    <div v-if="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-      {{ successMessage }}
-    </div>
+  <div class="bg-gray-900 text-gray-100 font-sans flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg">
+      <!-- Card -->
+      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl px-8 py-7">
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent mb-3">
+            Welcome Back
+          </h2>
+          <p class="text-gray-400 text-sm">
+            Sign in to your account
+          </p>
+        </div>
 
-    <!-- Error Message -->
-    <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-      {{ errorMessage }}
-    </div>
+        <!-- Messages -->
+        <transition name="fade">
+          <div v-if="successMessage" class="mb-6 p-4 bg-emerald-900/30 border border-emerald-700 text-emerald-300 rounded-lg text-sm">
+            {{ successMessage }}
+          </div>
+        </transition>
+        <transition name="fade">
+          <div v-if="errorMessage" class="mb-6 p-4 bg-red-900/30 border border-red-700 text-red-300 rounded-lg text-sm">
+            {{ errorMessage }}
+          </div>
+        </transition>
 
-    <form @submit.prevent="handleSubmit" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium">Email *</label>
-        <input
-          v-model="form.email"
-          type="email"
-          required
-          maxlength="50"
-          :disabled="isRedirecting"
-          @blur="handleEmailBlur"
-          @input="handleEmailInput"
-          :class="[
-            'itbms-email mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
-            fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-          ]"
-          placeholder="Enter your email address"
-        />
-        <p v-if="fieldErrors.email" class="text-sm text-red-600 mt-1">
-          {{ fieldErrors.email }}
-        </p>
+        <!-- Form -->
+        <form @submit.prevent="handleSubmit" class="space-y-4">
+          <!-- Email Field -->
+          <div>
+            <label class="block text-sm font-medium text-purple-300 mb-2">
+              Email <span class="text-red-400">*</span>
+            </label>
+            <input
+              v-model="form.email"
+              type="email"
+              required
+              maxlength="50"
+              :disabled="isRedirecting"
+              @blur="handleEmailBlur"
+              @input="handleEmailInput"
+              :class="[
+                'itbms-email',
+                'w-full px-4 py-3 bg-gray-700 border rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed',
+                fieldErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+              ]"
+              placeholder="Enter your email"
+            />
+            <p v-if="fieldErrors.email" class="text-sm text-red-400 mt-1">
+              {{ fieldErrors.email }}
+            </p>
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <label class="block text-sm font-medium text-purple-300 mb-2">
+              Password <span class="text-red-400">*</span>
+            </label>
+            <div class="relative">
+              <input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                maxlength="14"
+                :disabled="isRedirecting"
+                @blur="handlePasswordBlur"
+                @input="handlePasswordInput"
+                :class="[
+                  'itbms-password',
+                  'w-full px-4 py-3 bg-gray-700 border rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 transition disabled:bg-gray-600 disabled:cursor-not-allowed',
+                  fieldErrors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+                ]"
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition"
+                :disabled="isRedirecting"
+              >
+                <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              </button>
+            </div>
+            <p v-if="fieldErrors.password" class="text-sm text-red-400 mt-1">
+              {{ fieldErrors.password }}
+            </p>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="isButtonDisabled"
+              :class="[
+                'itbms-signin-button w-full py-3 rounded-lg font-medium transition-all shadow-md',
+                isButtonDisabled
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-500 hover:shadow-lg'
+              ]"
+            >
+              {{ isRedirecting ? 'Redirecting...' : 'Sign In' }}
+            </button>
+          </div>
+
+          <!-- Sign Up Link -->
+          <div class="pt-4 border-t border-gray-700 text-center">
+            <p class="text-sm text-gray-400">
+              Don't have an account?
+              <router-link
+                :to="{ name: 'Register' }"
+                class="text-purple-400 hover:text-purple-300 hover:underline font-medium transition ml-1"
+              >
+                Sign up
+              </router-link>
+            </p>
+          </div>
+
+          <!-- Forgot Password Link -->
+          <div class="text-center">
+            <router-link
+              :to="{ name: 'ResetEmail' }"
+              class="text-sm text-purple-400 hover:text-purple-300 hover:underline transition"
+            >
+              Forgot password?
+            </router-link>
+          </div>
+        </form>
       </div>
-
-      <div>
-        <label class="block text-sm font-medium">Password *</label>
-        <input
-          v-model="form.password"
-          type="password"
-          required
-          maxlength="14"
-          :disabled="isRedirecting"
-          @blur="handlePasswordBlur"
-          @input="handlePasswordInput"
-          :class="[
-            'itbms-password mt-1 w-full border rounded-md px-3 py-2 focus:ring focus:ring-orange-200 disabled:bg-gray-100',
-            fieldErrors.password ? 'border-red-500' : 'border-gray-300'
-          ]"
-          placeholder="Enter your password 14 characters"
-        />
-        <p v-if="fieldErrors.password" class="text-sm text-red-600 mt-1">
-          {{ fieldErrors.password }}
-        </p>
-      </div>
-
-      <!-- Buttons -->
-      <div class="pt-4">
-        <button
-          type="submit"
-          :disabled="isButtonDisabled"
-          :class="[
-            'itbms-signin-button w-full py-2 rounded-md transition-colors',
-            isButtonDisabled
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-              : 'bg-green-500 text-white hover:bg-green-600'
-          ]"
-        >
-          {{ isRedirecting ? 'Redirecting...' : 'Login' }}
-        </button>
-      </div>
-    </form>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

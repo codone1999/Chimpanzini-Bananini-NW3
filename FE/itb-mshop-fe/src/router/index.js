@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { initializeAuth, isAuthenticated } from '@/lib/authUtils'
 import Home from "@/views/Home.vue";
 import ListGallery from "@/components/sale-items/gallery/ListGallery.vue";
 import ListDetails from "@/components/sale-items/ListDetail.vue";
@@ -17,6 +18,9 @@ import EditProfile from "@/views/profile/EditProfile.vue";
 import Cart from "@/views/order/Cart.vue";
 import OrderHistory from "@/views/order/OrderHistory.vue";
 import OrderDetail from "@/views/order/OrderDetail.vue";
+import ResetPassword from "@/views/password-reset/ResetPassword.vue";
+import VerifyResetCode from "@/views/password-reset/VerifyResetCode.vue";
+import RequestReset from "@/views/password-reset/RequestReset.vue";
 
 const routes = [
     {
@@ -105,6 +109,21 @@ const routes = [
         component: OrderDetail
     },
     {
+        path: '/request-reset-email',
+        name: 'ResetEmail',
+        component: RequestReset
+    },
+    {
+        path: '/verify-reset-code',
+        name: 'ResetCode',
+        component: VerifyResetCode
+    },
+    {
+        path: '/reset-password',
+        name: 'ResetPassword',
+        component: ResetPassword
+    },
+    {
         path: '/:NotFound(.*)',
         name: 'NotFound',
         component: PageNotFound
@@ -115,4 +134,26 @@ const router = createRouter({
     history: createWebHistory('/nw3/'), 
     routes
 })
+
+// Global navigation guard
+router.beforeEach(async (to, from, next) => {
+  const publicPages = ['Login', 'Register', 'ResetEmail', 'ResetCode', 'ResetPassword'] // Add your public route names
+  const authRequired = !publicPages.includes(to.name)
+  
+  // Try to initialize auth (refresh token if needed)
+  const isAuth = await initializeAuth(import.meta.env.VITE_APP_URL2)
+  
+  if (authRequired && !isAuth) {
+    // Redirect to login if auth is required but user is not authenticated
+    return next({ name: 'Login' })
+  }
+  
+  if (!authRequired && isAuth) {
+    // If already authenticated and trying to access login/register, redirect to home
+    return next({ name: 'ListGallery' })
+  }
+  
+  next()
+})
+
 export default router
