@@ -14,6 +14,7 @@ import org.example.itbmshopbe.repositories.AccountRepository;
 import org.example.itbmshopbe.repositories.EmailVerificationTokenRepository;
 import org.example.itbmshopbe.repositories.PasswordResetTokenRepository;
 import org.example.itbmshopbe.repositories.SellerRepository;
+import org.example.itbmshopbe.utils.EntityValidatorUtil;
 import org.example.itbmshopbe.utils.JwtTokenUtil;
 import org.example.itbmshopbe.utils.Util;
 import org.example.itbmshopbe.utils.ValidationUtil;
@@ -40,6 +41,7 @@ public class AccountService {
     private final ModelMapper modelMapper;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ValidationUtil validationUtil;
+    private final EntityValidatorUtil entityValidatorUtil;
 
     public UserResponseDto registerAccount(RegisterRequestDto accountReq,
                                            MultipartFile frontPhoto,
@@ -259,17 +261,22 @@ public class AccountService {
         }
     }
     public String refreshAccessToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No refresh token provided"
+            );
+        }
         try {
             JwtTokenUtil.validateToken(refreshToken);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid token"
+            );
         }
         Integer userId = JwtTokenUtil.getIdFromToken(refreshToken);
-        Account account = accountRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found"));
-        if (account.getStatus() != Account.Status.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
-        }
+        Account account = entityValidatorUtil.validateActiveAccount(userId);
         return JwtTokenUtil.generateAccessToken(
                 account.getId(),
                 account.getEmail(),

@@ -75,17 +75,16 @@ public class AccountController {
 
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDto> refreshToken(
-            @CookieValue(value = "refresh_token", required = true) String refreshToken
-    ){
-        try {
-            String newAccessToken = accountService.refreshAccessToken(refreshToken);
-            return ResponseEntity.ok(new LoginResponseDto(newAccessToken, refreshToken));
-
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Refresh failed", e);
+            @CookieValue(value = "refresh_token", required = false) String refreshToken
+    ) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No refresh token provided"
+            );
         }
+        String newAccessToken = accountService.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(new LoginResponseDto(newAccessToken, refreshToken));
     }
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(
