@@ -141,7 +141,7 @@ public class OrderService {
         order.setCustomer(buyer);
         order.setOrderNote(dto.getOrderNote());
         order.setShippingAddress(dto.getShippingAddress());
-        order.setStatus(isStockSufficient ? "PENDING" : "CANCELLED");
+        order.setStatus(isStockSufficient ? "COMPLETED" : "CANCELLED");
         return order;
     }
 
