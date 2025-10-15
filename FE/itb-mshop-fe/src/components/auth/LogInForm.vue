@@ -3,7 +3,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
-import { setAuthTokens, clearAuthTokens, isAuthenticated, getAccessToken } from '@/lib/authUtils'
+import { setAuthTokens, clearAuthTokens, isAuthenticated, ensureValidToken, isTokenExpired } from '@/lib/authUtils'
 import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
@@ -157,11 +157,13 @@ async function handleSubmit() {
 }
 
 onMounted(async () => {
-  if(getAccessToken()){
+  if(!isTokenExpired()){
     if (userRole.value === "BUYER")
       router.push({ name: 'ListGallery'})
     else 
       router.push({ name: 'ListSaleItems'})
+  } else {
+    await ensureValidToken()
   }
 })
 </script>

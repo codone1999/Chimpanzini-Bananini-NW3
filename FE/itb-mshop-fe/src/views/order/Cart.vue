@@ -4,7 +4,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import { useUser } from '@/composables/useUser'
-import { getItemsWithToken, addItemWithToken, editItemWithToken, deleteItemWithToken } from '@/lib/fetchUtils'
+import { addItemWithToken } from '@/lib/fetchUtils'
 import { getAccessToken } from '@/lib/authUtils'
 import { useShippingAddress } from '@/composables/useShippingAddress'
 
@@ -191,7 +191,6 @@ const createOrder = async () => {
         sellerId: items[0].sellerId || '',
         shippingAddress: orderShippingAddress.value.trim(),
         orderNote: shippingNote.value.trim() || '',
-        orderStatus: 'COMPLETED',
         orderItems: orderItems
       }
 

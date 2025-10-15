@@ -1,4 +1,5 @@
 // lib/authUtils.js
+import { useCart } from '@/composables/useCart'
 import Cookies from 'js-cookie'
 
 // Cookie configuration
@@ -92,7 +93,6 @@ export async function refreshAccessToken() {
 
     const data = await response.json()
     
-    // Backend returns: { access_token: "...", refresh_token: "..." }
     // Store both tokens (refresh token rotation)
     setAuthTokens(data.access_token, data.refresh_token)
     
@@ -103,6 +103,48 @@ export async function refreshAccessToken() {
     clearAuthTokens()
     return null
   }
+}
+
+/**
+ * Check if the access token is expired or about to expire
+ * @param {number} bufferSeconds - Refresh if token expires within this many seconds (default: 60)
+ */
+export function isTokenExpired(bufferSeconds = 60) {
+  const token = getAccessToken()
+  if (!token) return true
+  
+  const decoded = decodeJWT(token)
+  if (!decoded || !decoded.exp) return true
+  
+  const expirationTime = decoded.exp
+  const currentTime = Math.floor(Date.now() / 1000)
+  
+  // Return true if token is expired or will expire within buffer time
+  return expirationTime - currentTime < bufferSeconds
+}
+
+/**
+ * Ensure we have a valid access token, refreshing if necessary
+ * Returns the valid access token or null if refresh fails
+ */
+export async function ensureValidToken() {
+  // If token is valid and not expired, return it
+  if (!isTokenExpired()) {
+    return getAccessToken()
+  }
+  
+  // Token is expired or about to expire, try to refresh
+  const newToken = await refreshAccessToken()
+  
+  if (!newToken) {
+    const { clearCart } = useCart()
+    clearCart()
+    // Refresh failed, clear tokens
+    clearAuthTokens()
+    return null
+  }
+  
+  return newToken
 }
 
 /**

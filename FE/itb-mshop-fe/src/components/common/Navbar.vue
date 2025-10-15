@@ -3,7 +3,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUser } from '@/composables/useUser'
-import { getAccessToken, refreshAccessToken } from '@/lib/authUtils'
+import { ensureValidToken } from '@/lib/authUtils'
 
 const router = useRouter()
 
@@ -38,14 +38,9 @@ async function handleLogout() {
   }
 }
 
-async function getRefreshToken() {
-  if (!getAccessToken()){
-    await refreshAccessToken()
-  }
-}
 
-onMounted(() => {
-  getRefreshToken()
+onMounted( async() => {
+  await ensureValidToken()
 })
 
 </script>
@@ -91,7 +86,7 @@ onMounted(() => {
           <template v-else-if="!isLoggedIn">
             <!-- Not logged in - show login/register -->
             <router-link :to="{ name: 'Login'}" 
-              @click="getRefreshToken()"
+              @click="ensureValidToken()"
               class="px-4 py-2 rounded-md text-gray-200 border border-gray-500 hover:bg-gray-800 transition">
               Sign In
             </router-link>
@@ -155,7 +150,7 @@ onMounted(() => {
         
         <template v-else-if="!isLoggedIn">
           <router-link :to="{ name: 'Login'}" 
-            @click="mobileMenuOpen = false; getRefreshToken()"
+            @click="mobileMenuOpen = false; ensureValidToken()"
             class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800">
             Sign In
           </router-link>

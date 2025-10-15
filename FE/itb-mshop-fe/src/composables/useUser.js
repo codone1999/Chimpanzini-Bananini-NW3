@@ -1,6 +1,6 @@
 // composables/useUser.js
 import { ref, computed, watch } from 'vue'
-import { getAccessToken, decodeJWT, isAuthenticated, logoutFromServer } from '@/lib/authUtils'
+import { decodeJWT, isAuthenticated, logoutFromServer, ensureValidToken } from '@/lib/authUtils'
 import { getProfileByIdAndToken } from '@/lib/fetchUtils'
 import { useShippingAddress } from './useShippingAddress'
 import { useCart } from './useCart'
@@ -17,7 +17,7 @@ const loadCompleteUserData = async () => {
   isLoading.value = true
   
   try {
-    const token = getAccessToken()
+    const token = await ensureValidToken()
     if (!token) {
       currentUser.value = null
       apiUserData.value = null
