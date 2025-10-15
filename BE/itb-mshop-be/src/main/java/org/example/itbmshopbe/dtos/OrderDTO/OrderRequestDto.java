@@ -11,6 +11,5 @@ public class OrderRequestDto {
     private Integer sellerId;
     private String ShippingAddress;
     private String OrderNote;
-    private String OrderStatus;
     private List<OrderItemRequestDto> orderItems;
 }
