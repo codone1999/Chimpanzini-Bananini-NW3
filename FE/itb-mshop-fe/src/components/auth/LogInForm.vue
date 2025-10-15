@@ -1,9 +1,9 @@
 // LogInForm.vue
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
-import { setAuthTokens, isAuthenticated, clearAuthTokens } from '@/lib/authUtils'
+import { setAuthTokens, clearAuthTokens, isAuthenticated, getAccessToken } from '@/lib/authUtils'
 import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
@@ -117,7 +117,7 @@ async function handleSubmit() {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    // Store tokens using AuthUtils - much cleaner!
+    // Store tokens using AuthUtils
     setAuthTokens(result.access_token, result.refresh_token)
 
     await loadCompleteUserData()
@@ -155,6 +155,15 @@ async function handleSubmit() {
     errorMessage.value = displayMessage
   }
 }
+
+onMounted(async () => {
+  if(getAccessToken()){
+    if (userRole.value === "BUYER")
+      router.push({ name: 'ListGallery'})
+    else 
+      router.push({ name: 'ListSaleItems'})
+  }
+})
 </script>
 
 <template>

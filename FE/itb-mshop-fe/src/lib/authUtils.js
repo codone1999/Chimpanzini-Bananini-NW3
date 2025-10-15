@@ -6,69 +6,49 @@ const COOKIE_CONFIG = {
   ACCESS_TOKEN: {
     name: 'access_token',
     expires: 30 / (60 * 24), // 30 minutes (30 min / 60 min/hour / 24 hours/day)
-    secure: false, // Allow HTTP for development
-    sameSite: 'lax', // Less restrictive
-    httpOnly: false
+    secure: true,
+    sameSite: 'Strict',
+    httpOnly: true
   },
   REFRESH_TOKEN: {
-    name: 'refresh_token', 
-    expires: 1, // 1 day
-    secure: false, // Allow HTTP for development
-    sameSite: 'lax', // Less restrictive
-    httpOnly: false
+    name: 'refresh_token',
+    expires: 7, // 7 days 
+    secure: true,
+    sameSite: 'Strict',
+    httpOnly: true
   }
 }
 
-/**
- * Set authentication tokens in cookies
- */
 export function setAuthTokens(accessToken, refreshToken) {
-  if (accessToken) {
-    Cookies.set(COOKIE_CONFIG.ACCESS_TOKEN.name, accessToken, {
-      expires: COOKIE_CONFIG.ACCESS_TOKEN.expires,
-      secure: COOKIE_CONFIG.ACCESS_TOKEN.secure,
-      sameSite: COOKIE_CONFIG.ACCESS_TOKEN.sameSite,
-      httpOnly: COOKIE_CONFIG.ACCESS_TOKEN.httpOnly
-    })
-  }
+  // Set access token
+  Cookies.set(COOKIE_CONFIG.ACCESS_TOKEN.name, accessToken, {
+    expires: COOKIE_CONFIG.ACCESS_TOKEN.expires,
+    secure: COOKIE_CONFIG.ACCESS_TOKEN.secure,
+    sameSite: COOKIE_CONFIG.ACCESS_TOKEN.sameSite
+  })
   
+  // Set refresh token (if provided)
   if (refreshToken) {
     Cookies.set(COOKIE_CONFIG.REFRESH_TOKEN.name, refreshToken, {
       expires: COOKIE_CONFIG.REFRESH_TOKEN.expires,
       secure: COOKIE_CONFIG.REFRESH_TOKEN.secure,
-      sameSite: COOKIE_CONFIG.REFRESH_TOKEN.sameSite,
-      httpOnly: COOKIE_CONFIG.REFRESH_TOKEN.httpOnly
+      sameSite: COOKIE_CONFIG.REFRESH_TOKEN.sameSite
     })
   }
 }
 
-/**
- * Get access token from cookies
- * @returns {string|undefined} Access token
- */
 export function getAccessToken() {
   return Cookies.get(COOKIE_CONFIG.ACCESS_TOKEN.name)
 }
 
-/**
- * Get refresh token from cookies
- */
 export function getRefreshToken() {
   return Cookies.get(COOKIE_CONFIG.REFRESH_TOKEN.name)
 }
-
 /**
  * Check if user is authenticated (has valid access token)
  */
 export function isAuthenticated() {
   return !!getAccessToken()
-}
-
-/**
- * Check if user has a refresh token (can potentially refresh session)
- */
-export function hasRefreshToken() {
-  return !!getRefreshToken()
 }
 
 /**
@@ -80,19 +60,21 @@ export function clearAuthTokens() {
 }
 
 /**
- * Refresh access token using refresh token
+ * Refresh the access token using the refresh token
+ * Returns the new access token or null if refresh fails
  */
-export async function refreshAccessToken(apiUrl) {
+export async function refreshAccessToken() {
   const refreshToken = getRefreshToken()
-  
+
   if (!refreshToken) {
-    clearAuthTokens()
-    return false
+    // console.error('No refresh token available')
+    return null
   }
-  
+
   try {
-    const response = await fetch(`${apiUrl}/auth/refresh`, {
+    const response = await fetch(`${import.meta.env.VITE_APP_URL2}/auth/refresh`, {
       method: 'POST',
+      credentials: 'include', // Also send any HttpOnly cookies
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${refreshToken}`
@@ -100,54 +82,27 @@ export async function refreshAccessToken(apiUrl) {
     })
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      if (response.status === 400) {
+        throw new Error('No refresh token provided')
+      } else if (response.status === 401) {
+        throw new Error('Invalid or expired refresh token')
+      }
+      throw new Error('Token refresh failed')
     }
+
+    const data = await response.json()
     
-    const result = await response.json()
+    // Backend returns: { access_token: "...", refresh_token: "..." }
+    // Store both tokens (refresh token rotation)
+    setAuthTokens(data.access_token, data.refresh_token)
     
-    if (result.access_token) {
-      // Store new access token, keep existing refresh token
-      setAuthTokens(result.access_token, refreshToken)
-      return true
-    }
+    return data.access_token
     
-    clearAuthTokens()
-    return false
   } catch (error) {
-    console.error('Token refresh failed:', error)
+    console.error('Token refresh error:', error)
     clearAuthTokens()
-    return false
+    return null
   }
-}
-
-/**
- * Attempts to refresh access token if only refresh token exists
- */
-export async function initializeAuth(apiUrl) {
-  const accessToken = getAccessToken()
-  const refreshToken = getRefreshToken()
-  
-  // If we have access token, we're good
-  if (accessToken) {
-    return true
-  }
-  
-  // If we have refresh token but no access token, try to refresh
-  if (refreshToken && !accessToken) {
-    console.log('Access token expired, attempting refresh...')
-    return await refreshAccessToken(apiUrl)
-  }
-  
-  // No tokens at all
-  return false
-}
-
-/**
- * Create authorization header for API requests
- */
-export function getAuthHeaders() {
-  const token = getAccessToken()
-  return token ? { 'Authorization': `Bearer ${token}` } : {}
 }
 
 /**

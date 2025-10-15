@@ -1,8 +1,9 @@
 //Navbar.vue
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUser } from '@/composables/useUser'
+import { getAccessToken, refreshAccessToken } from '@/lib/authUtils'
 
 const router = useRouter()
 
@@ -36,6 +37,16 @@ async function handleLogout() {
     isLoggingOut.value = false
   }
 }
+
+async function getRefreshToken() {
+  if (!getAccessToken()){
+    await refreshAccessToken()
+  }
+}
+
+onMounted(() => {
+  getRefreshToken()
+})
 
 </script>
 
@@ -80,6 +91,7 @@ async function handleLogout() {
           <template v-else-if="!isLoggedIn">
             <!-- Not logged in - show login/register -->
             <router-link :to="{ name: 'Login'}" 
+              @click="getRefreshToken()"
               class="px-4 py-2 rounded-md text-gray-200 border border-gray-500 hover:bg-gray-800 transition">
               Sign In
             </router-link>
@@ -143,7 +155,7 @@ async function handleLogout() {
         
         <template v-else-if="!isLoggedIn">
           <router-link :to="{ name: 'Login'}" 
-            @click="mobileMenuOpen = false"
+            @click="mobileMenuOpen = false; getRefreshToken()"
             class="block py-2 border border-gray-600 rounded-md hover:bg-gray-800">
             Sign In
           </router-link>
