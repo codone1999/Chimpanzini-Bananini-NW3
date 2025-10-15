@@ -37,8 +37,8 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final ModelMapper modelMapper;
     private final PagingUtil pagingUtil;
-    private ValidationUtil validationUtil;
-    private EntityValidatorUtil entityValidatorUtil;
+    private final ValidationUtil validationUtil;
+    private final EntityValidatorUtil entityValidatorUtil;
 
     @Transactional
     public List<OrderResponseDto<OrderSellerResponseDto>> createOrder(Integer buyerId, OrderRequestDto orderRequestDto) {
