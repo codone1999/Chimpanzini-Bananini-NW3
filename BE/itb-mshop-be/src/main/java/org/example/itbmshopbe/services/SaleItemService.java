@@ -212,4 +212,16 @@ public class SaleItemService {
         dto.setSaleItemImages(imageDtos);
         return dto;
     }
+    @Transactional
+    public void deleteSellerSaleItem(Integer sellerId, Integer saleItemId) {
+        SaleItem saleItem = saleItemRepository.findById(saleItemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "SaleItem not found for id :: " + saleItemId));
+        if (!saleItem.getSeller().getId().equals(sellerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You don't have permission to delete this sale item");
+        }
+        deleteSaleItem(saleItemId);
+    }
+
 }

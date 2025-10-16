@@ -101,4 +101,25 @@ public class SellerController {
                 tokenUserId,page,size,sortField,sortDirection);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{id}/sale-item/{saleItemId}")
+    public ResponseEntity<Void> deleteSellerSaleItem(
+            @PathVariable Integer id,
+            @PathVariable Integer saleItemId,
+            HttpServletRequest request
+    ) {
+        Integer tokenUserId = Util.validateAndGetSellerUserId(request, id);
+        Optional<Seller> seller = sellerRepository.findById(tokenUserId);
+        if (seller.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Seller not found");
+        }
+
+        if (seller.get().getAccount().getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
+        }
+        saleItemService.deleteSellerSaleItem(tokenUserId, saleItemId);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }
