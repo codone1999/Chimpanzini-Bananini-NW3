@@ -7,12 +7,12 @@ import { handleQueryAlerts } from "@/lib/alertMessage";
 import { useUser } from "@/composables/useUser";
 import { useCart } from "@/composables/useCart";
 import { getAccessToken } from "@/lib/authUtils";
-import Filter from "./Filter.vue";
-import Sort from "./Sort.vue";
-import Pagination from "./Pagination.vue";
-import phoneImg from "../../../../public/phone.png";
-import Search from "./Search.vue";
-import ShoppingCart from "./ShoppingCart.vue";
+import phoneImg from "../../../public/phone.png";
+import Search from "./controls/Search.vue";
+import Filter from "./controls/Filter.vue";
+import Sort from "./controls/Sort.vue";
+import Pagination from "./controls/Pagination.vue";
+import ShoppingCart from "./controls/ShoppingCart.vue";
 
 const router = useRouter()
 
@@ -440,7 +440,7 @@ onMounted(async () => {
 
     <template v-else>
       <!-- Layout หลัก: Filter (ซ้าย) + เนื้อหา (ขวา) -->
-      <div class="flex flex-col md:flex-row gap-6">
+      <div class="flex flex-col md:flex-row gap-3">
         <!-- Left Content -->
         <div class="md:w-1/4 w-full">
           <Filter

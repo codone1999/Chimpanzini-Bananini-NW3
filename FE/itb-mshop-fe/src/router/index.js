@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "@/views/Home.vue";
-import ListGallery from "@/components/sale-items/gallery/ListGallery.vue";
+import ListGallery from "@/components/sale-items/ListGallery.vue";
 import ListDetails from "@/components/sale-items/ListDetail.vue";
 import AddItem from "@/components/sale-items/AddItem.vue";
 import EditItem from "@/components/sale-items/EditItem.vue";

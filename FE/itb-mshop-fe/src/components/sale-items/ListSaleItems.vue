@@ -4,12 +4,12 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from 'vue-router'
 import { deleteItemById, getSellerItemsByToken, getItems } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
-import { useUser } from "@/composables/useUser";
-import FilterAndSort from "./gallery/FilterAndSort.vue";
-import Pagination from "./gallery/Pagination.vue";
-import Search from "./gallery/Search.vue";
 import { getAccessToken } from "@/lib/authUtils";
-import ShoppingCart from "./gallery/ShoppingCart.vue";
+import { useUser } from "@/composables/useUser";
+import FilterAndSort from "./controls/FilterAndSort.vue";
+import Pagination from "./controls/Pagination.vue";
+import Search from "./controls/Search.vue";
+import ShoppingCart from "./controls/ShoppingCart.vue";
 
 const router = useRouter()
 

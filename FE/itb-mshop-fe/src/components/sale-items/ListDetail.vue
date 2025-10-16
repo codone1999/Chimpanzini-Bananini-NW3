@@ -3,12 +3,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, computed, watch } from 'vue'
 import { getItemById, deleteItemById } from '@/lib/fetchUtils'
 import { handleQueryAlerts } from '@/lib/alertMessage'
-import phoneImg from '../../../public/phone.png'
-import DeleteSaleItem from './DeleteSaleItem.vue'
-import Search from './gallery/Search.vue'
-import ShoppingCart from './gallery/ShoppingCart.vue'
 import { useUser } from '@/composables/useUser'
 import { useCart } from '@/composables/useCart'
+import phoneImg from '../../../public/phone.png'
+import DeleteSaleItem from './DeleteSaleItem.vue'
+import Search from './controls/Search.vue'
+import ShoppingCart from './controls/ShoppingCart.vue'
 
 const url = `${import.meta.env.VITE_APP_URL}/sale-items`
 const url2 = `${import.meta.env.VITE_APP_URL2}/sale-items`
@@ -17,7 +17,7 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
-const { userRole, userId, isLoading: userLoading, loadCompleteUserData } = useUser()
+const { userId, isLoading: userLoading, loadCompleteUserData } = useUser()
 const { addToCart: addItemToCart, cartItems } = useCart()
 
 const showModal = ref(false)
