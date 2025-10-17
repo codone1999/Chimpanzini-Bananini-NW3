@@ -415,6 +415,7 @@ onMounted(async () => {
       Shop Our Products
     </h2>
 
+    <!-- Search & Cart -->
     <div class="flex mb-10 relative max-w-xl mx-auto">
       <Search
         v-model="search"
@@ -425,6 +426,7 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Alert Message -->
     <div
       v-if="showSuccessMessage"
       class="itbms-message mb-6 p-4 text-sm font-medium text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm"
@@ -433,6 +435,7 @@ onMounted(async () => {
       {{ successMessage }}
     </div>
 
+    <!-- Loading -->
     <div v-if="isLoading || !canLoadData" class="text-center text-gray-400 py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
       <p class="mt-2">Loading user data...</p>
@@ -440,9 +443,9 @@ onMounted(async () => {
 
     <template v-else>
       <!-- Layout หลัก: Filter (ซ้าย) + เนื้อหา (ขวา) -->
-      <div class="flex flex-col md:flex-row gap-3">
+      <div class="flex flex-col md:flex-row">
         <!-- Left Content -->
-        <div class="md:w-1/4 w-full">
+        <div class="md:w-1/5 w-full">
           <Filter
             :brands="brands"
             :filter-brands="filterBrands"
@@ -459,7 +462,7 @@ onMounted(async () => {
           />
         </div>
         <!-- Right Content -->
-        <div class="md:w-3/4 w-full flex flex-col">
+        <div class="md:w-4/5 w-full flex flex-col">
           <!-- Filters + Sort + Page Size -->
           <div class="flex items-center gap-3 bg-[#1A1A1D] p-4 rounded-xl shadow-md mb-4">
             <!-- Merged Filters Display -->
@@ -524,7 +527,7 @@ onMounted(async () => {
             />
           </div>
 
-          <!-- List Sale Items -->
+          <!-- Add Items Button (ONLY SELLER) -->
           <div v-if="userRole === 'SELLER'" class="mb-10 text-center">
             <router-link
               :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
@@ -539,11 +542,13 @@ onMounted(async () => {
             </router-link>
           </div>
 
+          <!-- Loading -->
           <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
             <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
             <p class="mt-2">Loading products...</p>
           </div>
 
+          <!-- No Sale Item -->
           <div
             v-else-if="products.length === 0"
             class="text-center text-gray-500 text-lg py-10"
@@ -551,20 +556,22 @@ onMounted(async () => {
             no sale item
           </div>
 
+          <!-- List Sale Items -->
           <div
             v-else
             class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
           >
             <div
-              v-for="product in products"
+              v-for="(product,index) in products"
               :key="product.id"
               class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
               hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
-              transition duration-300 flex flex-col cursor-pointer"
+              transition duration-300 flex flex-col cursor-pointer animate-product"
+              :style="{ '--delay': `${index * 50}ms` }"
             >
               <router-link
                 :to="{ name: 'ListDetails', params: { id: product.id } }"
-                class="block flex flex-col flex-grow"
+                class="flex flex-col flex-grow"
               >
                 <img
                   :src="phoneImg"
@@ -572,24 +579,24 @@ onMounted(async () => {
                   class="w-full h-56 object-contain bg-gray-800"
                 />
 
-                <div class="p-5 flex flex-col flex-grow text-center">
-                  <h3 class="itbms-brand text-xs font-medium text-gray-400 uppercase tracking-wide">
+                <div class="p-5 flex flex-col flex-grow">
+                  <h3 class="itbms-brand text-xs md:text-base font-bold text-[#7e5bef] uppercase tracking-wide mb-2">
                     {{ product.brandName }}
                   </h3>
 
-                  <p class="text-[#7e5bef] font-semibold mt-2 mb-4 line-clamp-2">
-                    <span class="itbms-model">{{ product.model }}</span> /
-                    <span class="itbms-ramGb">{{ product.ramGb ?? '-' }}</span>
-                    <span class="itbms-ramGb-unit">GB</span> /
-                    <span class="itbms-storageGb">{{ product.storageGb ?? '-' }}</span>
-                    <span class="itbms-storageGb-unit">GB</span>
+                  <p class="text-white font-semibold mt-1 mb-4 line-clamp-2">
+                    <span class="itbms-model">{{ product.model }}</span> <br>
+                    <span class="itbms-ramGb text-gray-400 font-normal">{{ product.ramGb ?? '-' }}</span>
+                    <span class="itbms-ramGb-unit text-gray-400 font-normal">GB</span> /
+                    <span class="itbms-storageGb text-gray-400 font-normal">{{ product.storageGb ?? '-' }}</span>
+                    <span class="itbms-storageGb-unit text-gray-400 font-normal">GB</span>
                   </p>
                 </div>
               </router-link>
               
               <div class="px-4 pb-3 flex items-center justify-between">
                 <div class="text-left">
-                  <p class="text-white font-bold text-lg">
+                  <p class="text-white font-extrabold text-lg">
                     ฿<span class="itbms-price">{{ product.price.toLocaleString() }}</span>
                   </p>
                 </div>
@@ -629,3 +636,21 @@ onMounted(async () => {
     </template>
   </section>
 </template>
+
+<style>
+@keyframes fadeScale {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-product {
+  animation: fadeScale 0.4s ease forwards;
+  animation-delay: var(--delay);
+}
+</style>

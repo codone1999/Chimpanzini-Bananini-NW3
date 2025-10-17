@@ -3,7 +3,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { validateEmail, validatePassword, isLoginFormValid } from '@/lib/validateInput'
-import { setAuthTokens, clearAuthTokens, isAuthenticated, ensureValidToken, isTokenExpired } from '@/lib/authUtils'
+import { setAuthTokens, clearAuthTokens, isAuthenticated, getAccessToken } from '@/lib/authUtils'
 import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
@@ -157,13 +157,11 @@ async function handleSubmit() {
 }
 
 onMounted(async () => {
-  if(!isTokenExpired()){
+  if(getAccessToken()){
     if (userRole.value === "BUYER")
       router.push({ name: 'ListGallery'})
     else 
       router.push({ name: 'ListSaleItems'})
-  } else {
-    await ensureValidToken()
   }
 })
 </script>
@@ -172,7 +170,7 @@ onMounted(async () => {
   <div class="bg-gray-900 text-gray-100 font-sans flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-lg">
       <!-- Card -->
-      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl px-8 py-7">
+      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl px-8 py-7 animate-pop-in">
         <!-- Header -->
         <div class="text-center mb-8">
           <h2 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent mb-3">
@@ -269,9 +267,9 @@ onMounted(async () => {
               type="submit"
               :disabled="isButtonDisabled"
               :class="[
-                'itbms-signin-button w-full py-3 rounded-lg font-medium transition-all shadow-md',
+                'itbms-signin-button w-full py-3 rounded-lg font-medium transition-all shadow-md hover:scale-105',
                 isButtonDisabled
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  ? 'bg-purple-500/30 text-gray-400 cursor-not-allowed'
                   : 'bg-purple-600 text-white hover:bg-purple-500 hover:shadow-lg'
               ]"
             >
@@ -308,10 +306,22 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+
+.animate-pop-in {
+  animation: popIn 0.5s ease-out forwards;
 }
+
 </style>

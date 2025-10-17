@@ -1,6 +1,6 @@
 //Filter.vue
 <script setup>
-import {ref} from "vue";
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   // Brands //
@@ -42,7 +42,19 @@ const props = defineProps({
     type: Function,
     required: true
   }
-})
+});
+
+// Mobile filter state
+const isFilterOpen = ref(false);
+
+// Collapse states
+const showBrands = ref(false);
+const showPrices = ref(false);
+const showStorage = ref(false);
+
+// Custom price range
+const customMinPrice = ref('');
+const customMaxPrice = ref('');
 
 // ----------- Options -------------------- //
 const storageOptions = [
@@ -53,7 +65,7 @@ const storageOptions = [
   { value: 256, label: "256GB" },
   { value: 512, label: "512GB" },
   { value: 1, label: "1TB" }
-]
+];
 
 const priceOptions = [
   { value: "0-5000", label: "Under ฿5,000" },
@@ -62,59 +74,79 @@ const priceOptions = [
   { value: "20,001-30,000", label: "฿20,001 - ฿30,000" },
   { value: "30,001-40,000", label: "฿30,001 - ฿40,000" },
   { value: "40,001-50,000", label: "฿40,001 - ฿50,000" }
-]
+];
 
-const customMinPrice = ref('')
-const customMaxPrice = ref('')
-
-// Collapse states
-const showBrands = ref(false)
-const showPrices = ref(false)
-const showStorage = ref(false)
+// Total active filters count
+const totalActiveFilters = computed(() => {
+  return props.filterBrands.length + props.filterPrices.length + props.filterStorageSizes.length;
+});
 
 function addCustomPriceRange() {
   if (customMinPrice.value && customMaxPrice.value && Number(customMinPrice.value) <= Number(customMaxPrice.value)) {
-    const customRange = `${Number(customMinPrice.value).toLocaleString()}-${Number(customMaxPrice.value).toLocaleString()}`
+    const customRange = `${Number(customMinPrice.value).toLocaleString()}-${Number(customMaxPrice.value).toLocaleString()}`;
     
     if (!props.filterPrices.includes(customRange)) {
-      props.onTogglePrice(customRange)
+      props.onTogglePrice(customRange);
     }
     
-    customMinPrice.value = ''
-    customMaxPrice.value = ''
+    customMinPrice.value = '';
+    customMaxPrice.value = '';
   }
 }
+
+const handleClearAll = () => {
+  props.onClearBrands();
+  // Close mobile filter after clearing
+  if (window.innerWidth < 768) {
+    isFilterOpen.value = false;
+  }
+};
 </script>
 
 <template>
-  <aside class="w-80 bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg sticky top-4 self-start">
-    
-    <!-- Header -->
-    <div class="px-6 py-5 border-b border-gray-800">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold text-white tracking-wide">Filters</h3>
-        <button
-          @click="props.onClearBrands"
-          class="flex items-center gap-1 p-2 bg-red-600/90 text-white text-xs rounded-full hover:bg-red-700 transition-all duration-200"
-        >
-          <span class="material-icons text-sm">cleaning_services</span>
-        </button>
-      </div>
-    </div>
+  <!-- Mobile Filter Button (visible only on small screens) -->
+  <button
+    @click="isFilterOpen = true"
+    class="md:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+  >
+    <span class="material-icons">filter_list</span>
+    <span class="font-semibold">Filters</span>
+    <span v-if="totalActiveFilters > 0" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+      {{ totalActiveFilters }}
+    </span>
+  </button>
 
+  <!-- Overlay for mobile -->
+  <div
+    v-if="isFilterOpen"
+    @click="isFilterOpen = false"
+    class="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+  ></div>
+
+  <!-- Filter Sidebar -->
+  <aside
+    :class="[
+      'bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg transition-all duration-300',
+      // Desktop: shorter width, sticky
+      'md:w-52 lg:w-56 xl:w-64 md:sticky md:top-4 md:self-start md:translate-x-0',
+      // Mobile: slide from right
+      'fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] z-50 rounded-l-2xl rounded-r-none',
+      isFilterOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+    ]"
+  >
     <!-- Filter Sections -->
-    <div class="overflow-y-auto max-h-[calc(100vh-200px)] custom-scrollbar">
+    <div class="overflow-y-auto max-h-[calc(100vh-120px)] md:max-h-[calc(100vh-200px)] custom-scrollbar">
       
       <!-- Brand Filter -->
       <div class="border-b border-gray-800">
         <button
           @click="showBrands = !showBrands"
-          class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
+          class="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
         >
-          <span class="text-sm font-semibold text-gray-300">Brand</span>
+          <span class="text-xs sm:text-sm font-semibold text-gray-300">Brand</span>
           <svg
             :class="{'rotate-180': showBrands}"
-            class="w-5 h-5 text-gray-400 transition-transform"
+            class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -123,7 +155,7 @@ function addCustomPriceRange() {
           </svg>
         </button>
         
-        <div v-if="showBrands" class="px-6 pb-4 grid grid-cols-2 gap-3">
+        <div v-if="showBrands" class="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-2 gap-2 sm:gap-3">
           <label
             v-for="brand in props.brands"
             :key="brand.id"
@@ -136,7 +168,7 @@ function addCustomPriceRange() {
               class="custom-checkbox"
             />
             <span 
-              class="text-sm transition-all"
+              class="text-xs sm:text-sm transition-all"
               :class="props.filterBrands.includes(brand.name) ? 'text-purple-400 font-bold' : 'text-gray-500 font-normal'"
             >
               {{ brand.name }}
@@ -149,12 +181,12 @@ function addCustomPriceRange() {
       <div class="border-b border-gray-800">
         <button
           @click="showPrices = !showPrices"
-          class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
+          class="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
         >
-          <span class="text-sm font-semibold text-gray-300">Price</span>
+          <span class="text-xs sm:text-sm font-semibold text-gray-300">Price</span>
           <svg
             :class="{'rotate-180': showPrices}"
-            class="w-5 h-5 text-gray-400 transition-transform"
+            class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -163,11 +195,11 @@ function addCustomPriceRange() {
           </svg>
         </button>
         
-        <div v-if="showPrices" class="px-6 pb-4 space-y-3">
+        <div v-if="showPrices" class="px-4 sm:px-6 pb-3 sm:pb-4 space-y-2 sm:space-y-3">
           <label
             v-for="price in priceOptions"
             :key="price.value"
-            class="flex items-center gap-3 cursor-pointer group"
+            class="flex items-center gap-2 sm:gap-3 cursor-pointer group"
           >
             <input
               type="checkbox"
@@ -176,7 +208,7 @@ function addCustomPriceRange() {
               class="custom-checkbox"
             />
             <span 
-              class="text-sm transition-all"
+              class="text-xs sm:text-sm transition-all"
               :class="props.filterPrices.includes(price.value) ? 'text-purple-400 font-bold' : 'text-gray-500 font-normal'"
             >
               {{ price.label }}
@@ -184,26 +216,26 @@ function addCustomPriceRange() {
           </label>
           
           <!-- Custom Price Range -->
-          <div class="mt-4 pt-4 border-t border-gray-800">
-            <p class="text-xs font-medium text-gray-500 mb-3">Custom Range</p>
-            <div class="space-y-2 mb-3">
+          <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-800">
+            <p class="text-xs font-medium text-gray-500 mb-2 sm:mb-3">Custom Range</p>
+            <div class="space-y-2 mb-2 sm:mb-3">
               <input
                 type="number"
                 placeholder="Min Price"
                 v-model="customMinPrice"
-                class="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                class="w-full px-3 py-2 text-xs sm:text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <input
                 type="number"
                 placeholder="Max Price"
                 v-model="customMaxPrice"
-                class="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                class="w-full px-3 py-2 text-xs sm:text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
             <button
               @click="addCustomPriceRange"
               :disabled="!customMinPrice || !customMaxPrice || customMinPrice > customMaxPrice"
-              class="w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed transition"
+              class="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed transition"
             >
               Apply
             </button>
@@ -215,12 +247,12 @@ function addCustomPriceRange() {
       <div class="border-b border-gray-800">
         <button
           @click="showStorage = !showStorage"
-          class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
+          class="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-800/50 transition"
         >
-          <span class="text-sm font-semibold text-gray-300">Storage Size</span>
+          <span class="text-xs sm:text-sm font-semibold text-gray-300">Storage Size</span>
           <svg
             :class="{'rotate-180': showStorage}"
-            class="w-5 h-5 text-gray-400 transition-transform"
+            class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -229,11 +261,11 @@ function addCustomPriceRange() {
           </svg>
         </button>
         
-        <div v-if="showStorage" class="px-6 pb-4 space-y-3">
+        <div v-if="showStorage" class="px-4 sm:px-6 pb-3 sm:pb-4 space-y-2 sm:space-y-3">
           <label
             v-for="storage in storageOptions"
             :key="storage.value"
-            class="flex items-center gap-3 cursor-pointer group"
+            class="flex items-center gap-2 sm:gap-3 cursor-pointer group"
           >
             <input
               type="checkbox"
@@ -242,16 +274,33 @@ function addCustomPriceRange() {
               class="custom-checkbox"
             />
             <span 
-              class="text-sm transition-all"
+              class="text-xs sm:text-sm transition-all"
               :class="props.filterStorageSizes.includes(storage.value) ? 'text-purple-400 font-bold' : 'text-gray-500 font-normal'"
             >
               {{ storage.label }}
             </span>
           </label>
         </div>
-      </div>
-     
+      </div>     
     </div>
+
+    <!-- Clear All Button (Fixed at bottom) -->
+      <div class="border-t border-gray-800 p-4">
+        <button
+          @click="handleClearAll"
+          :disabled="totalActiveFilters === 0"
+          class="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+          :class="totalActiveFilters > 0 
+            ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-lg hover:shadow-xl' 
+            : 'bg-gray-800 text-gray-500 cursor-not-allowed'"
+        >
+          <span class="material-icons text-lg">clear_all</span>
+          <span>Clear All</span>
+          <span v-if="totalActiveFilters > 0" class="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ totalActiveFilters }}
+          </span>
+        </button>
+      </div>
   </aside>
 </template>
 

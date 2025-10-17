@@ -33,15 +33,14 @@ const canLoadData = computed(() => {
 
 const displayOrders = computed(() => {
   if (activeTab.value === 'NEW') {
-    // Show both completed and cancelled orders that haven't been viewed
-    const newCompleted = orders.value.filter(o => !viewedOrderIds.value.has(o.id))
-    const newCancelled = cancelledOrders.value.filter(o => !viewedOrderIds.value.has(o.id))
-    return [...newCompleted, ...newCancelled]
+    // Show only orders that haven't been viewed yet
+    return orders.value.filter(o => !viewedOrderIds.value.has(o.id))
   } else if (activeTab.value === 'CANCELLED') {
+    // Show only cancelled orders
     return cancelledOrders.value
   } else {
-    // ALL - show all orders (both completed and cancelled)
-    return [...orders.value, ...cancelledOrders.value]
+    // ALL - show all orders (cancelledOrders is already included in orders)
+    return orders.value
   }
 })
 
@@ -80,17 +79,51 @@ function loadViewedOrderIds() {
   try {
     const stored = localStorage.getItem('viewedOrderIds')
     if (stored) {
-      viewedOrderIds.value = new Set(JSON.parse(stored))
+      const allData = JSON.parse(stored)
+      const userKey = `user_${userId.value}`
+      
+      // Check if data structure is the new format (object with multiple users)
+      if (allData[userKey]) {
+        // Remove the "order_" prefix when loading into Set
+        viewedOrderIds.value = new Set(
+          allData[userKey].map(orderId => {
+            if (typeof orderId === 'string' && orderId.startsWith('order_')) {
+              // Remove "order_" prefix and convert to number
+              const id = orderId.replace('order_', '')
+              return isNaN(id) ? id : Number(id)
+            }
+            return orderId
+          })
+        )
+      } else {
+        viewedOrderIds.value = new Set()
+      }
     }
   } catch (error) {
     console.error('Error loading viewed order IDs:', error)
+    viewedOrderIds.value = new Set()
   }
 }
 
 // Save viewed order IDs to localStorage
 function saveViewedOrderIds() {
   try {
-    localStorage.setItem('viewedOrderIds', JSON.stringify([...viewedOrderIds.value]))
+    // Get existing data from localStorage
+    const stored = localStorage.getItem('viewedOrderIds')
+    let allData = {}
+    
+    if (stored) {
+      allData = JSON.parse(stored)
+    }
+    
+    // Create readable user key (e.g., "user_123" instead of just "123")
+    const userKey = `user_${userId.value}`
+    
+    // Update only this user's viewed orders with readable order IDs
+    allData[userKey] = [...viewedOrderIds.value].map(orderId => `order_${orderId}`)
+    
+    // Save back to localStorage with pretty formatting (2 spaces indentation)
+    localStorage.setItem('viewedOrderIds', JSON.stringify(allData, null, 2))
   } catch (error) {
     console.error('Error saving viewed order IDs:', error)
   }
@@ -119,12 +152,12 @@ async function fetchOrders() {
     const response = await getOrdersByIdWithToken(finalUrl, getAccessToken())
     
     if (response && response.content && Array.isArray(response.content)) {
-      orders.value = response.content.filter(order => order.orderStatus === 'COMPLETED')
+      orders.value = response.content
       cancelledOrders.value = response.content.filter(order => order.orderStatus === 'CANCELLED')
       totalPages.value = response.totalPages || 1
       totalElements.value = response.totalElements || 0
     } else if (Array.isArray(response)) {
-      orders.value = response.filter(order => order.orderStatus === 'COMPLETED')
+      orders.value = response
       cancelledOrders.value = response.filter(order => order.orderStatus === 'CANCELLED')
       totalPages.value = 1
       totalElements.value = response.length
@@ -174,16 +207,6 @@ function goToOrderDetails(orderId) {
   router.push({ name: 'OrderDetail', params: { id: orderId } })
 }
 
-watch(canLoadData, (newValue) => {
-  if (newValue && hasCompleteUserData.value) {
-    fetchOrders()
-  }
-})
-
-watch(activeTab, () => {
-  // Could fetch different data based on tab if needed
-})
-
 function calculateOrderTotal(order) {
   if (!order.orderItems || !Array.isArray(order.orderItems)) return 0
   return order.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -197,9 +220,28 @@ function getItemImage(item) {
 }
 
 onMounted(async () => {
-  loadViewedOrderIds()
+  if (userId.value) {
+    loadViewedOrderIds()
+  }
+  
   if (canLoadData.value && hasCompleteUserData.value) {
     await fetchOrders()
+  }
+})
+
+watch(canLoadData, (newValue) => {
+  if (newValue && hasCompleteUserData.value) {
+    fetchOrders()
+  }
+})
+
+watch(activeTab, () => {
+  // Could fetch different data based on tab if needed
+})
+
+watch(userId, (newUserId, oldUserId) => {
+  if (newUserId && newUserId !== oldUserId) {
+    loadViewedOrderIds()
   }
 })
 </script>

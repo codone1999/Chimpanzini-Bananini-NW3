@@ -214,7 +214,7 @@ const sellerFields = [
   <div class="bg-gray-900 text-gray-100 font-sans flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-lg">
       <!-- Card -->
-      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl px-8 py-10">
+      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl px-8 py-10 animate-pop-in">
         <!-- Header -->
         <div class="text-center mb-8">
           <h2 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent mb-3">
@@ -235,7 +235,7 @@ const sellerFields = [
               'flex-1 py-2.5 text-center font-semibold rounded-lg transition-all',
               activeRole === role 
                 ? 'bg-purple-600 text-white shadow-md' 
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-105 hover:shadow-lg'
             ]"
             :disabled="isLoading"
           >
@@ -404,7 +404,7 @@ const sellerFields = [
                   v-for="side in [{ key: 'nationalCardFront', label: 'Front', class: 'itbms-card-photo-front' }, 
                                   { key: 'nationalCardBack', label: 'Back', class: 'itbms-card-photo-back' }]"
                   :key="side.key"
-                  class="relative flex-1 h-32 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:border-purple-500 overflow-hidden group transition-colors bg-gray-700/30"
+                  class="relative flex-1 h-32 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:border-purple-500 overflow-hidden group transition-colors bg-gray-700/30 hover:scale-105"
                   :class="{ 'opacity-50 cursor-not-allowed border-gray-600': isLoading, 'border-gray-600': !isLoading }"
                 >
                   <template v-if="form[side.key]">
@@ -444,9 +444,9 @@ const sellerFields = [
               type="submit"
               :disabled="isSubmitDisabled"
               :class="[
-                'itbms-submit-button flex-1 py-3 rounded-lg font-medium transition-all shadow-md',
+                'itbms-submit-button flex-1 py-3 rounded-lg font-medium transition-all shadow-md hover:scale-105',
                 isSubmitDisabled 
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  ? 'bg-purple-500/30 text-gray-400 cursor-not-allowed' 
                   : 'bg-purple-600 text-white hover:bg-purple-500 hover:shadow-lg'
               ]"
             >
@@ -455,7 +455,7 @@ const sellerFields = [
             <router-link 
               to="/"
               @click="handleCancel"
-              class="itbms-cancel-button flex-1 text-center bg-gray-700 text-gray-300 py-3 rounded-lg hover:bg-gray-600 font-medium transition-all"
+              class="itbms-cancel-button flex-1 text-center bg-gray-700 text-gray-300 py-3 rounded-lg hover:bg-gray-600 font-medium transition-all hover:scale-105"
             >
               Cancel
             </router-link>
@@ -480,10 +480,22 @@ const sellerFields = [
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+
+.animate-pop-in {
+  animation: popIn 0.5s ease-out forwards;
 }
 </style>
