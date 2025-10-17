@@ -1,3 +1,4 @@
+// OrderHistory.vue
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -9,7 +10,7 @@ import phoneImg from '../../../public/phone.png'
 const router = useRouter()
 const { userId, hasCompleteUserData, isLoading: userIsLoading } = useUser()
 
-const activeTab = ref('COMPLETED')
+const activeTab = ref('NEW')
 const isLoadingOrders = ref(false)
 
 // Pagination state
@@ -23,6 +24,7 @@ const totalElements = ref(0)
 // Order data
 const orders = ref([])
 const cancelledOrders = ref([])
+const viewedOrderIds = ref(new Set())
 
 // Computed property to determine when we can load data
 const canLoadData = computed(() => {
@@ -30,7 +32,17 @@ const canLoadData = computed(() => {
 })
 
 const displayOrders = computed(() => {
-  return activeTab.value === 'COMPLETED' ? orders.value : cancelledOrders.value
+  if (activeTab.value === 'NEW') {
+    // Show both completed and cancelled orders that haven't been viewed
+    const newCompleted = orders.value.filter(o => !viewedOrderIds.value.has(o.id))
+    const newCancelled = cancelledOrders.value.filter(o => !viewedOrderIds.value.has(o.id))
+    return [...newCompleted, ...newCancelled]
+  } else if (activeTab.value === 'CANCELLED') {
+    return cancelledOrders.value
+  } else {
+    // ALL - show all orders (both completed and cancelled)
+    return [...orders.value, ...cancelledOrders.value]
+  }
 })
 
 const isLoading = computed(() => {
@@ -63,12 +75,29 @@ const visiblePages = computed(() => {
   return pages
 })
 
+// Load viewed order IDs from localStorage
+function loadViewedOrderIds() {
+  try {
+    const stored = localStorage.getItem('viewedOrderIds')
+    if (stored) {
+      viewedOrderIds.value = new Set(JSON.parse(stored))
+    }
+  } catch (error) {
+    console.error('Error loading viewed order IDs:', error)
+  }
+}
+
+// Save viewed order IDs to localStorage
+function saveViewedOrderIds() {
+  try {
+    localStorage.setItem('viewedOrderIds', JSON.stringify([...viewedOrderIds.value]))
+  } catch (error) {
+    console.error('Error saving viewed order IDs:', error)
+  }
+}
+
 async function fetchOrders() {
   if (!hasCompleteUserData.value || userIsLoading.value) {
-    // console.log('Waiting for user data...', { 
-    //   hasCompleteUserData: hasCompleteUserData.value, 
-    //   userIsLoading: userIsLoading.value 
-    // })
     return
   }
 
@@ -86,21 +115,14 @@ async function fetchOrders() {
     if (sortDirection.value) query.push('sortDirection=' + sortDirection.value)
     
     const finalUrl = url + query.join('&')
-    // console.log('Fetching orders from:', finalUrl)
     
     const response = await getOrdersByIdWithToken(finalUrl, getAccessToken())
-    // console.log('Orders response:', response)
     
     if (response && response.content && Array.isArray(response.content)) {
       orders.value = response.content.filter(order => order.orderStatus === 'COMPLETED')
       cancelledOrders.value = response.content.filter(order => order.orderStatus === 'CANCELLED')
       totalPages.value = response.totalPages || 1
       totalElements.value = response.totalElements || 0
-      
-      // console.log('Loaded orders:', { 
-      //   completed: orders.value.length, 
-      //   cancelled: cancelledOrders.value.length 
-      // })
     } else if (Array.isArray(response)) {
       orders.value = response.filter(order => order.orderStatus === 'COMPLETED')
       cancelledOrders.value = response.filter(order => order.orderStatus === 'CANCELLED')
@@ -145,6 +167,10 @@ function handlePageSizeChange(event) {
 }
 
 function goToOrderDetails(orderId) {
+  // Mark this order as viewed
+  viewedOrderIds.value.add(orderId)
+  saveViewedOrderIds()
+  
   router.push({ name: 'OrderDetail', params: { id: orderId } })
 }
 
@@ -171,6 +197,7 @@ function getItemImage(item) {
 }
 
 onMounted(async () => {
+  loadViewedOrderIds()
   if (canLoadData.value && hasCompleteUserData.value) {
     await fetchOrders()
   }
@@ -188,18 +215,22 @@ onMounted(async () => {
       </div>
 
       <template v-else>
-        <!-- Tab Completed & Cancelled -->
+        <!-- Tab: New Orders, Cancelled, All Orders -->
         <div class="flex gap-4 mb-6 border-b border-gray-300">
           <button
-            @click="activeTab = 'COMPLETED'"
+            @click="activeTab = 'NEW'"
             :class="[
               'pb-3 px-4 font-medium transition-colors',
-              activeTab === 'COMPLETED'
+              activeTab === 'NEW'
                 ? 'text-purple-600 border-b-2 border-purple-600'
                 : 'text-gray-600 hover:text-gray-800'
             ]"
           >
-            Completed
+            New Orders
+            <span v-if="orders.filter(o => !viewedOrderIds.has(o.id)).length + cancelledOrders.filter(o => !viewedOrderIds.has(o.id)).length > 0" 
+              class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              {{ orders.filter(o => !viewedOrderIds.has(o.id)).length + cancelledOrders.filter(o => !viewedOrderIds.has(o.id)).length }}
+            </span>
           </button>
           <button
             @click="activeTab = 'CANCELLED'"
@@ -211,6 +242,17 @@ onMounted(async () => {
             ]"
           >
             Cancelled
+          </button>
+          <button
+            @click="activeTab = 'ALL'"
+            :class="[
+              'pb-3 px-4 font-medium transition-colors',
+              activeTab === 'ALL'
+                ? 'text-purple-600 border-b-2 border-purple-600'
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            All Orders
           </button>
         </div>
 
@@ -280,6 +322,7 @@ onMounted(async () => {
             v-for="order in displayOrders" 
             :key="order.id" 
             class="Itbms-item-row bg-white rounded-lg shadow-md p-6 border border-gray-200"
+            :class="{ 'ring-2 ring-purple-400': !viewedOrderIds.has(order.id) && activeTab === 'NEW' }"
           >
             <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-200">
               <div class="flex items-center gap-3">
@@ -288,6 +331,10 @@ onMounted(async () => {
                 </div>
                 <span class="itbms-nickname font-semibold text-gray-800">
                   {{ order.seller[0].sellerName || 'Unknown' }}
+                </span>
+                <span v-if="!viewedOrderIds.has(order.id)" 
+                  class="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  NEW
                 </span>
               </div>
               <div>
@@ -371,7 +418,7 @@ onMounted(async () => {
         </div>
 
         <div v-if="displayOrders.length === 0" class="text-center py-12 text-gray-500">
-          <p class="text-lg">No {{ activeTab }} orders found.</p>
+          <p class="text-lg">No {{ activeTab === 'NEW' ? 'new' : activeTab === 'CANCELLED' ? 'cancelled' : '' }} orders found.</p>
         </div>
 
         <div 
