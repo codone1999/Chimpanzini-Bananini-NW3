@@ -13,7 +13,7 @@ const COOKIE_CONFIG = {
   },
   REFRESH_TOKEN: {
     name: 'refresh_token',
-    expires: 7, // 7 days 
+    expires: 1, // 1 days 
     secure: true,
     sameSite: 'Strict',
     httpOnly: true
@@ -144,6 +144,7 @@ export async function ensureValidToken() {
     return null
   }
   
+  router.go(0)
   return newToken
 }
 
