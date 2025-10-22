@@ -294,5 +294,14 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
 CREATE INDEX idx_cart_account ON cart(account_id);
 CREATE INDEX idx_cart_sale_item ON cart(sale_item_id);
 
+-- Add 'used' column to password_reset_token table
+ALTER TABLE password_reset_token 
+ADD COLUMN used BOOLEAN DEFAULT FALSE;
 
+-- Add soft delete columns to sale_item table
+ALTER TABLE sale_item 
+ADD COLUMN deleted BOOLEAN DEFAULT FALSE,
+ADD COLUMN deleted_at TIMESTAMP;
+
+CREATE INDEX idx_sale_item_deleted ON sale_item(deleted);
 

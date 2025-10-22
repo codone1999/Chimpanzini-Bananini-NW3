@@ -22,10 +22,12 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Random;
 
@@ -306,15 +308,20 @@ public class AccountService {
         }
         return responseDto;
     }
+
+    @Transactional
     public void forgotPassword(String email) {
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with this email does not exist."));
-        String code = String.format("%04d", new Random().nextInt(10000));
-        passwordResetTokenRepository.findByAccount(account).ifPresent(passwordResetTokenRepository::delete);
+        passwordResetTokenRepository.deleteByAccountAndUsedFalse(account);
+        String resetCode = String.format("%04d", new Random().nextInt(10000));
+
         PasswordResetToken resetToken = new PasswordResetToken();
-        resetToken.setToken(code);
+        resetToken.setToken(resetCode);
         resetToken.setAccount(account);
-        resetToken.setExpiryDate(Instant.now().plusSeconds(60 * 10)); // Token expires in 10 minutes
+        resetToken.setExpiryDate(Instant.now().plus(2, ChronoUnit.MINUTES));//2min
+        resetToken.setVerified(false);
+        resetToken.setUsed(false);
         passwordResetTokenRepository.save(resetToken);
         String resetPasswordHtml =
                 "<body style='margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;'>" +
@@ -327,10 +334,10 @@ public class AccountService {
                         "      <p style='margin: 0 0 24px; color: #666666; font-size: 15px; line-height: 1.6;'>Use the code below to reset your password:</p>" +
                         "      <div style='text-align: center; margin: 32px 0;'>" +
                         "        <div style='display: inline-block; background-color: #51007a; padding: 20px 40px; border-radius: 4px;'>" +
-                        "          <p style='margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #ffffff;'>" + code + "</p>" +
+                        "          <p style='margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #ffffff;'>" + resetCode + "</p>" +
                         "        </div>" +
                         "      </div>" +
-                        "      <p style='margin: 24px 0 0; color: #666666; font-size: 13px; line-height: 1.6; text-align: center;'>This code will expire in <strong style='color: #51007a;'>10 minutes</strong></p>" +
+                        "      <p style='margin: 24px 0 0; color: #666666; font-size: 13px; line-height: 1.6; text-align: center;'>This code will expire in <strong style='color: #51007a;'>2 minutes</strong></p>" +
                         "    </div>" +
                         "    <div style='background-color: #f9f9f9; padding: 16px 24px; border-top: 1px solid #eeeeee;'>" +
                         "      <p style='margin: 0; color: #999999; font-size: 12px; text-align: center;'>If you didn't request this, please ignore this email</p>" +
@@ -340,66 +347,51 @@ public class AccountService {
         emailService.sendEmail(account.getEmail(), "Your Password Reset Code", resetPasswordHtml);
     }
 
-    public void verifyResetCode(VerifyResetCodeRequestDto verifyRequest) {
-        Account account = accountRepository.findByEmail(verifyRequest.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Account with this email does not exist"
-                ));
-
-        PasswordResetToken token = passwordResetTokenRepository.findByAccount(account)
+    @Transactional
+    public void verifyResetCode(VerifyResetCodeRequestDto verifyCodeDto) {
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByTokenAndAccountEmail(verifyCodeDto.getCode(), verifyCodeDto.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "No password reset request was found. Please request a new code"
+                        "Invalid reset code"
                 ));
-
-        if (token.getExpiryDate().isBefore(Instant.now())) {
-            passwordResetTokenRepository.delete(token);
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Your reset code has expired. Please request a new one"
+                    "Reset code has expired. Please request a new one."
             );
         }
-
-        if (!token.getToken().equals(verifyRequest.getCode())) {
+        if (Boolean.TRUE.equals(resetToken.getUsed())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "The provided code is incorrect"
+                    "This reset code has already been used. Please request a new one."
             );
         }
-
-        token.setVerified(true);
-        passwordResetTokenRepository.save(token);
+        resetToken.setVerified(true);
+        passwordResetTokenRepository.save(resetToken);
     }
 
-    public void resetPassword(ResetPasswordRequestDto resetRequest) {
-        Account account = accountRepository.findByEmail(resetRequest.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Account with this email does not exist"
-                ));
-
-        PasswordResetToken token = passwordResetTokenRepository.findByAccount(account)
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDto resetPasswordDto) {
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findTopByAccountEmailAndVerifiedTrueAndUsedFalseOrderByExpiryDateDesc(
+                        resetPasswordDto.getEmail()
+                )
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "No password reset request was found. Please verify your reset code first"
+                        "No valid reset code found. Please verify your code first."
                 ));
-        if (token.getExpiryDate().isBefore(Instant.now())) {
-            passwordResetTokenRepository.delete(token);
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Your reset code has expired. Please request a new one"
+                    "Reset code has expired. Please request a new one."
             );
         }
-        if (!token.getVerified()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Please verify your reset code first before changing your password"
-            );
-        }
-        account.setPassword(passwordEncoder.encode(resetRequest.getNewPassword()));
+        Account account = resetToken.getAccount();
+        account.setPassword(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
         accountRepository.save(account);
-        passwordResetTokenRepository.delete(token);
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
     }
-
 }

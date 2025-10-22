@@ -71,4 +71,11 @@ public class SaleItem {
     @JoinColumn(name = "seller_id", nullable = false)
     private Seller seller;
 
+    @ColumnDefault("0")
+    @Column(name = "deleted")
+    private Boolean deleted;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
 }
