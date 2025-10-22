@@ -31,6 +31,26 @@ async function deleteItemById(url, id) {
   }
 }
 
+async function deleteItemByIdAndToken(url, id, token) {
+  try {    
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const res = await fetch(`${url}/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return res.status;
+  } catch (error) {
+    throw new Error('can not delete your item');
+  }
+}
+
 async function addItem(url, newItem) {
   try {
     const res = await fetch(url, {
@@ -576,4 +596,5 @@ export {
   getOrderDetailByIdWithToken,
 
   getItemsWithToken,
+  deleteItemByIdAndToken
 }

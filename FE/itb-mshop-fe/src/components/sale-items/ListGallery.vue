@@ -528,7 +528,7 @@ onMounted(async () => {
           </div>
 
           <!-- Add Items Button (ONLY SELLER) -->
-          <div v-if="userRole === 'SELLER'" class="mb-10 text-center">
+          <div v-if="userRole === 'SELLER'" class="mb-4 text-center">
             <router-link
               :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
               class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
@@ -557,34 +557,54 @@ onMounted(async () => {
           </div>
 
           <!-- List Sale Items -->
-          <div
-            v-else
-            class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
-          >
+          <div v-else class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             <div
-              v-for="(product,index) in products"
+              v-for="(product, index) in products"
               :key="product.id"
               class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
               hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
-              transition duration-300 flex flex-col cursor-pointer animate-product"
+              transition duration-300 flex flex-col cursor-pointer animate-product relative"
               :style="{ '--delay': `${index * 50}ms` }"
             >
+              <!-- "My Item" Icon - Top Right -->
+              <div
+                v-if="userId && userId === product.sellerId"
+                class="absolute top-1.5 right-1.5 z-15 bg-gradient-to-r from-yellow-400 to-orange-500 
+                text-gray-900 p-1 rounded-lg text-xs font-bold shadow-lg 
+                flex items-center gap-1"
+              >
+                <span class="material-symbols-outlined">person_edit</span>
+              </div>
+              <!-- Out of Stock Overlay -->
+              <div
+                v-if="product.quantity === 0"
+                class="absolute inset-0 bg-gray-900/70 backdrop-blur-xs z-10 flex items-center justify-center rounded-2xl"
+              >
+                <div class="text-center">
+                  <p class="text-gray-300 text-xl font-bold tracking-wider">OUT OF STOCK</p>
+                </div>
+              </div>
+
+              <!-- Main Data -->
               <router-link
                 :to="{ name: 'ListDetails', params: { id: product.id } }"
                 class="flex flex-col flex-grow"
+                :class="{ 'pointer-events-none': product.quantity === 0 }"
               >
+                <!-- Image -->
                 <img
                   :src="phoneImg"
                   :alt="product.model"
                   class="w-full h-56 object-contain bg-gray-800"
                 />
 
-                <div class="p-5 flex flex-col flex-grow">
-                  <h3 class="itbms-brand text-xs md:text-base font-bold text-[#7e5bef] uppercase tracking-wide mb-2">
+                <!-- Content -->
+                <div class="pt-3 px-5 flex flex-col flex-grow text-center">
+                  <h3 class="itbms-brand text-xl md:text-base font-bold text-[#7e5bef] uppercase tracking-wide mb-1">
                     {{ product.brandName }}
                   </h3>
 
-                  <p class="text-white font-semibold mt-1 mb-4 line-clamp-2">
+                  <p class="text-white font-semibold text-base line-clamp-2">
                     <span class="itbms-model">{{ product.model }}</span> <br>
                     <span class="itbms-ramGb text-gray-400 font-normal">{{ product.ramGb ?? '-' }}</span>
                     <span class="itbms-ramGb-unit text-gray-400 font-normal">GB</span> /
@@ -593,32 +613,34 @@ onMounted(async () => {
                   </p>
                 </div>
               </router-link>
-              
-              <div class="px-4 pb-3 flex items-center justify-between">
-                <div class="text-left">
-                  <p class="text-white font-extrabold text-lg">
-                    ฿<span class="itbms-price">{{ product.price.toLocaleString() }}</span>
-                  </p>
-                </div>
+              <hr class="w-4/5 mx-auto mt-3 pb-3 text-gray-600/40 border-t-2">
+
+              <!-- Price & Add To Cart Button -->
+              <div class="px-6 pb-4 flex items-center justify-between">
+                <!-- Price -->
+                <span class="text-white font-extrabold text-xl">
+                  ฿ <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+                </span>
                 
+                <!-- Only show Add button if NOT out of stock -->
                 <button
+                  v-if="product.quantity > 0"
                   @click.stop="addToCart(product)"
-                  :disabled="product.quantity === 0 || (userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
+                  :disabled="(userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
                   :class="[
-                    'itbms-add-to-cart-button px-4 py-2 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
-                    (product.quantity === 0 || (userId && !canAddToCart(product)) || (userId && userId === product.sellerId))
+                    'itbms-add-to-cart-button px-3 py-1.5 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
+                    ((userId && !canAddToCart(product)) || (userId && userId === product.sellerId))
                       ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                       : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
                   ]"
                 >
-                  <template v-if="product.quantity === 0">
-                    Sold Out
-                  </template>
-                  <template v-else-if="!canAddToCart(product)">
+                  <template v-if="!canAddToCart(product)">
                     Max
                   </template>
                   <template v-else>
-                    Add
+                    <span class="material-symbols-outlined align-middle">
+                    add_shopping_cart
+                    </span>
                   </template>
                 </button>
               </div>

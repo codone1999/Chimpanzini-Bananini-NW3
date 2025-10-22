@@ -20,7 +20,7 @@ const COOKIE_CONFIG = {
   }
 }
 
-export function setAuthTokens(accessToken, refreshToken) {
+export function setAuthTokens(accessToken, refreshToken = null) {
   // Set access token
   Cookies.set(COOKIE_CONFIG.ACCESS_TOKEN.name, accessToken, {
     expires: COOKIE_CONFIG.ACCESS_TOKEN.expires,
@@ -93,8 +93,8 @@ export async function refreshAccessToken() {
 
     const data = await response.json()
     
-    // Store both tokens (refresh token rotation)
-    setAuthTokens(data.access_token, data.refresh_token)
+    // Store ONLY Access Token
+    setAuthTokens(data.access_token)
     
     return data.access_token
     

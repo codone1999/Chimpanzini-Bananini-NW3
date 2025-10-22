@@ -2,7 +2,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from 'vue-router'
-import { deleteItemById, getSellerItemsByToken, getItems } from "@/lib/fetchUtils";
+import { getSellerItemsByToken, getItems, deleteItemByIdAndToken } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
 import { getAccessToken } from "@/lib/authUtils";
 import { useUser } from "@/composables/useUser";
@@ -334,21 +334,20 @@ function confirmDelete(id) {
 async function handleDelete() {
   if (!selectedProductId.value || !userId.value) return;
 
+  showModal.value = false;
+
   try {
     const baseUrl = `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item`;
-    const item = await deleteItemById(baseUrl, selectedProductId.value);
+    const item = await deleteItemByIdAndToken(baseUrl, selectedProductId.value, getAccessToken());
     
-    if (typeof item === 'number') {
-      showModal.value = false;
-      handleDeleteAlerts(showSuccessMessage, successMessage, 'The requested sale item does not exist.', products, baseUrl);
-      return;
+    if (item === 204) {
+      handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.');
+    } else {
+      handleDeleteAlerts(showSuccessMessage, successMessage, 'The requested sale item does not exist.');
     }
   } catch (error) {
     console.error('Failed to delete product:', error);
   }
-
-  showModal.value = false;
-  handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.', products, `${import.meta.env.VITE_APP_URL2}/seller/${userId.value}/sale-item`);
   
   // Refresh the filtered results
   await fetchFilteredSaleItems();

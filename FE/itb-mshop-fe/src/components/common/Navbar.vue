@@ -38,7 +38,6 @@ async function handleLogout() {
   }
 }
 
-
 onMounted( async() => {
   await ensureValidToken()
 })
