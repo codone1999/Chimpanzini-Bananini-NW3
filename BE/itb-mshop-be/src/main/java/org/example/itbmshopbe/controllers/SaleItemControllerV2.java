@@ -36,14 +36,14 @@ public class SaleItemControllerV2 {
             @RequestParam(required = false, defaultValue = "false") Boolean filterNullStorage
     ) throws NoSuchFieldException {
         SaleItemPagedResponseDto responseDto = saleItemService.getAllSaleItemsPaginatedAndFiltered(
-                null,filterBrands,filterStorages,filterPriceLower,filterPriceUpper,page,size,sortField,
-                sortDirection,filterNullStorage,searchKeyword
+                null, filterBrands, filterStorages, filterPriceLower, filterPriceUpper, page, size,
+                sortField, sortDirection, filterNullStorage, searchKeyword
         );
         return ResponseEntity.ok(responseDto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SaleItemDetailWithImagesDto> getSaleItemById(@PathVariable Integer id){
+    public ResponseEntity<SaleItemDetailWithImagesDto> getSaleItemById(@PathVariable Integer id) {
         return ResponseEntity.ok(saleItemService.getSaleItemDetailWithImages(id));
     }
 
@@ -51,42 +51,33 @@ public class SaleItemControllerV2 {
     public ResponseEntity<SaleItemDetailWithImagesDto> createProduct(
             @ModelAttribute SaleItemRequestDto saleItemDto,
             @RequestParam(required = false) List<MultipartFile> images
-    ){
-        try {
-            SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(1,saleItemDto);
-            if (images != null && !images.isEmpty()) {
-                if (images.size() > 4) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 picture");
-                }
-                saleItemPictureService.storePicture(createdSaleItem.getId(), images);
+    ) {
+        SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(1, saleItemDto);
+        if (images != null && !images.isEmpty()) {
+            if (images.size() > 4) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum 4 pictures");
             }
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(saleItemService.getSaleItemDetailWithImages(createdSaleItem.getId()));
-        }catch (Exception e){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem Create Failed");
+            saleItemPictureService.storePicture(createdSaleItem.getId(), images);
         }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(saleItemService.getSaleItemDetailWithImages(createdSaleItem.getId()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSaleItemById(@PathVariable Integer id){
-        try
-            {
-            saleItemService.deleteSaleItem(id);
-            }catch (Exception e){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"SaleItem does not exist");
-        }
+    public void deleteSaleItemById(@PathVariable Integer id) {
+        saleItemService.deleteSaleItem(id);
     }
 
     @PutMapping("{id}")
     public ResponseEntity<SaleItemDetailWithImagesDto> updateSaleItem(
             @PathVariable Integer id,
             @ModelAttribute SaleItemWithImageInfo saleItemDto
-    ){
-        if(saleItemDto.getSaleItem() != null){
+    ) {
+        if (saleItemDto.getSaleItem() != null) {
             saleItemService.updateSaleItem(id, saleItemDto.getSaleItem());
         }
-        if(saleItemDto.getImagesInfos() != null && !saleItemDto.getImagesInfos().isEmpty()){
+        if (saleItemDto.getImagesInfos() != null && !saleItemDto.getImagesInfos().isEmpty()) {
             saleItemPictureService.updatePictureByDisplayOrder(id, saleItemDto.getImagesInfos());
         }
         return ResponseEntity.ok(saleItemService.getSaleItemDetailWithImages(id));

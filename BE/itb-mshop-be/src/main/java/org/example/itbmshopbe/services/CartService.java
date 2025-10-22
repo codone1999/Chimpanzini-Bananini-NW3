@@ -34,19 +34,27 @@ public class CartService {
     @Transactional
     public CartResponseDto addToCart(Integer userId, CartRequestDto cartRequestDto) {
         Account account = repositoryHelper.findByIdOrThrow(accountRepository, userId, "Account");
-        SaleItem saleItem = repositoryHelper.findByIdOrThrow(saleItemRepository, cartRequestDto.getSaleItemId(), "SaleItem");
+        SaleItem saleItem = repositoryHelper.findByIdOrThrow(
+                saleItemRepository,
+                cartRequestDto.getSaleItemId(),
+                "SaleItem"
+        );
+
+        // Check if item is deleted
+        if (Boolean.TRUE.equals(saleItem.getDeleted())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot add deleted item to cart"
+            );
+        }
 
         // Check if item belongs to the user (can't add own items to cart)
         if (saleItem.getSeller().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot add your own items to cart");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Cannot add your own items to cart"
+            );
         }
-
-        // Check if item is already ordered by this user
-        boolean isAlreadyOrdered = orderItemRepository.existsByOrderCustomerIdAndSaleItemId(userId, saleItem.getId());
-        if (isAlreadyOrdered) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item already ordered");
-        }
-
         // Check if item already exists in cart
         Cart existingCart = cartRepository.findByAccountIdAndSaleItemId(userId, saleItem.getId());
         if (existingCart != null) {
@@ -56,8 +64,6 @@ public class CartService {
             Cart updatedCart = cartRepository.save(existingCart);
             return mapToCartResponse(updatedCart);
         }
-
-        // Create new cart item
         Cart cart = new Cart();
         cart.setAccount(account);
         cart.setSaleItem(saleItem);
@@ -71,14 +77,20 @@ public class CartService {
     @Transactional
     public List<CartResponseDto> getAllCartItemsByUser(Integer userId) {
         Account account = accountRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found"
+                ));
 
         List<Cart> cartItems = cartRepository.findByAccountId(userId);
 
-        // Auto-remove items that have been ordered
+        // Auto-remove items that have been ordered OR deleted
         List<Cart> itemsToRemove = cartItems.stream()
-                .filter(cart -> orderItemRepository.existsByOrderCustomerIdAndSaleItemId(
-                        userId, cart.getSaleItem().getId()))
+                .filter(cart ->
+                        orderItemRepository.existsByOrderCustomerIdAndSaleItemId(
+                                userId, cart.getSaleItem().getId()) ||
+                                Boolean.TRUE.equals(cart.getSaleItem().getDeleted())
+                )
                 .collect(Collectors.toList());
 
         if (!itemsToRemove.isEmpty()) {
@@ -94,10 +106,23 @@ public class CartService {
     @Transactional
     public CartResponseDto getCartById(Integer cartId, Integer userId) {
         Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart item not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Cart item not found"
+                ));
 
         if (!cart.getAccount().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied: Not your cart item");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Access denied: Not your cart item"
+            );
+        }
+        if (Boolean.TRUE.equals(cart.getSaleItem().getDeleted())) {
+            cartRepository.delete(cart);
+            throw new ResponseStatusException(
+                    HttpStatus.GONE,
+                    "Item has been deleted and removed from cart"
+            );
         }
 
         boolean isAlreadyOrdered = orderItemRepository.existsByOrderCustomerIdAndSaleItemId(
@@ -105,7 +130,10 @@ public class CartService {
 
         if (isAlreadyOrdered) {
             cartRepository.delete(cart);
-            throw new ResponseStatusException(HttpStatus.GONE, "Item already ordered and removed from cart");
+            throw new ResponseStatusException(
+                    HttpStatus.GONE,
+                    "Item already ordered and removed from cart"
+            );
         }
 
         return mapToCartResponse(cart);
@@ -114,10 +142,23 @@ public class CartService {
     @Transactional
     public CartResponseDto updateCart(Integer cartId, Integer userId, CartRequestDto cartRequestDto) {
         Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart item not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Cart item not found"
+                ));
 
         if (!cart.getAccount().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied: Not your cart item");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Access denied: Not your cart item"
+            );
+        }
+        if (Boolean.TRUE.equals(cart.getSaleItem().getDeleted())) {
+            cartRepository.delete(cart);
+            throw new ResponseStatusException(
+                    HttpStatus.GONE,
+                    "Item has been deleted and removed from cart"
+            );
         }
 
         boolean isAlreadyOrdered = orderItemRepository.existsByOrderCustomerIdAndSaleItemId(
@@ -125,7 +166,10 @@ public class CartService {
 
         if (isAlreadyOrdered) {
             cartRepository.delete(cart);
-            throw new ResponseStatusException(HttpStatus.GONE, "Item already ordered and removed from cart");
+            throw new ResponseStatusException(
+                    HttpStatus.GONE,
+                    "Item already ordered and removed from cart"
+            );
         }
 
         if (cartRequestDto.getQuantity() != null && cartRequestDto.getQuantity() > 0) {
@@ -143,12 +187,16 @@ public class CartService {
     @Transactional
     public void deleteCart(Integer cartId, Integer userId) {
         Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart item not found"));
-
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Cart item not found"
+                ));
         if (!cart.getAccount().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied: Not your cart item");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Access denied: Not your cart item"
+            );
         }
-
         cartRepository.delete(cart);
     }
 

@@ -33,7 +33,11 @@ public class AccountController {
             @RequestParam(required = false) MultipartFile nationalCardPhotoFront,
             @RequestParam(required = false) MultipartFile nationalCardPhotoBack
     ) {
-        UserResponseDto createdAccount = accountService.registerAccount(registerDto, nationalCardPhotoFront, nationalCardPhotoBack);
+        UserResponseDto createdAccount = accountService.registerAccount(
+                registerDto,
+                nationalCardPhotoFront,
+                nationalCardPhotoBack
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
     }
 
@@ -45,44 +49,26 @@ public class AccountController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> Login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
-        try {
-            LoginResponseDto loginResponse = accountService.loginAccount(loginRequestDto);
-            return ResponseEntity.ok(loginResponse);
-        }catch (ResponseStatusException e) {
-            throw e;
-        }catch (Exception e){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed", e);
-        }
+        LoginResponseDto loginResponse = accountService.loginAccount(loginRequestDto);
+        return ResponseEntity.ok(loginResponse);
     }
 
+
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
-        if(refreshToken==null || refreshToken.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh token is empty");
-        }
-        try{
-            accountService.logout(refreshToken);
-            return ResponseEntity.noContent()
-                    .header("Set-Cookie",
-                            "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict")
-                    .build();
-        }catch (ResponseStatusException e) {
-            throw e;
-        }catch (Exception e){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Logout failed", e);
-        }
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = "refresh_token", required = false) String refreshToken
+    ) {
+        accountService.logout(refreshToken);
+        return ResponseEntity.noContent()
+                .header("Set-Cookie",
+                        "refresh_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict")
+                .build();
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDto> refreshToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken
     ) {
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "No refresh token provided"
-            );
-        }
         String newAccessToken = accountService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(new LoginResponseDto(newAccessToken, refreshToken));
     }

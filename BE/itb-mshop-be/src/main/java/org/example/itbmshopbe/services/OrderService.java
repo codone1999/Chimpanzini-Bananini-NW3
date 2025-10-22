@@ -82,6 +82,12 @@ public class OrderService {
                             HttpStatus.NOT_FOUND,
                             "SaleItem not found: " + itemDto.getSaleItemId()
                     ));
+            if (Boolean.TRUE.equals(saleItem.getDeleted())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Cannot order deleted item: " + itemDto.getSaleItemId()
+                );
+            }
 
             Integer sellerId = saleItem.getSeller().getId();
             entityValidatorUtil.validateNotOwnItem(
@@ -126,6 +132,7 @@ public class OrderService {
 
         return mapOrderToResponse(savedOrder, List.of(sellerDto), responseItems);
     }
+
     private boolean checkStockAvailability(List<OrderItemRequestDto> items) {
         for (OrderItemRequestDto itemDto : items) {
             SaleItem saleItem = saleItemRepository.findById(itemDto.getSaleItemId()).get();
@@ -213,21 +220,27 @@ public class OrderService {
         return dto;
     }
 
+
     private List<OrderItemRequestDto> mapOrderItems(List<OrderItem> orderItems) {
-        return orderItems.stream().map(
-                oi->{
-                    OrderItemRequestDto dto = modelMapper.map(oi, OrderItemRequestDto.class);
-                    SaleItem saleItem = oi.getSaleItem();
-                    String brandName = saleItem.getBrand().getName();
-                    String model =  saleItem.getModel();
-                    String storage = saleItem.getStorageGb() != null ? saleItem.getStorageGb() + "GB" : "-";
-                    String color = saleItem.getColor() != null ? saleItem.getColor() : "-";
-                    dto.setDescription(brandName + " " + model + " ("+ storage+" " + color+")");
-                    dto.setSaleItemId(saleItem.getId());
-                    dto.setPrice(saleItem.getPrice());
-                    return dto;
-                }
-        ).toList();
+        return orderItems.stream().map(oi -> {
+            OrderItemRequestDto dto = modelMapper.map(oi, OrderItemRequestDto.class);
+            SaleItem saleItem = oi.getSaleItem();
+            String brandName = saleItem.getBrand().getName();
+            String model = saleItem.getModel();
+            String storage = saleItem.getStorageGb() != null
+                    ? saleItem.getStorageGb() + "GB"
+                    : "-";
+            String color = saleItem.getColor() != null ? saleItem.getColor() : "-";
+
+            String deletedIndicator = Boolean.TRUE.equals(saleItem.getDeleted())
+                    ? " [REMOVE]"
+                    : "";
+
+            dto.setDescription(brandName + " " + model + " (" + storage + " " + color + ")" + deletedIndicator);
+            dto.setSaleItemId(saleItem.getId());
+            dto.setPrice(saleItem.getPrice());
+            return dto;
+        }).toList();
     }
 
     @Transactional
@@ -260,13 +273,17 @@ public class OrderService {
             Integer size,
             String sortField,
             String sortDirection
-    ){
+    ) {
         if (page == null || page < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page parameter is required and must be non-negative."
+            );
         }
         Pageable pageable = pagingUtil.createPageable(page, size, sortField, sortDirection, "createdOn");
         Specification<Order> spec = Specification.where(OrderSpecifications.belongsToAccount(currentUserId));
         Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
+
         List<OrderResponseDto<OrderSellerResponseDto>> orderResponse = ordersPage.getContent().stream()
                 .map(order -> {
                     List<Seller> sellers = order.getOrderItems().stream()
@@ -279,6 +296,7 @@ public class OrderService {
                     List<OrderItemRequestDto> orderItems = mapOrderItems(order.getOrderItems());
                     return mapOrderToResponse(order, sellerResponses, orderItems);
                 }).toList();
+
         OrderPagedResponseDto<OrderSellerResponseDto> response = new OrderPagedResponseDto<>();
         response.setContent(orderResponse);
         response.setPage(ordersPage.getNumber());
@@ -295,18 +313,23 @@ public class OrderService {
 
     @Transactional
     public List<OrderSellerViewResponseDto> getAllOrdersForSeller(
-                Integer sellerId,
-                Integer page,
-                Integer size,
-                String sortField,
-                String sortDirection
-        ) {
-            if (page == null || page < 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page parameter is required and must be non-negative.");
-            }
+            Integer sellerId,
+            Integer page,
+            Integer size,
+            String sortField,
+            String sortDirection
+    ) {
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Page parameter is required and must be non-negative."
+            );
+        }
+
         Pageable pageable = pagingUtil.createPageable(page, size, sortField, sortDirection, "createdOn");
         Specification<Order> spec = Specification.where(OrderSpecifications.belongsToAccount(sellerId));
         Page<Order> ordersPage = orderRepository.findAll(spec, pageable);
+
         return ordersPage.getContent().stream().map(order -> {
             OrderSellerViewResponseDto dto = new OrderSellerViewResponseDto();
             dto.setId(order.getId());
@@ -326,6 +349,4 @@ public class OrderService {
             return dto;
         }).toList();
     }
-
-
 }

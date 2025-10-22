@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 
 
@@ -52,58 +53,83 @@ public class SaleItemService {
                 .orElseThrow(() -> new ItemNotFoundException("SaleItem not found for this id :: " + id));
     }
 
-    public List<SaleItemGalleryDto> getAllSaleItemsForGallery(){
-        List<SaleItem> saleItems = saleItemRepository.findAll();
-        return listMapper.mapList(saleItems, SaleItemGalleryDto.class, modelMapper);
+    public List<SaleItemGalleryDto> getAllSaleItemsForGallery() {
+        try {
+            List<SaleItem> saleItems = saleItemRepository.findAll();
+            return listMapper.mapList(saleItems, SaleItemGalleryDto.class, modelMapper);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to retrieve sale items for gallery",
+                    e
+            );
+        }
     }
-
     public SaleItemDetailDto getSaleItemDetails(Integer id){
         SaleItem saleItem = findSaleItemById(id);
         return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public SaleItemDetailDto addSaleItem(Integer sellerId,SaleItemRequestDto dto) {
+    public SaleItemDetailDto addSaleItem(Integer sellerId, SaleItemRequestDto dto) {
+        try {
+            saleItemUtil.validateRequiredFields(dto);
 
-        saleItemUtil.validateRequiredFields(dto);
+            String color = saleItemUtil.sanitizeColor(dto.getColor());
+            int quantity = saleItemUtil.resolveQuantity(dto.getQuantity());
 
-        String color = saleItemUtil.sanitizeColor(dto.getColor());
-        int quantity = saleItemUtil.resolveQuantity(dto.getQuantity());
+            SaleItem newItem = new SaleItem();
+            newItem.setBrand(saleItemUtil.resolveBrand(dto));
+            newItem.setModel(trimFirstAndLastSentence(dto.getModel()));
+            newItem.setColor(color);
+            newItem.setQuantity(quantity);
+            newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
+            newItem.setPrice(dto.getPrice());
+            newItem.setRamGb(dto.getRamGb());
+            newItem.setStorageGb(dto.getStorageGb());
+            newItem.setScreenSizeInch(dto.getScreenSizeInch());
+            newItem.setDeleted(false);
 
-        SaleItem newItem = new SaleItem();
-        newItem.setBrand(saleItemUtil.resolveBrand(dto));
-        newItem.setModel(trimFirstAndLastSentence(dto.getModel()));
-        newItem.setColor(color);
-        newItem.setQuantity(quantity);
-        newItem.setDescription(trimFirstAndLastSentence(dto.getDescription()));
-        newItem.setPrice(dto.getPrice());
-        newItem.setRamGb(dto.getRamGb());
-        newItem.setStorageGb(dto.getStorageGb());
-        newItem.setScreenSizeInch(dto.getScreenSizeInch());
+            if (sellerId != null) {
+                Seller seller = sellerRepository.findById(sellerId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Seller not found for id :: " + sellerId
+                        ));
+                newItem.setSeller(seller);
+            }
 
-        if (sellerId != null) {
-            Seller seller = sellerRepository.findById(sellerId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Seller not found for id :: " + sellerId));
-            newItem.setSeller(seller);
+            SaleItem saleItem = saleItemRepository.save(newItem);
+            return modelMapper.map(saleItem, SaleItemDetailDto.class);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Sale item creation failed",
+                    e
+            );
         }
-
-        SaleItem saleItem = saleItemRepository.save(newItem);
-        return modelMapper.map(saleItem, SaleItemDetailDto.class);
     }
 
 
 
     @Transactional
     public SaleItemDetailDto updateSaleItem(Integer id, SaleItemRequestDto dto) {
+        try {
             SaleItem existingSaleItem = saleItemRepository.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "SaleItem not found for id :: " + id));
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "SaleItem not found for id :: " + id
+                    ));
+
             saleItemUtil.validateRequiredFields(dto);
             String trimmedModel = trimFirstAndLastSentence(dto.getModel());
             String trimmedDescription = trimFirstAndLastSentence(dto.getDescription());
             String sanitizedColor = saleItemUtil.sanitizeColor(dto.getColor());
             int resolvedQuantity = saleItemUtil.resolveQuantity(dto.getQuantity());
             Brand brand = saleItemUtil.resolveBrand(dto);
+
             existingSaleItem.setModel(trimmedModel);
             existingSaleItem.setDescription(trimmedDescription);
             existingSaleItem.setColor(sanitizedColor);
@@ -116,25 +142,35 @@ public class SaleItemService {
 
             SaleItem updatedSaleItem = saleItemRepository.save(existingSaleItem);
             return modelMapper.map(updatedSaleItem, SaleItemDetailDto.class);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Sale item update failed",
+                    e
+            );
+        }
     }
 
+    @Transactional
+    public void deleteSaleItem(Integer id) {
+        try {
+            SaleItem saleItem = findSaleItemById(id);
+            saleItem.setDeleted(true);
+            saleItem.setDeletedAt(Instant.now());
+            saleItemRepository.save(saleItem);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to delete sale item",
+                    e
+            );
+        }
+    }
 
-   public void deleteSaleItem(Integer id) {
-       List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
-
-       // Delete picture file on disk
-       for (SaleItemPicture pic : pictures) {
-           Path filePath = fileService.getFileStorageLocation().resolve(pic.getNewPictureName());
-           try {
-               Files.deleteIfExists(filePath);
-           } catch (IOException e) {
-               throw new RuntimeException("Failed to delete picture file " + pic.getNewPictureName(), e);
-           }
-       }
-
-       saleItemPictureRepository.deleteAll(pictures);
-       saleItemRepository.deleteById(id);
-   }
     public SaleItemPagedResponseDto getAllSaleItemsPaginatedAndFiltered(
             Integer sellerId,
             List<String> filterBrands,
@@ -171,7 +207,8 @@ public class SaleItemService {
                 .and(SaleItemSpecifications.minPrice(filterPriceLower))
                 .and(SaleItemSpecifications.maxPrice(filterPriceUpper))
                 .and(SaleItemSpecifications.hasStorage(filterStorages, filterNullStorage))
-                .and(SaleItemSpecifications.keyword(searchKeyword));
+                .and(SaleItemSpecifications.keyword(searchKeyword))
+                .and(SaleItemSpecifications.isNotDeleted());
 
         Page<SaleItem> saleItemsPage = saleItemRepository.findAll(spec, pageable);
         List<SaleItemDetailDto> content = saleItemsPage.getContent().stream()
@@ -201,7 +238,9 @@ public class SaleItemService {
         SaleItemDetailWithImagesDto dto = modelMapper.map(saleItem, SaleItemDetailWithImagesDto.class);
         dto.setBrandName(saleItem.getBrand().getName());
         dto.setSellerId(saleItem.getSeller() != null ? saleItem.getSeller().getId() : null);
-        dto.setSellerName(saleItem.getSeller() != null ? saleItem.getSeller().getAccount().getNickname() : null);
+        dto.setSellerName(saleItem.getSeller() != null
+                ? saleItem.getSeller().getAccount().getNickname()
+                : null);
         List<SaleItemPicture> pictures = saleItemPictureRepository.findBySaleItemId(id);
         List<SaleItemImageDto> imageDtos = pictures.stream().map(pic -> {
             SaleItemImageDto imgDto = new SaleItemImageDto();
@@ -212,14 +251,20 @@ public class SaleItemService {
         dto.setSaleItemImages(imageDtos);
         return dto;
     }
+
     @Transactional
     public void deleteSellerSaleItem(Integer sellerId, Integer saleItemId) {
         SaleItem saleItem = saleItemRepository.findById(saleItemId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "SaleItem not found for id :: " + saleItemId));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "SaleItem not found for id :: " + saleItemId
+                ));
+
         if (!saleItem.getSeller().getId().equals(sellerId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "You don't have permission to delete this sale item");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You don't have permission to delete this sale item"
+            );
         }
         deleteSaleItem(saleItemId);
     }

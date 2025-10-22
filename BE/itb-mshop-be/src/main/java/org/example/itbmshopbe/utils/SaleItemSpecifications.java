@@ -58,4 +58,15 @@ public class SaleItemSpecifications {
             return cb.equal(root.get("seller").get("id"), sellerId);
         };
     }
+
+    public static Specification<SaleItem> isNotDeleted() {
+        return (root, query, cb) -> cb.or(
+                cb.isNull(root.get("deleted")),
+                cb.isFalse(root.get("deleted"))
+        );
+    }
+
+    public static Specification<SaleItem> includeDeleted() {
+        return (root, query, cb) -> cb.conjunction();
+    }
 }

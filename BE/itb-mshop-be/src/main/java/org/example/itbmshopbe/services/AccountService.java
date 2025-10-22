@@ -48,6 +48,7 @@ public class AccountService {
     public UserResponseDto registerAccount(RegisterRequestDto accountReq,
                                            MultipartFile frontPhoto,
                                            MultipartFile backPhoto) {
+        try {
         validateRole(accountReq.getRole());
         checkEmailNotInUse(accountReq.getEmail());
 
@@ -64,6 +65,15 @@ public class AccountService {
         sendVerificationEmail(savedAccount);
 
         return mapToUserResponseDto(savedAccount);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Account registration failed",
+                    e
+            );
+        }
     }
 
     private void validateRole(String role) {
@@ -194,6 +204,7 @@ public class AccountService {
     }
 
     public UserResponseDto verifyEmail(String token) {
+        try {
         EmailVerificationToken verificationToken = tokenRepository.findByToken(token);
         if (verificationToken == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification token");
@@ -209,6 +220,15 @@ public class AccountService {
         tokenRepository.delete(verificationToken);
 
         return mapToUserResponseDto(updated);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Email verification failed",
+                    e
+            );
+        }
     }
 
     private UserResponseDto mapToUserResponseDto(Account account) {
@@ -277,6 +297,7 @@ public class AccountService {
                     "Invalid token"
             );
         }
+        try {
         Integer userId = JwtTokenUtil.getIdFromToken(refreshToken);
         Account account = entityValidatorUtil.validateActiveAccount(userId);
         return JwtTokenUtil.generateAccessToken(
@@ -286,6 +307,15 @@ public class AccountService {
                 account.getRole(),
                 account.getStatus().name()
         );
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Token refresh failed",
+                    e
+            );
+        }
     }
     public UserProfileResponseDto getUserProfile(Integer userId) {
         Optional<Account> accountOpt = accountRepository.findById(userId);
@@ -311,6 +341,7 @@ public class AccountService {
 
     @Transactional
     public void forgotPassword(String email) {
+        try {
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with this email does not exist."));
         passwordResetTokenRepository.deleteByAccountAndUsedFalse(account);
@@ -345,10 +376,20 @@ public class AccountService {
                         "  </div>" +
                         "</body>";
         emailService.sendEmail(account.getEmail(), "Your Password Reset Code", resetPasswordHtml);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process password reset request",
+                    e
+            );
+        }
     }
 
     @Transactional
     public void verifyResetCode(VerifyResetCodeRequestDto verifyCodeDto) {
+        try {
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findByTokenAndAccountEmail(verifyCodeDto.getCode(), verifyCodeDto.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -369,10 +410,20 @@ public class AccountService {
         }
         resetToken.setVerified(true);
         passwordResetTokenRepository.save(resetToken);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to verify reset code",
+                    e
+            );
+        }
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequestDto resetPasswordDto) {
+        try {
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findTopByAccountEmailAndVerifiedTrueAndUsedFalseOrderByExpiryDateDesc(
                         resetPasswordDto.getEmail()
@@ -393,5 +444,14 @@ public class AccountService {
         accountRepository.save(account);
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to reset password",
+                    e
+            );
+        }
     }
 }
