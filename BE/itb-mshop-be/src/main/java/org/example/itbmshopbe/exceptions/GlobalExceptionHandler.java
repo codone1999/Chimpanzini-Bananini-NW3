@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZonedDateTime;
+import java.util.List;
+
 @ControllerAdvice
 public class GlobalExceptionHandler  {
     @ExceptionHandler(ResponseStatusException.class)
@@ -34,16 +37,29 @@ public class GlobalExceptionHandler  {
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ger);
     }
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<GeneralErrorResponse> handleValidationErrors(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
 
-        GeneralErrorResponse ger = new GeneralErrorResponse(
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        List<FieldErrorDetail> errorDetails = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> new FieldErrorDetail(
+                        error.getField().toUpperCase(),
+                        error.getDefaultMessage()
+                ))
+                .toList();
+
+        ValidationErrorResponse response = new ValidationErrorResponse(
+                ZonedDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
-                "Email or Password is incorrect.", // As specified in PBI
+                "Validation Failed",
+                errorDetails,
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ger);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 }

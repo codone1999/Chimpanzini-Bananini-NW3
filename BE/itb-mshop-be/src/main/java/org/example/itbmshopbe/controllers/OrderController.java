@@ -1,6 +1,7 @@
 package org.example.itbmshopbe.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.itbmshopbe.dtos.OrderDTO.OrderRequestDto;
 import org.example.itbmshopbe.dtos.OrderDTO.OrderResponseDto;
@@ -22,7 +23,7 @@ public class OrderController {
     private final OrderService orderService;
     @PostMapping
     public ResponseEntity<List<OrderResponseDto<OrderSellerResponseDto>>> placeOrder(
-            @RequestBody OrderRequestDto orderRequestDto,
+            @Valid @RequestBody OrderRequestDto orderRequestDto,
             HttpServletRequest request
     ){
         Integer buyerId = Util.validateAndGetUserId(request, orderRequestDto.getBuyerId());

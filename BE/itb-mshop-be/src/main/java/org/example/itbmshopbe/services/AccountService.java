@@ -65,13 +65,10 @@ public class AccountService {
         sendVerificationEmail(savedAccount);
 
         return mapToUserResponseDto(savedAccount);
-        } catch (ResponseStatusException e) {
-            throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Account registration failed",
-                    e
+                    "Account registration failed"
             );
         }
     }
@@ -282,6 +279,8 @@ public class AccountService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not active");
         }
     }
+
+
     public String refreshAccessToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new ResponseStatusException(
@@ -297,9 +296,15 @@ public class AccountService {
                     "Invalid token"
             );
         }
-        try {
         Integer userId = JwtTokenUtil.getIdFromToken(refreshToken);
         Account account = entityValidatorUtil.validateActiveAccount(userId);
+
+        if (account.getStatus() != Account.Status.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "User is not active"
+            );
+        }
         return JwtTokenUtil.generateAccessToken(
                 account.getId(),
                 account.getEmail(),
@@ -307,16 +312,8 @@ public class AccountService {
                 account.getRole(),
                 account.getStatus().name()
         );
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Token refresh failed",
-                    e
-            );
-        }
     }
+
     public UserProfileResponseDto getUserProfile(Integer userId) {
         Optional<Account> accountOpt = accountRepository.findById(userId);
         if (accountOpt.isEmpty()) {
@@ -341,7 +338,6 @@ public class AccountService {
 
     @Transactional
     public void forgotPassword(String email) {
-        try {
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account with this email does not exist."));
         passwordResetTokenRepository.deleteByAccountAndUsedFalse(account);
@@ -376,20 +372,10 @@ public class AccountService {
                         "  </div>" +
                         "</body>";
         emailService.sendEmail(account.getEmail(), "Your Password Reset Code", resetPasswordHtml);
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to process password reset request",
-                    e
-            );
-        }
     }
 
     @Transactional
     public void verifyResetCode(VerifyResetCodeRequestDto verifyCodeDto) {
-        try {
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findByTokenAndAccountEmail(verifyCodeDto.getCode(), verifyCodeDto.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -410,20 +396,10 @@ public class AccountService {
         }
         resetToken.setVerified(true);
         passwordResetTokenRepository.save(resetToken);
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to verify reset code",
-                    e
-            );
-        }
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequestDto resetPasswordDto) {
-        try {
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findTopByAccountEmailAndVerifiedTrueAndUsedFalseOrderByExpiryDateDesc(
                         resetPasswordDto.getEmail()
@@ -444,14 +420,5 @@ public class AccountService {
         accountRepository.save(account);
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to reset password",
-                    e
-            );
-        }
     }
 }

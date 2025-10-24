@@ -68,7 +68,7 @@ public class SellerController {
     @PostMapping("/{id}/sale-item")
     public ResponseEntity<SaleItemDetailWithImagesDto> addSellerSaleItem(
             @PathVariable Integer id,
-            @ModelAttribute SaleItemRequestDto saleItemDto,
+            @Valid @ModelAttribute SaleItemRequestDto saleItemDto,
             @RequestParam(required = false) List<MultipartFile> images,
             HttpServletRequest request
     ) {

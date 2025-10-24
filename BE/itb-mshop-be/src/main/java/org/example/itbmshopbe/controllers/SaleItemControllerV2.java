@@ -49,7 +49,7 @@ public class SaleItemControllerV2 {
 
     @PostMapping
     public ResponseEntity<SaleItemDetailWithImagesDto> createProduct(
-            @ModelAttribute SaleItemRequestDto saleItemDto,
+            @Valid @ModelAttribute SaleItemRequestDto saleItemDto,
             @RequestParam(required = false) List<MultipartFile> images
     ) {
         SaleItemDetailDto createdSaleItem = saleItemService.addSaleItem(1, saleItemDto);

@@ -29,7 +29,7 @@ public class AccountController {
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> registerAccount(
-            @ModelAttribute RegisterRequestDto registerDto,
+            @Valid @ModelAttribute RegisterRequestDto registerDto,
             @RequestParam(required = false) MultipartFile nationalCardPhotoFront,
             @RequestParam(required = false) MultipartFile nationalCardPhotoBack
     ) {
