@@ -214,59 +214,62 @@ function calculateOrderTotal(order) {
 
 function getItemImage(item) {
   if (item.saleItem?.saleItemImages?.[0]?.fileName) {
-    return `${import.meta.env.VITE_APP_URL}/sale-items/picture/${item.saleItem.saleItemImages[0].fileName}`
+    return `${import.meta.env.VITE_APP_URL2}/sale-items-images/${item.saleItem.saleItemImages[0].fileName}`
   }
   return phoneImg
 }
 
-onMounted(async () => {
-  if (userId.value) {
+watch(userId, (newUserId) => {
+  if (newUserId && canLoadData.value) {
     loadViewedOrderIds()
-  }
-  
-  if (canLoadData.value && hasCompleteUserData.value) {
-    await fetchOrders()
-  }
-})
-
-watch(canLoadData, (newValue) => {
-  if (newValue && hasCompleteUserData.value) {
     fetchOrders()
   }
-})
+}, { immediate: true })
 
 watch(activeTab, () => {
-  // Could fetch different data based on tab if needed
+  currentPage.value = 1
 })
 
-watch(userId, (newUserId, oldUserId) => {
-  if (newUserId && newUserId !== oldUserId) {
+onMounted(() => {
+  if (userId.value && canLoadData.value) {
     loadViewedOrderIds()
+    fetchOrders()
   }
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-6xl mx-auto">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Orders</h1>
-
-      <div v-if="isLoading || !canLoadData" class="text-center py-20">
-        <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-gray-600">Loading your orders...</p>
-      </div>
+  <div class="bg-gray-900 text-gray-100 font-sans min-h-screen py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+      <template v-if="isLoading">
+        <div class="text-center py-20">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+          <p class="mt-4 text-gray-400">Loading user data...</p>
+        </div>
+      </template>
 
       <template v-else>
-        <!-- Tab: New Orders, Cancelled, All Orders -->
-        <div class="flex gap-4 mb-6 border-b border-gray-300">
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-extrabold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent mb-3">
+            Order History
+          </h1>
+          <p class="text-gray-400">
+            Track and manage your orders
+          </p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center gap-4 mb-8">
           <button
             @click="activeTab = 'NEW'"
             :class="[
-              'pb-3 px-4 font-medium transition-colors',
+              'px-6 py-3 rounded-lg font-medium transition-all duration-200 animate-bounce-in',
               activeTab === 'NEW'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-purple-600 text-white shadow-lg'
+                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-200'
             ]"
+            style="animation-delay: 0s"
           >
             New Orders
             <span v-if="orders.filter(o => !viewedOrderIds.has(o.id)).length + cancelledOrders.filter(o => !viewedOrderIds.has(o.id)).length > 0" 
@@ -275,62 +278,72 @@ watch(userId, (newUserId, oldUserId) => {
             </span>
           </button>
           <button
-            @click="activeTab = 'CANCELLED'"
-            :class="[
-              'pb-3 px-4 font-medium transition-colors',
-              activeTab === 'CANCELLED'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-800'
-            ]"
-          >
-            Cancelled
-          </button>
-          <button
             @click="activeTab = 'ALL'"
             :class="[
-              'pb-3 px-4 font-medium transition-colors',
+              'px-6 py-3 rounded-lg font-medium transition-all duration-200 animate-bounce-in',
               activeTab === 'ALL'
-                ? 'text-purple-600 border-b-2 border-purple-600'
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-purple-600 text-white shadow-lg'
+                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-200'
             ]"
+            style="animation-delay: 0.15s"
           >
             All Orders
           </button>
+          <button
+            @click="activeTab = 'CANCELLED'"
+            :class="[
+              'px-6 py-3 rounded-lg font-medium transition-all duration-200 animate-bounce-in',
+              activeTab === 'CANCELLED'
+                ? 'bg-purple-600 text-white shadow-lg'
+                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-200'
+            ]"
+            style="animation-delay: 0.3s"
+          >
+            Cancelled
+            <span v-if="cancelledOrders.length > 0"
+                  class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              {{ cancelledOrders.length }}
+            </span>
+          </button>
         </div>
 
-        <!-- Filter & Sort -->
-        <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8 bg-gray-100 p-4 rounded-lg shadow-sm">
-          <div class="flex gap-2 items-center">
-            <label class="text-sm font-medium text-gray-700">Sort by:</label>
+        <!-- Filter and Sort Controls -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6 mb-8 flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-3">
+            <!-- Sort by -->
+            <label class="text-sm font-medium text-purple-300">Sort by:</label>
             <select 
-              v-model="sortField" 
+              v-model="sortField"
               @change="changeSort(sortField)"
-              class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              class="px-4 py-2 border border-gray-600 bg-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="createdOn">Order Date</option>
+              <option value="createdOn">Created On</option>
+              <option value="orderDate">Order Date</option>
               <option value="paymentDate">Payment Date</option>
             </select>
             
+            <!-- Ascending -->
             <button
               @click="sortDirection = 'asc'; fetchOrders()"
               :class="[
                 'px-3 py-2 text-lg rounded-lg transition',
                 sortDirection === 'asc'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-white text-purple-600 border border-purple-600 hover:bg-purple-50'
+                  : 'bg-gray-700 text-purple-400 border border-purple-600 hover:bg-gray-600'
               ]"
               title="Sort Ascending"
             >
               <span class="material-icons">north</span>
             </button>
             
+            <!-- Descending -->
             <button
               @click="sortDirection = 'desc'; fetchOrders()"
               :class="[
                 'px-3 py-2 text-lg rounded-lg transition',
                 sortDirection === 'desc'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-white text-purple-600 border border-purple-600 hover:bg-purple-50'
+                  : 'bg-gray-700 text-purple-400 border border-purple-600 hover:bg-gray-600'
               ]"
               title="Sort Descending"
             >
@@ -338,12 +351,13 @@ watch(userId, (newUserId, oldUserId) => {
             </button>
           </div>
           
+          <!-- Page Size -->
           <div class="flex items-center gap-2">
-            <label class="text-sm font-medium text-gray-700">Show:</label>
+            <label class="text-sm font-medium text-purple-300">Show:</label>
             <select 
               :value="pageSize"
               @change="handlePageSizeChange"
-              class="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              class="px-3 py-2 border border-gray-600 bg-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option :value="5">5</option>
               <option :value="10">10</option>
@@ -354,24 +368,24 @@ watch(userId, (newUserId, oldUserId) => {
         </div>
 
         <!-- Loading  -->
-        <div v-if="isLoadingOrders" class="text-center text-gray-600 py-10">
-          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+        <div v-if="isLoadingOrders" class="text-center text-gray-400 py-10">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
           <p class="mt-2">Loading orders...</p>
         </div>
 
-        <div v-else class="itbms-row space-y-6">
+        <div v-else class="itbms-row space-y-6 animate-slide-to-top">
           <div 
             v-for="order in displayOrders" 
             :key="order.id" 
-            class="Itbms-item-row bg-white rounded-lg shadow-md p-6 border border-gray-200"
-            :class="{ 'ring-2 ring-purple-400': !viewedOrderIds.has(order.id) && activeTab === 'NEW' }"
+            class="Itbms-item-row bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6"
+            :class="{ 'ring-2 ring-purple-500': !viewedOrderIds.has(order.id) && activeTab === 'NEW' }"
           >
-            <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-200">
+            <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-700">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
                   {{ (order.seller[0].sellerName || 'U').charAt(0).toUpperCase() }}
                 </div>
-                <span class="itbms-nickname font-semibold text-gray-800">
+                <span class="itbms-nickname font-semibold text-gray-100">
                   {{ order.seller[0].sellerName || 'Unknown' }}
                 </span>
                 <span v-if="!viewedOrderIds.has(order.id)" 
@@ -380,32 +394,32 @@ watch(userId, (newUserId, oldUserId) => {
                 </span>
               </div>
               <div>
-                <div class="text-gray-500 mb-1">Order No:</div>
-                <div class="itbms-order-id font-medium text-gray-800">{{ order.id }}</div>
+                <div class="text-gray-400 text-sm mb-1">Order No:</div>
+                <div class="itbms-order-id font-medium text-purple-300">{{ order.id }}</div>
               </div>
               <div>
-                <div class="text-gray-500 mb-1">Order Date:</div>
-                <div class="itbms-order-date font-medium text-gray-800">
+                <div class="text-gray-400 text-sm mb-1">Order Date:</div>
+                <div class="itbms-order-date font-medium text-gray-200">
                   {{ order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '-' }}
                 </div>
               </div>
               <div>
-                <div class="text-gray-500 mb-1">Payment Date:</div>
-                <div class="itbms-payment-date font-medium text-gray-800">
+                <div class="text-gray-400 text-sm mb-1">Payment Date:</div>
+                <div class="itbms-payment-date font-medium text-gray-200">
                   {{ order.paymentDate ? new Date(order.paymentDate).toLocaleDateString() : '-' }}
                 </div>
               </div>
               <div>
-                <div class="text-gray-500 mb-1">Total:</div>
-                <div class="tbms-total-order-price font-bold text-gray-800">
+                <div class="text-gray-400 text-sm mb-1">Total:</div>
+                <div class="tbms-total-order-price font-bold text-purple-400">
                   ฿{{ calculateOrderTotal(order).toLocaleString() }}
                 </div>
               </div>
               <div>
-                <div class="text-gray-500 mb-1">Status:</div>
+                <div class="text-gray-400 text-sm mb-1">Status:</div>
                 <div :class="[
                   'itbms-order-status font-medium',
-                  order.orderStatus === 'COMPLETED' ? 'text-green-600' : 'text-red-600'
+                  order.orderStatus === 'COMPLETED' ? 'text-emerald-400' : 'text-red-400'
                 ]">
                   {{ order.orderStatus }}
                 </div>
@@ -413,45 +427,45 @@ watch(userId, (newUserId, oldUserId) => {
             </div>
 
             <div class="mb-4 text-sm">
-              <span class="font-medium text-gray-700">Ship To: </span>
-              <span class="Itbms-shipping-address text-gray-600">{{ order.shippingAddress || '-' }}</span>
+              <span class="font-medium text-purple-300">Ship To: </span>
+              <span class="Itbms-shipping-address text-gray-300">{{ order.shippingAddress || '-' }}</span>
             </div>
 
             <div v-if="order.orderNote" class="mb-4 text-sm">
-              <span class="font-medium text-gray-700">Note: </span>
-              <span class="Itbms-order-note text-gray-600">{{ order.orderNote }}</span>
+              <span class="font-medium text-purple-300">Note: </span>
+              <span class="Itbms-order-note text-gray-300">{{ order.orderNote }}</span>
             </div>
 
             <div class="space-y-3">
               <div 
                 v-for="item in order.orderItems" 
                 :key="item.id" 
-                class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg"
+                class="flex items-center gap-4 p-3 bg-gray-700/50 border border-gray-600 rounded-lg"
               >
                 <img
                   :src="getItemImage(item)"
                   :alt="item.saleItem?.model || 'Product'"
-                  class="w-16 h-16 object-cover rounded"
+                  class="w-16 h-16 object-cover rounded border border-gray-600"
                 />
                 <div class="flex-1">
-                  <div class="Itbms-item-description font-medium text-gray-800">
+                  <div class="Itbms-item-description font-medium text-gray-100">
                     <span>{{ item.description }}</span>
                   </div>
                 </div>
-                <div class="text-sm text-gray-600">
-                  Qty: <span class="Itbms-item-quantity font-medium">{{ item.quantity }}</span>
+                <div class="text-sm text-gray-300">
+                  Qty: <span class="Itbms-item-quantity font-medium text-purple-400">{{ item.quantity }}</span>
                 </div>
-                <div class="font-bold text-gray-800 min-w-[120px] text-right">
-                  Price: <span class="itbms-item-total-price">฿{{ (item.price * item.quantity).toLocaleString() }}</span>
+                <div class="font-bold text-gray-100 min-w-[120px] text-right">
+                  Price: <span class="itbms-item-total-price text-purple-400">฿{{ (item.price * item.quantity).toLocaleString() }}</span>
                 </div>
               </div>
             </div>
 
             <!-- View Details Button -->
-            <div class="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+            <div class="mt-4 pt-4 border-t border-gray-700 flex justify-end">
               <button
                 @click="goToOrderDetails(order.id)"
-                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200 font-medium"
+                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition duration-200 font-medium shadow-lg hover:shadow-xl"
               >
                 View Details
               </button>
@@ -459,7 +473,7 @@ watch(userId, (newUserId, oldUserId) => {
           </div>
         </div>
 
-        <div v-if="displayOrders.length === 0" class="text-center py-12 text-gray-500">
+        <div v-if="displayOrders.length === 0" class="text-center py-12 text-gray-400">
           <p class="text-lg">No {{ activeTab === 'NEW' ? 'new' : activeTab === 'CANCELLED' ? 'cancelled' : '' }} orders found.</p>
         </div>
 
@@ -468,8 +482,8 @@ watch(userId, (newUserId, oldUserId) => {
           :class="totalPages > 1 ? 'visible': 'invisible' "
         >
           <button 
-            class="itbms-page-first px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
-              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            class="itbms-page-first px-5 py-2 text-lg rounded-lg border border-gray-700 text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-500 hover:shadow-md transition duration-200"
             @click="goToPage(1)" 
             :disabled="currentPage === 1"
           >
@@ -477,8 +491,8 @@ watch(userId, (newUserId, oldUserId) => {
           </button>
 
           <button 
-            class="itbms-page-prev px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
-            disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            class="itbms-page-prev px-5 py-2 text-lg rounded-lg border border-gray-700 text-white bg-purple-600 
+            disabled:opacity-50 hover:bg-purple-500 hover:shadow-md transition duration-200"
             @click="goToPage(currentPage - 1)"
             :disabled="currentPage === 1"
           >
@@ -493,8 +507,8 @@ watch(userId, (newUserId, oldUserId) => {
             :class="[
               `itbms-page-${page - 1}`,
               {
-                'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md': page === currentPage,
-                'bg-white text-purple-600 border-purple-600 hover:bg-purple-50 hover:shadow-md': page !== currentPage
+                'bg-purple-600 text-white border-gray-700 hover:bg-purple-500 hover:shadow-md': page === currentPage,
+                'bg-gray-800 text-purple-400 border-purple-600 hover:bg-gray-700 hover:shadow-md': page !== currentPage
               },
               totalPages === 1 ? 'invisible' : 'visible'
             ]"
@@ -503,8 +517,8 @@ watch(userId, (newUserId, oldUserId) => {
           </button>
 
           <button 
-            class="itbms-page-next px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
-              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            class="itbms-page-next px-5 py-2 text-lg rounded-lg border border-gray-700 text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-500 hover:shadow-md transition duration-200"
             @click="goToPage(currentPage + 1)" 
             :disabled="currentPage === totalPages"
           >
@@ -512,8 +526,8 @@ watch(userId, (newUserId, oldUserId) => {
           </button>
 
           <button 
-            class="itbms-page-last px-5 py-2 text-lg rounded-lg border text-white bg-purple-600 
-              disabled:opacity-50 hover:bg-purple-700 hover:shadow-md transition duration-200"
+            class="itbms-page-last px-5 py-2 text-lg rounded-lg border border-gray-700 text-white bg-purple-600 
+              disabled:opacity-50 hover:bg-purple-500 hover:shadow-md transition duration-200"
             @click="goToPage(totalPages)"
             :disabled="currentPage === totalPages"
           >
@@ -524,3 +538,73 @@ watch(userId, (newUserId, oldUserId) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInTop {
+  0% {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(-50px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out forwards;
+}
+
+.animate-slide-to-top {
+  animation: slideInTop 0.6s ease-out forwards;
+}
+
+.animate-bounce-in {
+  opacity: 0;
+  animation: bounceIn 0.6s ease-out forwards;
+}
+</style>

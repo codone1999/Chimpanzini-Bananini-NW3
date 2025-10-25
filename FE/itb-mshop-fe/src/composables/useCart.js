@@ -9,6 +9,7 @@ const CART_STORAGE_KEY = 'shopping_cart'
 const cartItems = ref([])
 let isInitialized = false
 let isSyncing = false
+let syncScheduled = false
 
 // Initialize cart from localStorage
 function initCart() {
@@ -92,14 +93,38 @@ export function useCart() {
     return selectedItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   })
 
+  // Helper to check if error is authentication-related
+  function isAuthError(error) {
+    const errorMessage = error.message?.toLowerCase() || ''
+    return errorMessage.includes('authentication') || 
+           errorMessage.includes('token') || 
+           errorMessage.includes('unauthorized') ||
+           error.response?.status === 401
+  }
+  
   async function syncWithBackend(userId) {
-    if (!userId || isSyncing) return
+    // Skip if no userId or already syncing
+    if (!userId || isSyncing) {
+      return
+    }
+    
+    // Check if token exists BEFORE starting sync
+    const token = getAccessToken()
+    if (!token) {
+      // Schedule a retry if not already scheduled
+      if (!syncScheduled) {
+        syncScheduled = true
+        setTimeout(() => {
+          syncScheduled = false
+          syncWithBackend(userId)
+        }, 2000)
+      }
+      return
+    }
     
     isSyncing = true
+    
     try {
-      const token = getAccessToken()
-      if (!token) return
-
       // Get cart from backend using getItemsWithToken
       const backendCart = await getItemsWithToken(
         `${import.meta.env.VITE_APP_URL2}/carts?accountId=${userId}`,
@@ -128,32 +153,55 @@ export function useCart() {
 
         // Add items from localStorage that aren't in backend
         for (const localItem of localCart) {
+          // Validate local item has required fields
+          if (!localItem.id) {
+            console.error('Local cart item missing id:', localItem)
+            continue
+          }
+
           const existsInBackend = mergedCart.find(item => item.id === localItem.id)
+          
           if (!existsInBackend) {
-            // Add to backend
+            // Item is in local cart but not in backend - add it to backend
             try {
+              const payload = {
+                accountId: userId,
+                saleItemId: localItem.id,
+                quantity: localItem.quantity || 1,
+                note: localItem.note || ''
+              }
+              
               const response = await addItemWithToken(
                 `${import.meta.env.VITE_APP_URL2}/carts`,
-                {
-                  accountId: userId,
-                  saleItemId: localItem.id,
-                  quantity: localItem.quantity,
-                  note: localItem.note || ''
-                },
+                payload,
                 token
               )
-              // Add to merged cart with backend cart id
+
+              // Validate response has id
+              if (response && response.id) {
+                mergedCart.push({
+                  ...localItem,
+                  cartId: response.id
+                })
+              } else {
+                mergedCart.push({
+                  ...localItem,
+                  cartId: null
+                })
+              }
+            } catch (error) {
+              // Add to merged cart anyway to preserve local data
               mergedCart.push({
                 ...localItem,
-                cartId: response.id
+                cartId: null
               })
-            } catch (error) {
-              console.error('Failed to sync local item to backend:', error)
             }
           } else {
-            // Merge local cart details with backend data
+            // Item exists in both local and backend
             const backendItem = mergedCart.find(item => item.id === localItem.id)
+            
             if (backendItem) {
+              // Merge local cart details with backend data
               backendItem.image = localItem.image
               backendItem.brandName = localItem.brandName
               backendItem.color = localItem.color
@@ -162,25 +210,63 @@ export function useCart() {
               backendItem.screenSizeInch = localItem.screenSizeInch
               backendItem.sellerId = localItem.sellerId
               backendItem.model = localItem.model || backendItem.model
+              
+              // ⭐ KEY FIX: If local quantity is higher than backend, update backend
+              if (localItem.quantity > backendItem.quantity) {
+                console.log(`Local quantity (${localItem.quantity}) > backend quantity (${backendItem.quantity}), syncing to backend...`)
+                backendItem.quantity = localItem.quantity
+                
+                // Update backend with the higher quantity
+                try {
+                  await editItemWithToken(
+                    `${import.meta.env.VITE_APP_URL2}/carts/${backendItem.cartId}`,
+                    {
+                      accountId: userId,
+                      saleItemId: localItem.id,
+                      quantity: localItem.quantity,
+                      note: localItem.note || ''
+                    },
+                    token
+                  )
+                  console.log('✓ Backend updated with local quantity')
+                } catch (error) {
+                  if (!isAuthError(error)) {
+                    console.error('Failed to update backend quantity:', error.message)
+                  }
+                  // Keep local quantity even if backend update fails
+                }
+              }
             }
           }
         }
 
         cartItems.value = mergedCart
         saveCart()
+        console.log('✓ Cart synced with backend')
       }
     } catch (error) {
-      console.error('Failed to sync with backend:', error)
+      if (isAuthError(error)) {
+        // Schedule another retry for auth errors
+        if (!syncScheduled) {
+          syncScheduled = true
+          setTimeout(() => {
+            syncScheduled = false
+            syncWithBackend(userId)
+          }, 3000)
+        }
+      } else {
+        console.error('Failed to sync with backend:', error.message)
+      }
     } finally {
       isSyncing = false
     }
   }
 
   async function addToBackend(userId, product, quantity, note = '') {
-    try {
-      const token = getAccessToken()
-      if (!token || !userId) return null
+    const token = getAccessToken()
+    if (!token || !userId) return null
 
+    try {
       const response = await addItemWithToken(
         `${import.meta.env.VITE_APP_URL2}/carts`,
         {
@@ -191,20 +277,20 @@ export function useCart() {
         },
         token
       )
-      console.log(response)
-
       return response
     } catch (error) {
-      console.error('Failed to add to backend cart:', error)
+      if (!isAuthError(error)) {
+        console.error('Failed to add to backend cart:', error.message)
+      }
       return null
     }
   }
 
   async function updateBackend(userId, cartId, saleItemId, newQuantity, note = '') {
-    try {
-      const token = getAccessToken()
-      if (!token || !userId || !cartId) return null
+    const token = getAccessToken()
+    if (!token || !userId || !cartId) return null
 
+    try {
       const response = await editItemWithToken(
         `${import.meta.env.VITE_APP_URL2}/carts/${cartId}`,
         {
@@ -215,25 +301,34 @@ export function useCart() {
         },
         token
       )
-
       return response
     } catch (error) {
-      console.error('Failed to update backend cart:', error)
+      if (isAuthError(error)) {
+        // Clear cartId so it will be re-synced properly later
+        const item = cartItems.value.find(i => i.id === saleItemId)
+        if (item) {
+          item.cartId = null
+        }
+      } else {
+        console.error('Failed to update backend cart:', error.message)
+      }
       return null
     }
   }
 
   async function deleteFromBackend(userId, cartId) {
-    try {
-      const token = getAccessToken()
-      if (!token || !userId || !cartId) return
+    const token = getAccessToken()
+    if (!token || !userId || !cartId) return
 
+    try {
       await deleteItemWithToken(
         `${import.meta.env.VITE_APP_URL2}/carts/${cartId}?accountId=${userId}`,
         token
       )
     } catch (error) {
-      console.error('Failed to delete from backend cart:', error)
+      if (!isAuthError(error)) {
+        console.error('Failed to delete from backend cart:', error.message)
+      }
     }
   }
 
@@ -251,8 +346,9 @@ export function useCart() {
         existingItem.quantity = newQuantity
       }
 
+      // Try to update backend silently
       if (userId && existingItem.cartId) {
-        await updateBackend(userId, existingItem.cartId, product.id, existingItem.quantity)
+        await updateBackend(userId, existingItem.cartId, product.id, existingItem.quantity, existingItem.note)
       }
     } else {
       const quantityToAdd = Math.min(quantity, product.quantity)
@@ -316,14 +412,14 @@ export function useCart() {
         item.quantity = item.maxQuantity
         
         if (userId && item.cartId) {
-          await updateBackend(userId, item.cartId, itemId, item.maxQuantity)
+          await updateBackend(userId, item.cartId, itemId, item.maxQuantity, item.note)
         }
         saveCart()
       } else {
         item.quantity = newQuantity
         
         if (userId && item.cartId) {
-          await updateBackend(userId, item.cartId, itemId, newQuantity)
+          await updateBackend(userId, item.cartId, itemId, newQuantity, item.note)
         }
         saveCart()
       }
@@ -339,13 +435,11 @@ export function useCart() {
   }
 
   async function clearCart(userId = null) {
-    // Clear both reactive state and localStorage
     cartItems.value = []
     removeCart()
   }
 
   async function clearSelectedItems(userId = null) {
-    // Just remove selected items locally
     cartItems.value = cartItems.value.filter(item => !item.selected)
     saveCart()
   }

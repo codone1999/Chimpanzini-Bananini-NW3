@@ -351,9 +351,6 @@ watch(canLoadData, async (newValue) => {
       return; 
     }
     
-    // Cart sync is now handled in useUser.js loadCompleteUserData()
-    // No need to sync here anymore
-    
     fetchFilteredSaleItems();
   }
 });
@@ -464,7 +461,7 @@ onMounted(async () => {
         <!-- Right Content -->
         <div class="md:w-4/5 w-full flex flex-col">
           <!-- Filters + Sort + Page Size -->
-          <div class="flex items-center gap-3 bg-[#1A1A1D] p-4 rounded-xl shadow-md mb-4">
+          <div class="flex items-center gap-3 bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg p-4 mb-4 fade-in">
             <!-- Merged Filters Display -->
             <div 
               v-if="filterBrands.length > 0 || filterPrices.length > 0 || filterStorageSizes.length > 0" 
@@ -578,7 +575,7 @@ onMounted(async () => {
               <!-- Out of Stock Overlay -->
               <div
                 v-if="product.quantity === 0"
-                class="absolute inset-0 bg-gray-900/70 backdrop-blur-xs z-10 flex items-center justify-center rounded-2xl"
+                class="absolute inset-0 bg-gray-900/70 z-10 flex items-center justify-center rounded-2xl"
               >
                 <div class="text-center">
                   <p class="text-gray-300 text-xl font-bold tracking-wider">OUT OF STOCK</p>
@@ -624,23 +621,26 @@ onMounted(async () => {
                 
                 <!-- Only show Add button if NOT out of stock -->
                 <button
-                  v-if="product.quantity > 0"
                   @click.stop="addToCart(product)"
                   :disabled="(userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
                   :class="[
                     'itbms-add-to-cart-button px-3 py-1.5 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
-                    ((userId && !canAddToCart(product)) || (userId && userId === product.sellerId))
+                    ((userId && !canAddToCart(product)) || (userId && userId === product.sellerId) || (product.quantity <= 0))
                       ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                       : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
                   ]"
                 >
-                  <template v-if="!canAddToCart(product)">
+                  <!-- Out of Stock -->
+                  <template v-if="product.quantity <= 0">
+                    <span class="material-symbols-outlined">shopping_cart_off</span>
+                  </template>
+                  <!-- [Max] Add to cart -->
+                  <template v-else-if="!canAddToCart(product)">
                     Max
                   </template>
+                  <!-- Add To Cart -->
                   <template v-else>
-                    <span class="material-symbols-outlined align-middle">
-                    add_shopping_cart
-                    </span>
+                    <span class="material-symbols-outlined align-middle">add_shopping_cart</span>
                   </template>
                 </button>
               </div>
@@ -674,5 +674,14 @@ onMounted(async () => {
 .animate-product {
   animation: fadeScale 0.4s ease forwards;
   animation-delay: var(--delay);
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
