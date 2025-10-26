@@ -121,7 +121,6 @@ export function useUser() {
     // Clear user data
     currentUser.value = null
     apiUserData.value = null
-    isInitialized.value = false
     initPromise = null
     
     // Clear shipping address

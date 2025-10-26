@@ -664,8 +664,9 @@ onMounted(async () => {
           </div>
         </div>
         <!-- Pagination -->
-        <div class="flex justify-center w-full">
+        <div class="flex justify-center w-full mt-12">
           <Pagination
+            v-if="products.length > 0"
             :current-page="currentPage"
             :total-pages="totalPages"
             :visible-pages="visiblePages"

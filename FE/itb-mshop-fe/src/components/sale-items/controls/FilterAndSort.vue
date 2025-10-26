@@ -133,9 +133,9 @@ function addCustomPriceRange() {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row justify-between gap-4 items-start w-full mb-8
-  bg-gray-900/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-800">
- 
+  <div 
+    class="flex flex-col md:flex-row justify-between gap-4 items-center w-full mb-8
+    bg-gray-900/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-800">
     <!-- Filter Section (Expandable Left Side) -->
     <div class="flex items-center gap-3 flex-grow w-full">
  
@@ -326,13 +326,12 @@ function addCustomPriceRange() {
           </button>
         </div>
       </div>
-     
     </div>
  
     <!-- Sort + Page Size (Right Side) -->
     <div class="flex md:flex-nowrap gap-2 items-center w-full md:w-auto">
       <div class="flex items-center gap-2 text-base">
-        <label class="font-medium text-purple-400 text-shadow-white whitespace-nowrap">Show:</label>
+        <label class="font-medium text-purple-400 text-shadow-white whitespace-nowrap">Show: </label>
         <select
           :value="props.pageSize"
           @change="handlePageSizeChange"
@@ -348,7 +347,7 @@ function addCustomPriceRange() {
       <button
         class="itbms-brand-none px-3 py-2 text-2xl rounded transition"
         :class="props.sortMode === 'none'
-          ? 'bg-gray-100 text-black border border-gray-300'
+          ? 'bg-purple-500/30 text-gray-500'
           : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
         @click="props.onChangeSort('none')"
         title="No Sort"
@@ -360,7 +359,7 @@ function addCustomPriceRange() {
       <button
         class="itbms-brand-asc flex px-3 py-3 text-2xl rounded transition"
         :class="props.sortMode === 'asc'
-          ? 'bg-white text-black border border-gray-300'
+          ? 'bg-purple-500/30 text-gray-500'
           : 'bg-[#7e5bef] text-white'"
         @click="props.onChangeSort('asc')"
         title="Sort Ascending"
@@ -373,7 +372,7 @@ function addCustomPriceRange() {
       <button
         class="itbms-brand-desc flex px-3 py-3 text-2xl rounded transition"
         :class="props.sortMode === 'desc'
-          ? 'bg-white text-black border border-gray-300'
+          ? 'bg-purple-500/30 text-gray-500'
           : 'bg-[#7e5bef] text-white hover:bg-[#6847d5]'"
         @click="props.onChangeSort('desc')"
         title="Sort Descending"
