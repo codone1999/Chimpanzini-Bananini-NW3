@@ -19,6 +19,7 @@ const {
   userRole,
   isLoading: userIsLoading, 
   hasCompleteUserData, 
+  waitForInit
 } = useUser();
 
 // Session Keys for Sale Items
@@ -396,6 +397,13 @@ onMounted(async () => {
   // Load session data first
   loadSession();
 
+  await waitForInit();
+
+  if (userRole.value !== "SELLER") {
+    router.push({ name: 'ListGallery'})
+    return
+  }
+
   // Handle query alerts
   handleQueryAlerts(
     {
@@ -409,7 +417,7 @@ onMounted(async () => {
   // Load brands (this doesn't require user data)
   await fetchBrands();
 
-  fetchFilteredSaleItems()
+  await fetchFilteredSaleItems();
 });
 </script>
 
