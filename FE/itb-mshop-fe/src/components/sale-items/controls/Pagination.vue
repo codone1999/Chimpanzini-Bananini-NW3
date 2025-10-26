@@ -21,7 +21,7 @@ const props = defineProps({
 
 <template>
   <div 
-    class="flex justify-center items-center gap-2 flex-wrap px-3 py-2 mt-12 bg-gray-800 rounded-xl visible"
+    class="flex justify-center items-center gap-2 flex-wrap px-3 py-2 bg-gray-800 rounded-xl visible"
     :class="props.totalPages > 1 ? 'visible': 'invisible' "
   >
     <!-- First Page -->

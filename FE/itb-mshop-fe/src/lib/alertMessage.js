@@ -1,9 +1,4 @@
 // lib/alertMessage.js
-import { useRoute, useRouter } from 'vue-router'
-
-const route = useRoute()
-const router = useRouter()
-
 function handleQueryAlerts(route, router, messages, showMessage, getMessage) {
   for (const key in messages) {
     if (route.query[key] === 'true') {

@@ -15,7 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 
-const { userId, isLoading: userLoading, loadCompleteUserData } = useUser()
+const { userId, isLoading: userLoading, waitForInit } = useUser()
 const { addToCart: addItemToCart, cartItems } = useCart()
 
 const url = `${import.meta.env.VITE_APP_URL}/sale-items`
@@ -179,6 +179,8 @@ async function loadImages() {
 
 onMounted(async () => {
   handleQueryAlerts(
+    route,
+    router,
    { edited: 'The sale item has been updated.'},
    showSuccessMessage,
    successMessage
@@ -186,9 +188,7 @@ onMounted(async () => {
   
   try {
     // Ensure user data is loaded first
-    if (userLoading.value) {
-      await loadCompleteUserData()
-    }
+    await waitForInit()
 
     const item = await getItemById(url2, id)
     if (typeof item === 'number') {
@@ -262,7 +262,7 @@ onMounted(async () => {
           <!-- Image Section -->
           <div class="flex flex-col items-center space-y-5">
             <img
-              :src="phoneImg"
+              :src="images[0] ?? phoneImg"
               class="w-full object-cover bg-gray-700 rounded-lg shadow-md border border-gray-700"
             />
             <div class="flex space-x-3 items-center justify-center">

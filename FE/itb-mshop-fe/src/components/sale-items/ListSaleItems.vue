@@ -1,7 +1,7 @@
 //ListSaleItems.vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getSellerItemsByToken, getItems, deleteItemByIdAndToken } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
 import { getAccessToken } from "@/lib/authUtils";
@@ -12,6 +12,7 @@ import Search from "./controls/Search.vue";
 import ShoppingCart from "./controls/ShoppingCart.vue";
 
 const router = useRouter()
+const route = useRoute()
 
 // Get user data from composable
 const { 
@@ -406,6 +407,8 @@ onMounted(async () => {
 
   // Handle query alerts
   handleQueryAlerts(
+    route,
+    router,
     {
       added: 'The sale item has been successfully added.',
       edited: 'The sale item has been edited.',    
@@ -446,15 +449,14 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Success Message -->
-      <transition name="fade">
-        <div 
-          v-if="showSuccessMessage" 
-          class="itbms-message mb-6 p-4 text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm text-sm font-medium"
-        >
-          {{ successMessage }}
-        </div>
-      </transition>
+      <!-- Alert Message -->
+      <div
+        v-if="showSuccessMessage"
+        class="itbms-message mb-6 p-4 text-sm font-medium text-green-800 bg-green-100 border border-green-300 rounded-lg shadow-sm"
+        role="alert"
+      >
+        {{ successMessage }}
+      </div>
 
       <!-- Filter and Sort Component -->
       <FilterAndSort
@@ -559,13 +561,15 @@ onMounted(async () => {
       </div>
 
       <!-- Pagination -->
-      <Pagination
-        v-if="products.length > 0"
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :visible-pages="visiblePages"
-        :go-to-page="goToPage"
-      />
+      <div class="flex justify-center w-full">
+        <Pagination
+          v-if="products.length > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :visible-pages="visiblePages"
+          :go-to-page="goToPage"
+        />
+      </div>
     </template>
 
     <!-- Delete Confirmation Modal -->
