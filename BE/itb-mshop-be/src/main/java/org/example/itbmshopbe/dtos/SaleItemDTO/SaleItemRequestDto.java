@@ -13,9 +13,7 @@ public class SaleItemRequestDto {
     @NotBlank(message = "Model is required")
     @Size(max = 60, message = "Model must be less than 60 characters")
     private String model;
-
-    @Valid
-    @NotNull(message = "Brand information is required")
+    
     private BrandDto brand;
 
     @Size(max = 60, message = "Brand name must be less than 60 characters")
