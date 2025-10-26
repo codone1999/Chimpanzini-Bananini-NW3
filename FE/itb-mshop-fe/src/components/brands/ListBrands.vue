@@ -1,5 +1,5 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from "vue";
 import { getItems, deleteItemById } from "@/lib/fetchUtils";
 import { handleQueryAlerts, handleDeleteAlerts } from "@/lib/alertMessage";
@@ -7,6 +7,7 @@ import DeleteBrands from './DeleteBrands.vue';
 
 const url = `${import.meta.env.VITE_APP_URL}/brands`
 const router = useRouter()
+const route = useRoute()
 
 const showModal = ref(false)
 
@@ -43,12 +44,12 @@ async function handleDelete() {
     if (item === 400 || item === 500 || item === 404) {
       showModal.value = false
       isCanDelete.value = false
-      handleDeleteAlerts(showSuccessMessage, successMessage, 'An error has occurred, the brand does not exist.', brands, url)
+      handleDeleteAlerts(router, showSuccessMessage, successMessage, 'An error has occurred, the brand does not exist.', brands, url)
       return
     } else if (item && item.noOfSaleItems > 0) {
       showModal.value = false
       isCanDelete.value = false
-      handleDeleteAlerts(showSuccessMessage, successMessage, 
+      handleDeleteAlerts(router, showSuccessMessage, successMessage, 
         `Delete ${selectedBrand.value} is not allowed. There are sale items with ${selectedBrand.value} brand.`, brands, url)
       return
     }
@@ -57,11 +58,13 @@ async function handleDelete() {
   }
 
   showModal.value = false
-  handleDeleteAlerts(showSuccessMessage, successMessage, 'The brand has been deleted.', brands, url)
+  handleDeleteAlerts(router, showSuccessMessage, successMessage, 'The brand has been deleted.', brands, url)
 }
 
 onMounted(async () => {
   handleQueryAlerts(
+    route,
+    router,
     {
       added: 'The brand has been added.',
       failed_add: 'The brand could not be added.',

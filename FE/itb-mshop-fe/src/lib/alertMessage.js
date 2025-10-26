@@ -1,9 +1,10 @@
+// lib/alertMessage.js
 import { useRoute, useRouter } from 'vue-router'
 
-function handleQueryAlerts(messages, showMessage, getMessage) {
-  const route = useRoute()
-  const router = useRouter()
+const route = useRoute()
+const router = useRouter()
 
+function handleQueryAlerts(route, router, messages, showMessage, getMessage) {
   for (const key in messages) {
     if (route.query[key] === 'true') {
       showMessage.value = true
@@ -23,7 +24,7 @@ function handleQueryAlerts(messages, showMessage, getMessage) {
   }
 }
 
-async function handleDeleteAlerts(showMessage, getMessage, setMessage){
+async function handleDeleteAlerts(router, showMessage, getMessage, setMessage){
   showMessage.value = true
   getMessage.value = setMessage
 

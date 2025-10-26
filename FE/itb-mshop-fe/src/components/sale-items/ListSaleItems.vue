@@ -341,9 +341,9 @@ async function handleDelete() {
     const item = await deleteItemByIdAndToken(baseUrl, selectedProductId.value, getAccessToken());
     
     if (item === 204) {
-      handleDeleteAlerts(showSuccessMessage, successMessage, 'The sale item has been deleted.');
+      handleDeleteAlerts(router, showSuccessMessage, successMessage, 'The sale item has been deleted.');
     } else {
-      handleDeleteAlerts(showSuccessMessage, successMessage, 'The requested sale item does not exist.');
+      handleDeleteAlerts(router, showSuccessMessage, successMessage, 'The requested sale item does not exist.');
     }
   } catch (error) {
     console.error('Failed to delete product:', error);

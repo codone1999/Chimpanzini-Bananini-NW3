@@ -144,7 +144,6 @@ export async function ensureValidToken() {
     return null
   }
   
-  router.go(0)
   return newToken
 }
 

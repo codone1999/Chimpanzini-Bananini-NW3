@@ -21,7 +21,7 @@ const loadCompleteUserData = async () => {
     if (!token) {
       currentUser.value = null
       apiUserData.value = null
-      return
+      return // Will be handled in finally block
     }
 
     const tokenData = decodeJWT(token)
@@ -29,7 +29,7 @@ const loadCompleteUserData = async () => {
       console.warn('Invalid token data')
       currentUser.value = null
       apiUserData.value = null
-      return
+      return // Will be handled in finally block
     }
 
     const data = await getProfileByIdAndToken(
@@ -76,13 +76,16 @@ const initializeUser = async () => {
     if (isAuthenticated()) {
       await loadCompleteUserData()
     } else {
+      // Not authenticated - mark as initialized immediately
       isInitialized.value = true
+      isLoading.value = false
     }
   })()
   
   return initPromise
 }
 
+// Initialize on module load
 if (!isInitialized.value) {
   initializeUser()
 }
@@ -111,9 +114,9 @@ export function useUser() {
   }
 
   const logout = async () => {
-    // Clear cart from localStorage only - keep backend data
+    // Clear cart from localStorage only
     const { clearCart } = useCart()
-    clearCart() // Don't pass userId - this will only clear local storage
+    clearCart()
     
     // Clear user data
     currentUser.value = null
@@ -121,11 +124,11 @@ export function useUser() {
     isInitialized.value = false
     initPromise = null
     
-    // Clear shipping address from local storage
+    // Clear shipping address
     const { clearShippingAddress } = useShippingAddress()
     clearShippingAddress()
     
-    // Logout from server (clears tokens)
+    // Logout from server
     await logoutFromServer()
   }
 

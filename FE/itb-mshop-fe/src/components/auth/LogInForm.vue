@@ -1,4 +1,3 @@
-// LogInForm.vue
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -8,7 +7,7 @@ import { useUser } from '@/composables/useUser'
 
 const router = useRouter()
 
-const { userRole, loadCompleteUserData } = useUser()
+const { userRole, refreshUser, waitForInit } = useUser()
 
 // form state
 const form = ref({
@@ -79,7 +78,7 @@ async function handleSubmit() {
     successMessage.value = 'You are already logged in!'
     isRedirecting.value = true
     setTimeout(() => {
-      router.push({ name: 'ListGallery' }).then( () => router.go(0))
+      router.push({ name: 'ListGallery' })
     }, 1500)
     return
   }
@@ -117,24 +116,22 @@ async function handleSubmit() {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    // Store tokens using AuthUtils
     setAuthTokens(result.access_token, result.refresh_token)
 
-    await loadCompleteUserData()
+    await refreshUser()
 
     successMessage.value = 'Login successful! Redirecting...'
     isRedirecting.value = true
 
-    if (userRole.value === "SELLER"){
-      setTimeout(() => {
+    setTimeout(() => {
+      resetForm()
+      
+      if (userRole.value === "SELLER") {
         router.push({ name: 'ListSaleItems' })
-      }, 1500)
-    } else {
-      setTimeout(() => {
-        resetForm()
-        router.push({name: 'ListGallery'}).then( () => router.go(0) )
-      }, 1500)
-    }
+      } else {
+        router.push({ name: 'ListGallery' })
+      }
+    }, 1500)
 
   } catch (error) {
     console.error('Login failed:', error)
@@ -157,11 +154,14 @@ async function handleSubmit() {
 }
 
 onMounted(async () => {
-  if(getAccessToken()){
-    if (userRole.value === "BUYER")
-      router.push({ name: 'ListGallery'})
-    else 
-      router.push({ name: 'ListSaleItems'})
+  await waitForInit()
+  
+  if (getAccessToken()) {
+    if (userRole.value === "BUYER") {
+      router.push({ name: 'ListGallery' })
+    } else {
+      router.push({ name: 'ListSaleItems' })
+    }
   }
 })
 </script>
@@ -323,5 +323,4 @@ onMounted(async () => {
 .animate-pop-in {
   animation: popIn 0.5s ease-out forwards;
 }
-
 </style>

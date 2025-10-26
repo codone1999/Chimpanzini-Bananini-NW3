@@ -1,7 +1,7 @@
 //ListGallery.vue
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { getItems, getSellerItemsByToken } from "@/lib/fetchUtils";
 import { handleQueryAlerts } from "@/lib/alertMessage";
 import { useUser } from "@/composables/useUser";
@@ -15,6 +15,7 @@ import Pagination from "./controls/Pagination.vue";
 import ShoppingCart from "./controls/ShoppingCart.vue";
 
 const router = useRouter()
+const route = useRoute()
 
 // Session Keys
 const SESSION_KEYS = {
@@ -54,12 +55,12 @@ const successMessage = ref("");
 
 const isLoadingData = ref(false);
 
-const { userId, userRole, isLoading } = useUser();
+const { userId, userRole, isLoading, waitForInit, isInitialized } = useUser();
 const { addToCart: addItemToCart, cartItems, syncWithBackend } = useCart()
 
-// Computed property to determine when we can load data
 const canLoadData = computed(() => {
-  return !isLoading.value || !getAccessToken();
+  // Can load data when user initialization is complete
+  return isInitialized.value;
 });
 
 // Function to get current cart quantity for a product
@@ -137,10 +138,6 @@ function saveSession() {
 
 // ------------------- Data Fetching ------------------//
 async function fetchFilteredSaleItems() {
-  if (isLoading.value) {
-    return;
-  }
-
   if (currentPage.value < 1) currentPage.value = 1;
 
   isLoadingData.value = true;
@@ -384,10 +381,25 @@ watch(storageSizeToAdd, (value) => {
   }
 });
 
+// Watch for userId changes (login/logout) and refetch items
+watch(userId, async (newUserId, oldUserId) => {
+  if (newUserId !== oldUserId) {
+    await fetchFilteredSaleItems();
+    
+    if (newUserId) {
+      await syncWithBackend(newUserId);
+    }
+  }
+});
+
 onMounted(async () => {
   loadSession();
 
+  await waitForInit();
+
   handleQueryAlerts(
+    route,
+    router,
     {
       added: "The sale item has been successfully added.",
       deleted: "The sale item has been deleted.",
@@ -399,9 +411,11 @@ onMounted(async () => {
 
   await fetchBrands();
 
-  fetchFilteredSaleItems();
+  await fetchFilteredSaleItems();
 
-  syncWithBackend(userId.value)
+  if (userId.value) {
+    await syncWithBackend(userId.value);
+  }
 });
 
 </script>
@@ -413,13 +427,14 @@ onMounted(async () => {
     </h2>
 
     <!-- Search & Cart -->
-    <div class="flex mb-10 relative max-w-xl mx-auto">
-      <Search
-        v-model="search"
-        @search="handleSearch"
-      />
-      <div class="absolute -right-16">
-        <ShoppingCart />
+    <div class="flex items-center justify-center sm:gap-3 mb-10 px-3 sm:px-4">
+      <div class="flex items-center gap-2 sm:gap-7 w-full max-w-2xl">
+        <div class="flex-1 min-w-0">
+          <Search v-model="search" @search="handleSearch" />
+        </div>
+        <div class="flex-shrink-0">
+          <ShoppingCart />
+        </div>
       </div>
     </div>
 
@@ -439,214 +454,217 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <!-- Layout หลัก: Filter (ซ้าย) + เนื้อหา (ขวา) -->
-      <div class="flex flex-col md:flex-row">
-        <!-- Left Content -->
-        <div class="md:w-1/5 w-full">
-          <Filter
-            :brands="brands"
-            :filter-brands="filterBrands"
-            :on-toggle-brand="toggleBrand"
-            :on-clear-brands="clearAllFilters"
-
-            :sale-items="products"
-
-            :filter-prices="filterPrices"
-            :on-toggle-price="togglePrice"
-
-            :filter-storage-sizes="filterStorageSizes"
-            :on-toggle-storage-size="toggleStorageSize"
-          />
-        </div>
-        <!-- Right Content -->
-        <div class="md:w-4/5 w-full flex flex-col">
-          <!-- Filters + Sort + Page Size -->
-          <div class="flex items-center gap-3 bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg p-4 mb-4 fade-in">
-            <!-- Merged Filters Display -->
-            <div 
-              v-if="filterBrands.length > 0 || filterPrices.length > 0 || filterStorageSizes.length > 0" 
-              class="flex flex-wrap items-center gap-2"
-            >
-              
-              <!-- Brand Filters -->
-              <div
-                v-for="brand in filterBrands"
-                :key="`brand-${brand}`"
-                class="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
-              >
-                {{ brand }}
-                <button
-                  @click.stop="toggleBrand(brand)"
-                  class="hover:text-red-300 transition -mb-0.5"
-                >
-                  <span class="material-icons text-sm">close</span>
-                </button>
-              </div>
-              
-              <!-- Price Filters -->
-              <div
-                v-for="price in filterPrices"
-                :key="`price-${price}`"
-                class="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
-              >
-                ฿{{ price }}
-                <button
-                  @click.stop="togglePrice(price)"
-                  class="hover:text-red-300 transition -mb-0.5"
-                >
-                  <span class="material-icons text-sm">close</span>
-                </button>
-              </div>
-              
-              <!-- Storage Filters -->
-              <div
-                v-for="storage in filterStorageSizes"
-                :key="`storage-${storage}`"
-                class="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
-              >
-                {{ storage === "Not Specify" ? "Not Specify" : (storage >= 1 && storage < 10 ? `${storage}TB` : `${storage}GB`) }}
-                <button
-                  @click.stop="toggleStorageSize(storage)"
-                  class="hover:text-red-300 transition -mb-0.5"
-                >
-                  <span class="material-icons text-sm">close</span>
-                </button>
-              </div>
-              
-            </div>
-
-            <!-- Page Size & Sort -->
-            <Sort
-              :page-size="pageSize"
-              :sort-mode="sortMode"
-              @update:pageSize="pageSize = $event"
-              @update:sortMode="changeSort($event)"
+        <!-- Filter -Left Side & Content - Right Side -->
+        <div class="flex flex-col md:flex-row">
+          <!-- Left Content -->
+          <div class="md:w-1/5 w-full">
+            <Filter
+              :brands="brands"
+              :filter-brands="filterBrands"
+              :on-toggle-brand="toggleBrand"
+              :on-clear-brands="clearAllFilters"
+  
+              :sale-items="products"
+  
+              :filter-prices="filterPrices"
+              :on-toggle-price="togglePrice"
+  
+              :filter-storage-sizes="filterStorageSizes"
+              :on-toggle-storage-size="toggleStorageSize"
             />
           </div>
-
-          <!-- Add Items Button (ONLY SELLER) -->
-          <div v-if="userRole === 'SELLER'" class="mb-4 text-center">
-            <router-link
-              :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
-              class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
-              hover:opacity-90 text-white px-5 py-3 rounded-xl text-base font-semibold shadow-lg 
-              transition duration-300"
-            >
-              <div class="flex justify-between gap-1">
-                <span class="material-icons">add</span>
-                Add Item
-              </div>
-            </router-link>
-          </div>
-
-          <!-- Loading -->
-          <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
-            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
-            <p class="mt-2">Loading products...</p>
-          </div>
-
-          <!-- No Sale Item -->
-          <div
-            v-else-if="products.length === 0"
-            class="text-center text-gray-500 text-lg py-10"
-          >
-            no sale item
-          </div>
-
-          <!-- List Sale Items -->
-          <div v-else class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-            <div
-              v-for="(product, index) in products"
-              :key="product.id"
-              class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
-              hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
-              transition duration-300 flex flex-col cursor-pointer animate-product relative"
-              :style="{ '--delay': `${index * 50}ms` }"
-            >
-              <!-- "My Item" Icon - Top Right -->
-              <div
-                v-if="userId && userId === product.sellerId"
-                class="absolute top-1.5 right-1.5 z-15 bg-gradient-to-r from-yellow-400 to-orange-500 
-                text-gray-900 p-1 rounded-lg text-xs font-bold shadow-lg 
-                flex items-center gap-1"
+          <!-- Right Content -->
+          <div class="md:w-4/5 w-full flex flex-col">
+            <!-- Filters + Sort + Page Size -->
+            <div class="flex items-center gap-3 bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg p-4 mb-4 fade-in">
+              <!-- Merged Filters Display -->
+              <div 
+                v-if="filterBrands.length > 0 || filterPrices.length > 0 || filterStorageSizes.length > 0" 
+                class="flex flex-wrap items-center gap-2"
               >
-                <span class="material-symbols-outlined">person_edit</span>
-              </div>
-              <!-- Out of Stock Overlay -->
-              <div
-                v-if="product.quantity === 0"
-                class="absolute inset-0 bg-gray-900/70 z-10 flex items-center justify-center rounded-2xl"
-              >
-                <div class="text-center">
-                  <p class="text-gray-300 text-xl font-bold tracking-wider">OUT OF STOCK</p>
+                
+                <!-- Brand Filters -->
+                <div
+                  v-for="brand in filterBrands"
+                  :key="`brand-${brand}`"
+                  class="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
+                >
+                  {{ brand }}
+                  <button
+                    @click.stop="toggleBrand(brand)"
+                    class="hover:text-red-300 transition -mb-0.5"
+                  >
+                    <span class="material-icons text-sm">close</span>
+                  </button>
                 </div>
+                
+                <!-- Price Filters -->
+                <div
+                  v-for="price in filterPrices"
+                  :key="`price-${price}`"
+                  class="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
+                >
+                  ฿{{ price }}
+                  <button
+                    @click.stop="togglePrice(price)"
+                    class="hover:text-red-300 transition -mb-0.5"
+                  >
+                    <span class="material-icons text-sm">close</span>
+                  </button>
+                </div>
+                
+                <!-- Storage Filters -->
+                <div
+                  v-for="storage in filterStorageSizes"
+                  :key="`storage-${storage}`"
+                  class="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md"
+                >
+                  {{ storage === "Not Specify" ? "Not Specify" : (storage >= 1 && storage < 10 ? `${storage}TB` : `${storage}GB`) }}
+                  <button
+                    @click.stop="toggleStorageSize(storage)"
+                    class="hover:text-red-300 transition -mb-0.5"
+                  >
+                    <span class="material-icons text-sm">close</span>
+                  </button>
+                </div>
+                
               </div>
-
-              <!-- Main Data -->
+  
+              <!-- Page Size & Sort -->
+              <Sort
+                :page-size="pageSize"
+                :sort-mode="sortMode"
+                @update:pageSize="pageSize = $event"
+                @update:sortMode="changeSort($event)"
+              />
+            </div>
+  
+            <!-- Add Items Button (ONLY SELLER) -->
+            <div v-if="userRole === 'SELLER'" class="mb-4 text-center">
               <router-link
-                :to="{ name: 'ListDetails', params: { id: product.id } }"
-                class="flex flex-col flex-grow"
-                :class="{ 'pointer-events-none': product.quantity === 0 }"
+                :to="{ name: 'AddItem', query: { from: 'Gallery' } }"
+                class="itbms-sale-item-add inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 
+                hover:opacity-90 text-white px-5 py-3 rounded-xl text-base font-semibold shadow-lg 
+                transition duration-300"
               >
-                <!-- Image -->
-                <img
-                  :src="phoneImg"
-                  :alt="product.model"
-                  class="w-full h-56 object-contain bg-gray-800"
-                />
-
-                <!-- Content -->
-                <div class="pt-3 px-5 flex flex-col flex-grow text-center">
-                  <h3 class="itbms-brand text-xl md:text-base font-bold text-[#7e5bef] uppercase tracking-wide mb-1">
-                    {{ product.brandName }}
-                  </h3>
-
-                  <p class="text-white font-semibold text-base line-clamp-2">
-                    <span class="itbms-model">{{ product.model }}</span> <br>
-                    <span class="itbms-ramGb text-gray-400 font-normal">{{ product.ramGb ?? '-' }}</span>
-                    <span class="itbms-ramGb-unit text-gray-400 font-normal">GB</span> /
-                    <span class="itbms-storageGb text-gray-400 font-normal">{{ product.storageGb ?? '-' }}</span>
-                    <span class="itbms-storageGb-unit text-gray-400 font-normal">GB</span>
-                  </p>
+                <div class="flex justify-between gap-1">
+                  <span class="material-icons">add</span>
+                  Add Item
                 </div>
               </router-link>
-              <hr class="w-4/5 mx-auto mt-3 pb-3 text-gray-600/40 border-t-2">
-
-              <!-- Price & Add To Cart Button -->
-              <div class="px-6 pb-4 flex items-center justify-between">
-                <!-- Price -->
-                <span class="text-white font-extrabold text-xl">
-                  ฿ <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
-                </span>
-                
-                <!-- Only show Add button if NOT out of stock -->
-                <button
-                  @click.stop="addToCart(product)"
-                  :disabled="(userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
-                  :class="[
-                    'itbms-add-to-cart-button px-3 py-1.5 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
-                    ((userId && !canAddToCart(product)) || (userId && userId === product.sellerId) || (product.quantity <= 0))
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
-                  ]"
+            </div>
+  
+            <!-- Loading -->
+            <div v-if="isLoadingData" class="text-center text-gray-400 py-10">
+              <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+              <p class="mt-2">Loading products...</p>
+            </div>
+  
+            <!-- No Sale Item -->
+            <div
+              v-else-if="products.length === 0"
+              class="text-center text-gray-500 text-lg py-10"
+            >
+              no sale item
+            </div>
+  
+            <!-- List Sale Items -->
+            <div v-else class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+              <div
+                v-for="(product, index) in products"
+                :key="product.id"
+                class="itbms-row bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-md
+                hover:shadow-purple-500/30 hover:border-purple-500/60 hover:scale-[1.02]
+                transition duration-300 flex flex-col cursor-pointer animate-product relative"
+                :style="{ '--delay': `${index * 50}ms` }"
+              >
+                <!-- "My Item" Icon - Top Right -->
+                <div
+                  v-if="userId && userId === product.sellerId"
+                  class="absolute top-1.5 right-1.5 z-15 bg-gradient-to-r from-yellow-400 to-orange-500 
+                  text-gray-900 p-1 rounded-lg text-xs font-bold shadow-lg 
+                  flex items-center gap-1"
                 >
-                  <!-- Out of Stock -->
-                  <template v-if="product.quantity <= 0">
-                    <span class="material-symbols-outlined">shopping_cart_off</span>
-                  </template>
-                  <!-- [Max] Add to cart -->
-                  <template v-else-if="!canAddToCart(product)">
-                    Max
-                  </template>
-                  <!-- Add To Cart -->
-                  <template v-else>
-                    <span class="material-symbols-outlined align-middle">add_shopping_cart</span>
-                  </template>
-                </button>
+                  <span class="material-symbols-outlined">person_edit</span>
+                </div>
+                <!-- Out of Stock Overlay -->
+                <div
+                  v-if="product.quantity === 0"
+                  class="absolute inset-0 bg-gray-900/70 z-10 flex items-center justify-center rounded-2xl"
+                >
+                  <div class="text-center">
+                    <p class="text-gray-300 text-xl font-bold tracking-wider">OUT OF STOCK</p>
+                  </div>
+                </div>
+  
+                <!-- Main Data -->
+                <router-link
+                  :to="{ name: 'ListDetails', params: { id: product.id } }"
+                  class="flex flex-col flex-grow"
+                  :class="{ 'pointer-events-none': product.quantity === 0 }"
+                >
+                  <!-- Image -->
+                  <img
+                    :src="phoneImg"
+                    :alt="product.model"
+                    class="w-full h-56 object-contain bg-gray-800"
+                  />
+  
+                  <!-- Content -->
+                  <div class="pt-3 px-5 flex flex-col flex-grow text-center">
+                    <h3 class="itbms-brand text-xl md:text-base font-bold text-[#7e5bef] uppercase tracking-wide mb-1">
+                      {{ product.brandName }}
+                    </h3>
+  
+                    <p class="text-white font-semibold text-base line-clamp-2">
+                      <span class="itbms-model">{{ product.model }}</span> <br>
+                      <span class="itbms-ramGb text-gray-400 font-normal">{{ product.ramGb ?? '-' }}</span>
+                      <span class="itbms-ramGb-unit text-gray-400 font-normal">GB</span> /
+                      <span class="itbms-storageGb text-gray-400 font-normal">{{ product.storageGb ?? '-' }}</span>
+                      <span class="itbms-storageGb-unit text-gray-400 font-normal">GB</span>
+                    </p>
+                  </div>
+                </router-link>
+                <hr class="w-4/5 mx-auto mt-3 pb-3 text-gray-600/40 border-t-2">
+  
+                <!-- Price & Add To Cart Button -->
+                <div class="px-6 pb-4 flex items-center justify-between">
+                  <!-- Price -->
+                  <span class="text-white font-extrabold text-xl">
+                    ฿ <span class="itbms-price">{{ product.price.toLocaleString() }}</span>
+                  </span>
+                  
+                  <!-- Only show Add button if NOT out of stock -->
+                  <button
+                    @click.stop="addToCart(product)"
+                    :disabled="(userId && !canAddToCart(product)) || (userId && userId === product.sellerId)"
+                    :class="[
+                      'itbms-add-to-cart-button px-3 py-1.5 rounded-lg font-bold shadow-inner transition whitespace-nowrap',
+                      ((userId && !canAddToCart(product)) || (userId && userId === product.sellerId) || (product.quantity <= 0))
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-purple-900/40'
+                    ]"
+                  >
+                    <!-- Out of Stock -->
+                    <template v-if="product.quantity <= 0">
+                      <span class="material-symbols-outlined">shopping_cart_off</span>
+                    </template>
+                    <!-- [Max] Add to cart -->
+                    <template v-else-if="!canAddToCart(product)">
+                      Max
+                    </template>
+                    <!-- Add To Cart -->
+                    <template v-else>
+                      <span class="material-symbols-outlined align-middle">add_shopping_cart</span>
+                    </template>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-
+        </div>
+        <!-- Pagination -->
+        <div class="flex justify-center w-full">
           <Pagination
             :current-page="currentPage"
             :total-pages="totalPages"
@@ -654,7 +672,6 @@ onMounted(async () => {
             :go-to-page="goToPage"
           />
         </div>
-      </div>
     </template>
   </section>
 </template>

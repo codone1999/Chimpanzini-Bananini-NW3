@@ -1,6 +1,4 @@
-//Pagination.vue
 <script setup>
-
 const props = defineProps({
   currentPage: {
     type: Number,
@@ -19,18 +17,19 @@ const props = defineProps({
     required: true
   }
 })
-
 </script>
 
 <template>
   <div 
-    class="flex justify-center items-center mt-10 gap-2 flex-wrap"
+    class="flex justify-center items-center gap-2 flex-wrap px-3 py-2 mt-12 bg-gray-800 rounded-xl visible"
     :class="props.totalPages > 1 ? 'visible': 'invisible' "
   >
     <!-- First Page -->
     <button 
-      class="itbms-page-first px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] 
-        disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+      class="itbms-page-first px-4 py-2 rounded-lg border border-gray-700 text-gray-200 bg-gray-800
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-purple-600 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/30
+        transition-all duration-200 font-medium"
       @click="props.goToPage(1)" 
       :disabled="props.currentPage === 1"
     >
@@ -39,11 +38,14 @@ const props = defineProps({
 
     <!-- Previous Page -->
     <button 
-      class="itbms-page-prev px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] 
-      disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+      class="itbms-page-prev px-4 py-2 rounded-lg border border-gray-700 text-gray-200 bg-gray-800
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-purple-600 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/30
+        transition-all duration-200 font-medium"
       @click="props.goToPage(props.currentPage - 1)"
       :disabled="props.currentPage === 1"
     >
+      <span class="material-icons text-sm align-middle">chevron_left</span>
       Prev
     </button>
 
@@ -52,13 +54,12 @@ const props = defineProps({
       v-for="page in props.visiblePages"
       :key="page"
       @click="props.goToPage(page)"
-      class="px-5 py-2 text-lg rounded-lg border font-medium"
+      class="min-w-[44px] px-4 py-2 rounded-lg border font-semibold transition-all duration-200"
       :class="[
         `itbms-page-${page - 1}`,
-        {
-          'bg-[#7e5bef] text-white hover:bg-[#6b4edb] hover:shadow-md': page === props.currentPage,
-          'bg-white text-[#7e5bef] border-[#7e5bef] hover:bg-[#f3f0ff] hover:shadow-md': page !== props.currentPage
-        },
+        page === props.currentPage
+          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500 text-white shadow-lg shadow-purple-500/40 scale-110'
+          : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:border-purple-500 hover:text-purple-400 hover:shadow-md',
         props.totalPages === 1 ? 'invisible' : 'visible'
       ]"
     >
@@ -67,18 +68,23 @@ const props = defineProps({
 
     <!-- Next Page -->
     <button 
-      class="itbms-page-next px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] 
-        disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+      class="itbms-page-next px-4 py-2 rounded-lg border border-gray-700 text-gray-200 bg-gray-800
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-purple-600 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/30
+        transition-all duration-200 font-medium"
       @click="props.goToPage(props.currentPage + 1)" 
       :disabled="props.currentPage === props.totalPages"
     >
       Next
+      <span class="material-icons text-sm align-middle">chevron_right</span>
     </button>
 
     <!-- Last Page -->
     <button 
-      class="itbms-page-last px-5 py-2 text-lg rounded-lg border text-white bg-[#7e5bef] 
-        disabled:opacity-50 hover:bg-[#6b4edb] hover:shadow-md transition duration-200"
+      class="itbms-page-last px-4 py-2 rounded-lg border border-gray-700 text-gray-200 bg-gray-800
+        disabled:opacity-40 disabled:cursor-not-allowed
+        hover:bg-purple-600 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/30
+        transition-all duration-200 font-medium"
       @click="props.goToPage(props.totalPages)"
       :disabled="props.currentPage === props.totalPages"
     >
