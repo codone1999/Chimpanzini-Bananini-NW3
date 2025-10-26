@@ -48,7 +48,6 @@ public class AccountService {
     public UserResponseDto registerAccount(RegisterRequestDto accountReq,
                                            MultipartFile frontPhoto,
                                            MultipartFile backPhoto) {
-        try {
         validateRole(accountReq.getRole());
         checkEmailNotInUse(accountReq.getEmail());
 
@@ -65,12 +64,6 @@ public class AccountService {
         sendVerificationEmail(savedAccount);
 
         return mapToUserResponseDto(savedAccount);
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Account registration failed"
-            );
-        }
     }
 
     private void validateRole(String role) {
@@ -201,7 +194,6 @@ public class AccountService {
     }
 
     public UserResponseDto verifyEmail(String token) {
-        try {
         EmailVerificationToken verificationToken = tokenRepository.findByToken(token);
         if (verificationToken == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification token");
@@ -217,15 +209,6 @@ public class AccountService {
         tokenRepository.delete(verificationToken);
 
         return mapToUserResponseDto(updated);
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Email verification failed",
-                    e
-            );
-        }
     }
 
     private UserResponseDto mapToUserResponseDto(Account account) {
